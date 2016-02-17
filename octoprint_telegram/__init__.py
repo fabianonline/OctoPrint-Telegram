@@ -174,7 +174,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			messages = dict(
 				PrintStarted = "Started printing {file}.",
 				PrintFailed = "Printing {file} failed.",
-				ZChange = "Printing at Z={z}",
+				ZChange = "Printing at Z={z}.\n{percent}% done, {time_left} remaining.",
 				PrintDone = "Finished printing {file}.",
 			)
 		)
@@ -214,7 +214,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if event=="ZChange":
 				z = payload['new']
 				self._logger.debug("Z-Change. z=" + str(z) + " last_z=" + str(self.last_z) + ", settings_height=" + str(self._settings.get_float(['height'])))
-				if abs(z - payload['old']) >= 2.0:
+				if abs(z - (payload['old'] or 0.0)) >= 2.0:
 					# a big jump in height is usually due to lifting at the beginning or end of a print
 					# we just ignore this.
 					self.last_z = z
@@ -226,7 +226,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			
 			if self.shut_up:
 				return
-					
+			
+			status = self._printer.get_current_data()
+			percent = int(status['progress']['completion'] or 0)
+			time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
+			
 			if "file" in payload: file = payload["file"]
 			if "gcode" in payload: file = payload["gcode"]
 			if "filename" in payload: file = payload["filename"]
