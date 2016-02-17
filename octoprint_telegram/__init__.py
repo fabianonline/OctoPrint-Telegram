@@ -88,6 +88,14 @@ class TelegramListener(threading.Thread):
 							else:
 								msg = "Not printing."
 							self.main.send_msg(msg)
+						elif command=="/help":
+							msg = "You can use following commands:\n"
+							msg+= "/photo - Sends a current photo.\n"
+							msg+= "/abort - Aborts the currently running print. A confirmation is required.\n"
+							msg+= "/shutup - Disables automatic notifications till the next print ends.\n"
+							msg+= "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
+							msg+= "/status - Sends the current status."
+							self.main.send_msg(msg)
 						
 					else:
 						self._logger.warn("Got a command from an unknown user.")
