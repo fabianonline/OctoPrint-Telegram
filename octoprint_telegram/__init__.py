@@ -267,7 +267,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Sending a message: " + message + " with_image=" + str(with_image))
 			data = {'chat_id': self._settings.get(['chat'])}
 			if responses:
-				keyboard = {'keyboard':[responses], 'one_time_keyboard': True}
+				keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True}
 				data['reply_markup'] = json.dumps(keyboard)
 			image_data = None
 			if with_image:
