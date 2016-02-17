@@ -54,60 +54,68 @@ class TelegramListener(threading.Thread):
 					if self.first_contact:
 						continue
 					
-					command = message['message']['text']
-					self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
-					if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
-						if command=="/photo":
-							self.main.send_msg("Current photo.", with_image=True)
-						elif command=="/abort":
-							if self.main._printer.is_printing():
-								self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
-							else:
-								self.main.send_msg("Currently I'm not printing, so there is nothing to stop.")
-						elif command=="Yes, abort the print!":
-							self.main.send_msg("Aborting the print...")
-							self.main._printer.cancel_print()
-						elif command=="No, don't abort the print.":
-							self.main.send_msg("Okay, nevermind.")
-						elif command=="/shutup":
-							self.main.shut_up = True
-							self.main.send_msg("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that.")
-						elif command=="/imsorrydontshutup":
-							self.main.shut_up = False
-							self.main.send_msg("Yay, I can talk again.")
-						elif command=="/status":
-							msg = ""
-							temps = self.main._printer.get_current_temperatures()
-							# {'bed': {'actual': 1.0, 'target': 1.0, 'offset': 0}, 'tool0': {'actual': 164.76, 'target': 220.0, 'offset': 0}}
-							# {'bed': {'actual': 0.0, 'target': 0.0, 'offset': 0}, 'tool0': {'actual': 18.7, 'target': 0.0, 'offset': 0}}
-							self._logger.debug(str(temps))
-							if self.main._printer.is_printing():
-								status = self.main._printer.get_current_data()
-								msg = "Printing " + str(status['job']['file']['name']) + ".\n"
-								msg+= "Currently at z=" + str(status['currentZ'] or 0.0) + ".\n"
-								msg+= str(int(status['progress']['completion'] or 0)) + "% done, "
-								msg+= octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0))) + " remaining."
-							else:
-								msg = "Not printing."
-							msg+="\n\nTemperatures:\n"
-							if not (temps['bed']['actual']==0.0 and temps['bed']['target']==0.0) and not (temps['bed']['actual']==1.0 and temps['bed']['target']==1.0):
-								msg += "Bed: " + str(temps['bed']['actual']) + "/" + str(temps['bed']['target']) + "\n"
-							if "tool0" in temps:
-								msg += "Extruder 1: {0} (Target {1})\n".format(temps['tool0']['actual'], temps['tool0']['target'])
-							if "tool1" in temps:
-								msg += "Extruder 2: {0} (Target {1})".format(temps['tool1']['actual'], temps['tool1']['target'])
-							self.main.send_msg(msg)
-						elif command=="/help":
-							msg = "You can use following commands:\n"
-							msg+= "/photo - Sends a current photo.\n"
-							msg+= "/abort - Aborts the currently running print. A confirmation is required.\n"
-							msg+= "/shutup - Disables automatic notifications till the next print ends.\n"
-							msg+= "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
-							msg+= "/status - Sends the current status."
-							self.main.send_msg(msg)
-						
+					if "text" in message['message']:
+						# We got a chat message.
+						command = message['message']['text']
+						self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
+						if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
+							if command=="/photo":
+								self.main.send_msg("Current photo.", with_image=True)
+							elif command=="/abort":
+								if self.main._printer.is_printing():
+									self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
+								else:
+									self.main.send_msg("Currently I'm not printing, so there is nothing to stop.")
+							elif command=="Yes, abort the print!":
+								self.main.send_msg("Aborting the print...")
+								self.main._printer.cancel_print()
+							elif command=="No, don't abort the print.":
+								self.main.send_msg("Okay, nevermind.")
+							elif command=="/shutup":
+								self.main.shut_up = True
+								self.main.send_msg("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that.")
+							elif command=="/imsorrydontshutup":
+								self.main.shut_up = False
+								self.main.send_msg("Yay, I can talk again.")
+							elif command=="/test":
+								self.main.send_msg("Is this a test?", responses=["Yes, it is!", "No, it isn't."])
+							elif command=="/status":
+								msg = ""
+								temps = self.main._printer.get_current_temperatures()
+								# {'bed': {'actual': 1.0, 'target': 1.0, 'offset': 0}, 'tool0': {'actual': 164.76, 'target': 220.0, 'offset': 0}}
+								# {'bed': {'actual': 0.0, 'target': 0.0, 'offset': 0}, 'tool0': {'actual': 18.7, 'target': 0.0, 'offset': 0}}
+								self._logger.debug(str(temps))
+								if self.main._printer.is_printing():
+									status = self.main._printer.get_current_data()
+									msg = "Printing " + str(status['job']['file']['name']) + ".\n"
+									msg+= "Currently at z=" + str(status['currentZ'] or 0.0) + ".\n"
+									msg+= str(int(status['progress']['completion'] or 0)) + "% done, "
+									msg+= octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0))) + " remaining."
+								else:
+									msg = "Not printing."
+								msg+="\n\nTemperatures:\n"
+								if not (temps['bed']['actual']==0.0 and temps['bed']['target']==0.0) and not (temps['bed']['actual']==1.0 and temps['bed']['target']==1.0):
+									msg += "Bed: " + str(temps['bed']['actual']) + "/" + str(temps['bed']['target']) + "\n"
+								if "tool0" in temps:
+									msg += "Extruder 1: {0} (Target {1})\n".format(temps['tool0']['actual'], temps['tool0']['target'])
+								if "tool1" in temps:
+									msg += "Extruder 2: {0} (Target {1})".format(temps['tool1']['actual'], temps['tool1']['target'])
+								self.main.send_msg(msg)
+							elif command=="/help":
+								msg = "You can use following commands:\n"
+								msg+= "/photo - Sends a current photo.\n"
+								msg+= "/abort - Aborts the currently running print. A confirmation is required.\n"
+								msg+= "/shutup - Disables automatic notifications till the next print ends.\n"
+								msg+= "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
+								msg+= "/status - Sends the current status."
+								self.main.send_msg(msg)
+						else:
+							self._logger.warn("Previous command was from an unknown user.")
+					elif "document" in message['message']:
+						# we got a file. Doing nothing (for now...)
+						self._logger.warn("Got a file. Doing nothing. Data: " + str(msg))
 					else:
-						self._logger.warn("Previous command was from an unknown user.")
+						self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(msg))
 			except Exception as ex:
 				self._logger.error("Exception caught! " + str(ex))
 				
