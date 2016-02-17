@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, flask
+import threading, requests, re, time, datetime, StringIO, json
 import octoprint.plugin, octoprint.util
 
 class TelegramListener(threading.Thread):
@@ -10,6 +10,7 @@ class TelegramListener(threading.Thread):
 		self.first_contact = True
 		self.main = main
 		self.do_stop = False
+		self.shut_up = False
 	
 	def run(self):
 		self.main._logger.debug("Listener is running.")
@@ -57,7 +58,19 @@ class TelegramListener(threading.Thread):
 						command = message['message']['text']
 						self.main._logger.debug("Got a command: " + command)
 						if command=="/photo":
-							self.main.send_msg("", with_image=True)
+							self.main.send_msg("Current photo.", with_image=True)
+						elif command=="/abort":
+							self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
+						elif command=="Yes, abort the print!":
+							# abort the print
+						elif command=="No, don't abort the print.":
+							self.main.send_msg("Okay, nevermind.")
+						elif command=="/shutup":
+							self.shut_up = True
+							self.main.send_msg("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that.")
+						elif command=="/imsorrydontshutup":
+							self.shut_up = False
+							self.main.send_msg("Yay, I can talk again.")
 						
 					else:
 						self.main._logger.warn("Got a command from an unknown user.")
@@ -75,6 +88,7 @@ class TelegramListener(threading.Thread):
 class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
                      octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.StartupPlugin,
+                     octoprint.plugin.ShutdownPlugin,
                      octoprint.plugin.TemplatePlugin,
                      octoprint.plugin.SimpleApiPlugin,
                      octoprint.plugin.AssetPlugin):
@@ -99,10 +113,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.thread.stop()
 			self.thread = None
 	
-	def on_after_startup(self, *args, **kwargs):
+	def on_after_startup(self):
 		self.start_listening()
 	
-	def on_settings_save(self, data, *args, **kwargs):
+	def on_shutdown(self):
+		self.send_msg("Shutting down. Goodbye.", with_image=False)
+	
+	def on_settings_save(self, data):
 		self._logger.debug("Saving data: " + str(data))
 		if not re.match("^[0-9]+:[a-zA-Z0-9]+$", data['token']):
 			self._logger.warn("Not saving token because it doesn't seem to have the right format.")
@@ -150,12 +167,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			# PrintFailed Payload: {'origin': 'local', 'file': u'cube.gcode'}
 			# MovieDone Payload: {'gcode': u'cube.gcode', 'movie_basename': 'cube_20160216125143.mpg', 'movie': '/home/pi/.octoprint/timelapse/cube_20160216125143.mpg'}
 			
-			if event=="PrintDone" and not self._settings.get_boolean(["message_at_print_done"]):
-				return
+			if event=="PrintDone":
+				self.shut_up = False
+				if not self._settings.get_boolean(["message_at_print_done"]):
+					return
 			elif event=="PrintStarted" and not self._settings.get_boolean(["message_at_print_started"]):
 				return
-			elif event=="PrintFailed" and not self._settings.get_boolean(["message_at_print_failed"]):
-				return
+			elif event=="PrintFailed":
+				self.shut_up = False
+				if not self._settings.get_boolean(["message_at_print_failed"]):
+					return
 			
 			z = ""
 			file = ""
@@ -175,6 +196,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self.last_z = z
 				else:
 					return
+			
+			if self.shut_up:
+				return
 					
 			if "file" in payload: file = payload["file"]
 			if "gcode" in payload: file = payload["gcode"]
@@ -189,19 +213,29 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as e:
 			self._logger.debug("Exception: " + str(e))
 
-	def send_msg(self, message, with_image=True):
-		self._logger.debug("Sending a message: " + message + " with_image=" + str(with_image))
-		image_data = None
-		if with_image:
-			image_data = self.take_image()
-		if image_data:
-			self._logger.debug("Sending with image.")
-			files = {'photo':("image.jpg", image_data)}
-			r = requests.post(self.bot_url + "/sendPhoto", files=files, data={'chat_id':self._settings.get(['chat']), 'caption':message})
-			self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
-		else:
-			self._logger.debug("Sending without image.")
-			requests.post(self.bot_url + "/sendMessage", data={'chat_id':self._settings.get(['chat']), 'text':message})
+	def send_msg(self, message, with_image=False, responses=None):
+		try:
+			self._logger.debug("Sending a message: " + message + " with_image=" + str(with_image))
+			data = {'chat_id': self._settings.get(['chat'])}
+			if responses:
+				keyboard = {'keyboard':[responses], 'one_time_keyboard': True}
+				data['reply_markup'] = json.dumps(keyboard)
+			image_data = None
+			if with_image:
+				image_data = self.take_image()
+			self._logger.debug("data so far: " + str(data))
+			if image_data:
+				self._logger.debug("Sending with image.")
+				files = {'photo':("image.jpg", image_data)}
+				data['caption'] = message
+				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+				self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
+			else:
+				self._logger.debug("Sending without image.")
+				data['text'] = message
+				requests.post(self.bot_url + "/sendMessage", data=data)
+		except Exception as ex:
+			self._logger.debug("Caught an exception in send_msg(): " + str(ex))
 	
 	def send_video(self, message, video_file):
 		files = {'video': open(video_file, 'rb')}
@@ -240,7 +274,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		chats = []
 		for key, value in self.known_chats.iteritems():
 			chats.append({'id': key, 'name': value})
-		return flask.jsonify(known_chats=chats)
+		return json.dumps({'known_chats':chats})
 	
 	def get_assets(self):
 		return dict(js=["js/telegram.js"])
