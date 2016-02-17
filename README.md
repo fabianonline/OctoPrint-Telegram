@@ -35,11 +35,14 @@ To allow the plugin to send messages via telegram, you have to register a telegr
 * Configuration is done via Octoprint's settings dialog.
 * Token: Enter your bot token here. You got this from @botfather, when you created your bot there.
 * Chat-ID: Which Telegram chat the plugin uses for communication. Commands from other chats are ignored, so you don't have to worry about other people controlling your Octoprint. Known chats (chats that have been active during the time octoprint is running) are listed below - find your chat and copy the ID into this field. If you're missing a chat in the list of known chats, close the settings, send any message to your bot and then re-open the settings. It should now be listed.
-* Z distance: Whenever the current z value grows by this value (or more), a message will be sent.
+* Height change: Whenever the current z value grows by this value (or more), a message will be sent.
  * Setting this to 1.0 would send messages at z=1.0, z=2.0, z=3.0 and so on.
  * Having this at 1.0 with a layer height of 0.3 would send messages at z=1.2, z=2.4, z=3.6 and so on.
 * You can control if you want messages at print start, finish and failure events.
 * You can change the messages. Usable variables are:
  * `{file}` - The currently printing file.
- * `{z}` (only for z change events) - The current percentage of the print progress.
- * `{time_left}` (only for z change events) - Time left in the print.
+ * `{z}` (only for height change events) - The current z value.
+ * `{percent}` (only useful for height change notifications) - The current percentage of the print progress.
+ * `{time_left}` (only useful for height change events) - Time left in the print.
+ * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
+ * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.

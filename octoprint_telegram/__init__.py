@@ -77,16 +77,25 @@ class TelegramListener(threading.Thread):
 							self.main.send_msg("Yay, I can talk again.")
 						elif command=="/status":
 							msg = ""
+							temps = self.main._printer.get_current_temperatures()
+							# {'bed': {'actual': 1.0, 'target': 1.0, 'offset': 0}, 'tool0': {'actual': 164.76, 'target': 220.0, 'offset': 0}}
+							# {'bed': {'actual': 0.0, 'target': 0.0, 'offset': 0}, 'tool0': {'actual': 18.7, 'target': 0.0, 'offset': 0}}
+							self._logger.debug(str(temps))
 							if self.main._printer.is_printing():
 								status = self.main._printer.get_current_data()
-								temps = self.main._printer.get_current_temperatures()
-								self.main.debug(str(temps))
 								msg = "Printing " + str(status['job']['file']['name']) + ".\n"
 								msg+= "Currently at z=" + str(status['currentZ'] or 0.0) + ".\n"
 								msg+= str(int(status['progress']['completion'] or 0)) + "% done, "
 								msg+= octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0))) + " remaining."
 							else:
 								msg = "Not printing."
+							msg+="\n\nTemperatures:\n"
+							if not (temps['bed']['actual']==0.0 and temps['bed']['target']==0.0) and not (temps['bed']['actual']==1.0 and temps['bed']['target']==1.0):
+								msg += "Bed: " + str(temps['bed']['actual']) + "/" + str(temps['bed']['target']) + "\n"
+							if "tool0" in temps:
+								msg += "Extruder 1: {0} (Target {1})\n".format(temps['tool0']['actual'], temps['tool0']['target'])
+							if "tool1" in temps:
+								msg += "Extruder 2: {0} (Target {1})".format(temps['tool1']['actual'], temps['tool1']['target'])
 							self.main.send_msg(msg)
 						elif command=="/help":
 							msg = "You can use following commands:\n"
@@ -174,7 +183,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			messages = dict(
 				PrintStarted = "Started printing {file}.",
 				PrintFailed = "Printing {file} failed.",
-				ZChange = "Printing at Z={z}.\n{percent}% done, {time_left} remaining.",
+				ZChange = "Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{percent}% done, {time_left} remaining.",
 				PrintDone = "Finished printing {file}.",
 			)
 		)
@@ -228,6 +237,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return
 			
 			status = self._printer.get_current_data()
+			temps = self._printer.get_current_temperatures()
+			bed_temp = temps['bed']['actual']
+			bed_target = temps['bed']['target']
+			e1_temp = temps['tool0']['actual']
+			e1_target = temps['tool0']['target']
+			e2_temp = e2_target = None
+			if "tool1" in temps:
+				e2_temp = temps['tool1']['actual']
+				e2_target = temps['tool1']['target']
 			percent = int(status['progress']['completion'] or 0)
 			time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
 			
