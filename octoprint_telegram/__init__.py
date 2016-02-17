@@ -60,9 +60,13 @@ class TelegramListener(threading.Thread):
 						if command=="/photo":
 							self.main.send_msg("Current photo.", with_image=True)
 						elif command=="/abort":
-							self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
+							if self.main._printer.is_printing():
+								self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
+							else:
+								self.main.send_msg("Currently I'm not printing, so there is nothing to stop.")
 						elif command=="Yes, abort the print!":
-							# abort the print
+							self.main.send_msg("Aborting the print...")
+							self.main._printer.cancel_print()
 						elif command=="No, don't abort the print.":
 							self.main.send_msg("Okay, nevermind.")
 						elif command=="/shutup":
