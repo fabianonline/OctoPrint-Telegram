@@ -75,6 +75,19 @@ class TelegramListener(threading.Thread):
 						elif command=="/imsorrydontshutup":
 							self.main.shut_up = False
 							self.main.send_msg("Yay, I can talk again.")
+						elif command=="/status":
+							msg = ""
+							if self.main._printer.is_printing():
+								status = self.main._printer.get_current_data()
+								temps = self.main._printer.get_current_temperatures()
+								self.main.debug(str(temps))
+								msg = "Printing " + str(status['job']['file']['name']) + ".\n"
+								msg+= "Currently at z=" + str(status['currentZ'] or 0.0) + ".\n"
+								msg+= str(int(status['progress']['completion'] or 0)) + "% done, "
+								msg+= octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0))) + " remaining."
+							else:
+								msg = "Not printing."
+							self.main.send_msg(msg)
 						
 					else:
 						self._logger.warn("Got a command from an unknown user.")
