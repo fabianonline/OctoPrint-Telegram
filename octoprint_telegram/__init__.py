@@ -10,11 +10,12 @@ class TelegramListener(threading.Thread):
 		self.first_contact = True
 		self.main = main
 		self.do_stop = False
+		self._logger = main._logger.getChild("listener")
 	
 	def run(self):
-		self.main._logger.debug("Listener is running.")
+		self._logger.debug("Listener is running.")
 		while not self.do_stop:
-			self.main._logger.debug("listener: sending request with offset " + str(self.update_offset) + "...")
+			self._logger.debug("listener: sending request with offset " + str(self.update_offset) + "...")
 			req = None
 			try:
 				timeout = '30'
@@ -23,39 +24,39 @@ class TelegramListener(threading.Thread):
 					self.update_offset = 1
 				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False)
 			except Exception as ex:
-				self.main._logger.error("Got an exception while trying to connect to telegram API: " + str(ex))
-				self.main._logger.error("Waiting 2 minutes before trying again.")
+				self._logger.error("Got an exception while trying to connect to telegram API: " + str(ex))
+				self._logger.error("Waiting 2 minutes before trying again.")
 				time.sleep(120)
 				continue
 			if req.status_code != 200:
-				self.main._logger.warn("Telegram API responded with code " + str(req.status_code) + ". Waiting 2 minutes before trying again.")
+				self._logger.warn("Telegram API responded with code " + str(req.status_code) + ". Waiting 2 minutes before trying again.")
 				time.sleep(120)
 				continue
 			if req.headers['content-type'] != 'application/json':
-				self.main._logger.warn("Unexpected Content-Type. Expected: application/json. Was: " + req.headers['content-type'])
-				self.main._logger.warn("Waiting 2 minutes before trying again.")
+				self._logger.warn("Unexpected Content-Type. Expected: application/json. Was: " + req.headers['content-type'])
+				self._logger.warn("Waiting 2 minutes before trying again.")
 				time.sleep(120)
 				continue
 			json = req.json()
 			if not json['ok']:
-				self.main._logger.warn("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: " + str(json))
+				self._logger.warn("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: " + str(json))
 				time.sleep(120)
 				continue
 			try:
 				for message in json['result']:
-					self.main._logger.debug(str(message))
+					self._logger.debug(str(message))
 					if message['update_id'] >= self.update_offset:
 						self.update_offset = message['update_id']+1
 					if message['message']['chat']['type']!='private':
 						continue
 					self.main.known_chats[str(message['message']['chat']['id'])] = message['message']['chat']['first_name'] + " " + message['message']['chat']['last_name'] + " (" + message['message']['chat']['username'] + ")"
-					self.main._logger.debug("Known chats: " + str(self.main.known_chats))
+					self._logger.debug("Known chats: " + str(self.main.known_chats))
 					if self.first_contact:
 						continue
 					
 					if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
 						command = message['message']['text']
-						self.main._logger.debug("Got a command: " + command)
+						self._logger.debug("Got a command: " + command)
 						if command=="/photo":
 							self.main.send_msg("Current photo.", with_image=True)
 						elif command=="/abort":
@@ -72,14 +73,14 @@ class TelegramListener(threading.Thread):
 							self.main.send_msg("Yay, I can talk again.")
 						
 					else:
-						self.main._logger.warn("Got a command from an unknown user.")
+						self._logger.warn("Got a command from an unknown user.")
 			except Exception as ex:
-				self.main._logger.error("Exception caught! " + str(ex))
+				self._logger.error("Exception caught! " + str(ex))
 				
 			if self.first_contact:
 				self.first_contact = False
 				self.main.send_msg("Hello. I'm online and ready to receive your commands.", with_image=False)
-		self.main._logger.debug("Listener exits NOW.")
+		self._logger.debug("Listener exits NOW.")
 	
 	def stop(self):
 		self.do_stop = True
