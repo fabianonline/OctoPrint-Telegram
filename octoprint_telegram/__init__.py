@@ -124,6 +124,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.first_contact = True
 		self.known_chats = {}
 		self.shut_up = False
+		requests.packages.urllib3.disable_warnings()
 
 	def start_listening(self):
 		if self._settings.get(['token']) != "" and self.thread is None:
