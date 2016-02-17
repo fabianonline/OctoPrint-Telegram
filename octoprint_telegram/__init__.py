@@ -10,7 +10,6 @@ class TelegramListener(threading.Thread):
 		self.first_contact = True
 		self.main = main
 		self.do_stop = False
-		self.shut_up = False
 	
 	def run(self):
 		self.main._logger.debug("Listener is running.")
@@ -66,10 +65,10 @@ class TelegramListener(threading.Thread):
 						elif command=="No, don't abort the print.":
 							self.main.send_msg("Okay, nevermind.")
 						elif command=="/shutup":
-							self.shut_up = True
+							self.main.shut_up = True
 							self.main.send_msg("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that.")
 						elif command=="/imsorrydontshutup":
-							self.shut_up = False
+							self.main.shut_up = False
 							self.main.send_msg("Yay, I can talk again.")
 						
 					else:
@@ -98,6 +97,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.bot_url = None
 		self.first_contact = True
 		self.known_chats = {}
+		self.shut_up = False
 
 	def start_listening(self):
 		if self._settings.get(['token']) != "" and self.thread is None:
