@@ -54,9 +54,9 @@ class TelegramListener(threading.Thread):
 					if self.first_contact:
 						continue
 					
+					command = message['message']['text']
+					self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
 					if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
-						command = message['message']['text']
-						self._logger.debug("Got a command: " + command)
 						if command=="/photo":
 							self.main.send_msg("Current photo.", with_image=True)
 						elif command=="/abort":
@@ -107,7 +107,7 @@ class TelegramListener(threading.Thread):
 							self.main.send_msg(msg)
 						
 					else:
-						self._logger.warn("Got a command from an unknown user.")
+						self._logger.warn("Previous command was from an unknown user.")
 			except Exception as ex:
 				self._logger.error("Exception caught! " + str(ex))
 				
