@@ -84,27 +84,22 @@ class TelegramListener(threading.Thread):
 							elif command=="A test? Why would there be a test?":
 								self.main.send_msg("Phew.")
 							elif command=="/status":
-								msg = ""
-								temps = self.main._printer.get_current_temperatures()
-								# {'bed': {'actual': 1.0, 'target': 1.0, 'offset': 0}, 'tool0': {'actual': 164.76, 'target': 220.0, 'offset': 0}}
-								# {'bed': {'actual': 0.0, 'target': 0.0, 'offset': 0}, 'tool0': {'actual': 18.7, 'target': 0.0, 'offset': 0}}
-								self._logger.debug(str(temps))
 								if self.main._printer.is_printing():
 									status = self.main._printer.get_current_data()
-									msg = "Printing " + str(status['job']['file']['name']) + ".\n"
-									msg+= "Currently at z=" + str(status['currentZ'] or 0.0) + ".\n"
-									msg+= str(int(status['progress']['completion'] or 0)) + "% done, "
-									msg+= octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0))) + " remaining."
+									self.main.on_event("TelegramSendStatus", {'z': (status['currentZ'] or 0.0)})
 								else:
+									temps = self.main._printer.get_current_temperatures()
+									# {'bed': {'actual': 1.0, 'target': 1.0, 'offset': 0}, 'tool0': {'actual': 164.76, 'target': 220.0, 'offset': 0}}
+									# {'bed': {'actual': 0.0, 'target': 0.0, 'offset': 0}, 'tool0': {'actual': 18.7, 'target': 0.0, 'offset': 0}}
 									msg = "Not printing."
-								msg+="\n\nTemperatures:\n"
-								if not (temps['bed']['actual']==0.0 and temps['bed']['target']==0.0) and not (temps['bed']['actual']==1.0 and temps['bed']['target']==1.0):
-									msg += "Bed: " + str(temps['bed']['actual']) + "/" + str(temps['bed']['target']) + "\n"
-								if "tool0" in temps:
-									msg += "Extruder 1: {0} (Target {1})\n".format(temps['tool0']['actual'], temps['tool0']['target'])
-								if "tool1" in temps:
-									msg += "Extruder 2: {0} (Target {1})".format(temps['tool1']['actual'], temps['tool1']['target'])
-								self.main.send_msg(msg)
+									msg+="\n\nTemperatures:\n"
+									if not (temps['bed']['actual']==0.0 and temps['bed']['target']==0.0) and not (temps['bed']['actual']==1.0 and temps['bed']['target']==1.0):
+										msg += "Bed: " + str(temps['bed']['actual']) + "/" + str(temps['bed']['target']) + "\n"
+									if "tool0" in temps:
+										msg += "Extruder 1: {0} (Target {1})\n".format(temps['tool0']['actual'], temps['tool0']['target'])
+									if "tool1" in temps:
+										msg += "Extruder 2: {0} (Target {1})".format(temps['tool1']['actual'], temps['tool1']['target'])
+									self.main.send_msg(msg)
 							elif command=="/help":
 								msg = "You can use following commands:\n"
 								msg+= "/photo - Sends a current photo.\n"
@@ -226,7 +221,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		
 	def on_event(self, event, payload, *args, **kwargs):
 		try:
-			if event != "PrintDone" and event != "PrintStarted" and event != "ZChange" and event!="PrintFailed":
+			if event != "PrintDone" and event != "PrintStarted" and event != "ZChange" and event!="PrintFailed" and event!="TelegramSendStatus":
 				# return as fast as possible
 				return
 			
@@ -265,6 +260,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					return
 				if not self._settings.get_boolean(["message_at_print_failed"]):
 					return
+			elif event=="TelegramSendStatus":
+				z = payload['z']
+				# Change the event type in order to generate a ZChange message
+				event = "ZChange"
 			
 			self.last_notification_time = time.time()
 			self.last_z = z
