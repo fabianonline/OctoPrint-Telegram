@@ -84,6 +84,11 @@
 			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.ZChanged"></textarea>
 		</div>
 	</div>
-
+	<div class="control-group">
+		<label class="control-label">{{ _('Message for /status when not printing') }}</label>
+		<div class="controls">
+			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.TelegramSendNotPrintingStatus"></textarea>
+		</div>
+	</div>
 	
 </form>
