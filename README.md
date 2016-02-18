@@ -43,6 +43,6 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  * `{file}` - The currently printing file.
  * `{z}` (only for height change events) - The current z value.
  * `{percent}` (only useful for height change notifications) - The current percentage of the print progress.
- * `{time_left}` (only useful for height change events) - Time left in the print.
+ * `{time_done}`, `{time_left}` (only useful for height change events) - Time done / left in the print.
  * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
  * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.

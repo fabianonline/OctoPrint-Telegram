@@ -192,7 +192,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			messages = dict(
 				PrintStarted = "Started printing {file}.",
 				PrintFailed = "Printing {file} failed.",
-				ZChange = "Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{percent}% done, {time_left} remaining.",
+				ZChange = "Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}% done, {time_left} remaining.",
 				PrintDone = "Finished printing {file}.",
 			)
 		)
@@ -283,6 +283,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				e2_temp = temps['tool1']['actual']
 				e2_target = temps['tool1']['target']
 			percent = int(status['progress']['completion'] or 0)
+			time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 			time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
 			
 			if "file" in payload: file = payload["file"]
