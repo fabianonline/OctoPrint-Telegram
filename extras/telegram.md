@@ -3,7 +3,7 @@ layout: plugin
 
 id: telegram
 title: OctoPrint-Telegram
-description: A plugin to send notifications before, *during* and after a print via telegram messager.
+description: A plugin to send notifications before, *during* and after a print via Telegram Messenger.
 author: Fabian Schlenz
 license: AGPLv3
 
