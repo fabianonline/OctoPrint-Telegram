@@ -21,13 +21,17 @@
 
 	<h4>Notification settings</h4>
 	<div class="control-group">
-		<label class="control-label">{{ _('Z distance') }}</label>
+		<label class="control-label">{{ _('Send notification every') }}</label>
 		<div class="controls">
 			<div class="input-append">
-				<input type="number" step="any" min="0.1" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.height" />
+				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_height" />
 				<span class="add-on">mm</span>
 			</div>
-			<span class="help-block">Sends a notification with image after this many mm have been printed.</span>
+			<div class="input-append">
+				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_time" />
+				<span class="add-on">min</span>
+			</div>
+			<span class="help-block">Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</span>
 		</div>
 	</div>
 	<div class="control-group">

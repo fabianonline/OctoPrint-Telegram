@@ -67,7 +67,7 @@ class TelegramListener(threading.Thread):
 								else:
 									self.main.send_msg("Currently I'm not printing, so there is nothing to stop.")
 							elif command=="Yes, abort the print!":
-								self.main.send_msg("Aborting the print...")
+								self.main.send_msg("Aborting the print.")
 								self.main._printer.cancel_print()
 							elif command=="No, don't abort the print.":
 								self.main.send_msg("Okay, nevermind.")
@@ -141,6 +141,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def __init__(self):
 		self.thread = None
 		self.last_z = 0.0
+		self.last_notification_time = 0
 		self.bot_url = None
 		self.first_contact = True
 		self.known_chats = {}
@@ -188,7 +189,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return dict(
 			token = "",
 			chat = "",
-			height = "5.0",
+			notification_height = "5.0",
+			notification_time = "15",
 			message_at_print_started = True,
 			message_at_print_done = True,
 			message_at_print_failed = True,
@@ -205,6 +207,23 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			dict(type="settings", name="Telegram", custom_bindings=True)
 		]
 	
+	def is_notification_necessary(self, new_z, old_z):
+		timediff = self._settings.get_int(['notification_time'])
+		if timediff and timediff > 0:
+			# check the timediff
+			if self.last_notification_time + timediff*60 <= time.time():
+				return True
+		zdiff = self._settings.get_float(['notification_height'])
+		if zdiff and zdiff > 0.0:
+			# check the zdiff
+			if abs(new_z - (old_z or 0.0)) >= 2.0:
+				# big changes in height are not interesting for notifications - we ignore them
+				self.last_z = new_z
+				return False
+			if new_z >= self.last_z + zdiff or new_z < self.last_z:
+				return True
+		return False
+		
 	def on_event(self, event, payload, *args, **kwargs):
 		try:
 			if event != "PrintDone" and event != "PrintStarted" and event != "ZChange" and event!="PrintFailed":
@@ -215,40 +234,46 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			# PrintFailed Payload: {'origin': 'local', 'file': u'cube.gcode'}
 			# MovieDone Payload: {'gcode': u'cube.gcode', 'movie_basename': 'cube_20160216125143.mpg', 'movie': '/home/pi/.octoprint/timelapse/cube_20160216125143.mpg'}
 			
-			if event=="PrintDone":
-				self.shut_up = False
+			z = ""
+			file = ""
+		
+			if event=="ZChange":
+				z = payload['new']
+				self._logger.debug("Z-Change. new_z=%.2f old_z=%.2f last_z=%.2f notification_height=%.2f notification_time=%d",
+					z,
+					payload['old'],
+					self.last_z,
+					self._settings.get_float(['notification_height']),
+					self._settings.get_int(['notification_time']))
+				
+				if not self.is_notification_necessary(payload['new'], payload['old']):
+					return
+			elif event=="PrintStarted":
+				self.last_z = 0.0
+				self.last_notification_time = time.time()
+				if not self._settings.get_boolean(["message_at_print_started"]):
+					return
+			elif event=="PrintDone":
+				if self.shut_up:
+					self.shut_up = False
+					return
 				if not self._settings.get_boolean(["message_at_print_done"]):
 					return
-			elif event=="PrintStarted" and not self._settings.get_boolean(["message_at_print_started"]):
-				return
 			elif event=="PrintFailed":
-				self.shut_up = False
+				if self.shut_up:
+					self.shut_up = False
+					return
 				if not self._settings.get_boolean(["message_at_print_failed"]):
 					return
 			
-			z = ""
-			file = ""
-			
-			if event=="PrintStarted":
-				self.last_z = 0.0
-			
-			if event=="ZChange":
-				z = payload['new']
-				self._logger.debug("Z-Change. z=" + str(z) + " last_z=" + str(self.last_z) + ", settings_height=" + str(self._settings.get_float(['height'])))
-				if abs(z - (payload['old'] or 0.0)) >= 2.0:
-					# a big jump in height is usually due to lifting at the beginning or end of a print
-					# we just ignore this.
-					self.last_z = z
-					return
-				if z >= self.last_z + self._settings.get_float(["height"]) or z < self.last_z:
-					self.last_z = z
-				else:
-					return
-			
+			self.last_notification_time = time.time()
+			self.last_z = z
+				
 			if self.shut_up:
 				return
 			
 			status = self._printer.get_current_data()
+			self._logger.debug(str(status))
 			temps = self._printer.get_current_temperatures()
 			bed_temp = temps['bed']['actual']
 			bed_target = temps['bed']['target']
