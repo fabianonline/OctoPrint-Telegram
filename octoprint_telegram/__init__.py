@@ -59,9 +59,7 @@ class TelegramListener(threading.Thread):
 						command = message['message']['text']
 						self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
 						if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
-							if command=="/photo":
-								self.main.send_msg("Current photo.", with_image=True)
-							elif command=="/abort":
+							if command=="/abort":
 								if self.main._printer.is_printing():
 									self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
 								else:
@@ -91,11 +89,10 @@ class TelegramListener(threading.Thread):
 									self.main.on_event("TelegramSendNotPrintingStatus", {})
 							elif command=="/help":
 								msg = "You can use following commands:\n"
-								msg+= "/photo - Sends a current photo.\n"
 								msg+= "/abort - Aborts the currently running print. A confirmation is required.\n"
 								msg+= "/shutup - Disables automatic notifications till the next print ends.\n"
 								msg+= "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
-								msg+= "/status - Sends the current status."
+								msg+= "/status - Sends the current status including a current photo."
 								self.main.send_msg(msg)
 						else:
 							self._logger.warn("Previous command was from an unknown user.")
