@@ -312,7 +312,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def send_msg(self, message, with_image=False, responses=None, force_reply=False):
 		try:
-			self._logger.debug("Sending a message: " + message + " with_image=" + str(with_image))
+			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image))
 			data = {'chat_id': self._settings.get(['chat'])}
 			# We always send hide_keyboard unless we send an actual keyboard
 			data['reply_markup'] = json.dumps({'hide_keyboard': True})
