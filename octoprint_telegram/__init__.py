@@ -78,7 +78,11 @@ class TelegramListener(threading.Thread):
 								self.main.shut_up = False
 								self.main.send_msg("Yay, I can talk again.")
 							elif command=="/test":
-								self.main.send_msg("Is this a test?", responses=["Yes, it is!", "No, it isn't."])
+								self.main.send_msg("Is this a test?", responses=["Yes, this is a test!", "A test? Why would there be a test?"])
+							elif command=="Yes, this is a test!":
+								self.main.send_msg("I'm behaving, then.")
+							elif command=="A test? Why would there be a test?":
+								self.main.send_msg("Phew.")
 							elif command=="/status":
 								msg = ""
 								temps = self.main._printer.get_current_temperatures()
@@ -274,6 +278,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			self._logger.debug("Sending a message: " + message + " with_image=" + str(with_image))
 			data = {'chat_id': self._settings.get(['chat'])}
+			# We always send hide_keyboard unless we send an actual keyboard
+			data['reply_markup'] = json.dumps({'hide_keyboard': True})
 			if responses:
 				keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True}
 				data['reply_markup'] = json.dumps(keyboard)
