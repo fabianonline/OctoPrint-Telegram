@@ -23,7 +23,8 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  shutup - Disables automatic notifications till the next print ends.
  imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.
  status - Sends the current status including a photo.
- help - Displays the help
+ help - Displays the help.
+ settings - Display and modify settings.
  ```
 * Send a message to your new bot. Any message is okay, Telegram's default `/start` is fine as well.
 * Now check the configuration.

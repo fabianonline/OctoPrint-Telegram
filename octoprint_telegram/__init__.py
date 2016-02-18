@@ -57,6 +57,11 @@ class TelegramListener(threading.Thread):
 					if "text" in message['message']:
 						# We got a chat message.
 						command = message['message']['text']
+						parameter = None
+						if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
+							command = message['message']['reply_to_message']['text']
+							parameter = message['message']['text']
+						
 						self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
 						if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
 							if command=="/abort":
@@ -87,12 +92,30 @@ class TelegramListener(threading.Thread):
 									self.main.on_event("TelegramSendPrintingStatus", {'z': (status['currentZ'] or 0.0)})
 								else:
 									self.main.on_event("TelegramSendNotPrintingStatus", {})
+							elif command=="/settings":
+								msg = "Current settings are:\n\nNotification height: {}mm\nNotification time: {}min\n\nWhich value do you want to change?".format(
+									self.main._settings.get_float(["notification_height"]),
+									self.main._settings.get_int(["notification_time"]))
+								self.main.send_msg(msg, responses=["Change notification height", "Change notification time", "None"])
+							elif command=="None":
+								self.main.send_msg("OK.")
+							elif command=="Change notification height":
+								self.main.send_msg("Please enter new notification height.", force_reply=True)
+							elif command=="Please enter new notification height." and parameter:
+								self.main._settings.set_float(['notification_height'], parameter, force=True)
+								self.main.send_msg("Notification height is now {}mm.".format(self.main._settings.get_float(['notification_height'])))
+							elif command=="Change notification time":
+								self.main.send_msg("Please enter new notification time.", force_reply=True)
+							elif command=="Please enter new notification time." and parameter:
+								self.main._settings.set_int(['notification_time'], parameter, force=True)
+								self.main.send_msg("Notification time is now {}mins.".format(self.main._settings.get_int(['notification_time'])))
 							elif command=="/help":
 								msg = "You can use following commands:\n"
 								msg+= "/abort - Aborts the currently running print. A confirmation is required.\n"
 								msg+= "/shutup - Disables automatic notifications till the next print ends.\n"
 								msg+= "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
-								msg+= "/status - Sends the current status including a current photo."
+								msg+= "/status - Sends the current status including a current photo.\n"
+								msg+= "/settings - Displays the current notification settings and allows you to change them."
 								self.main.send_msg(msg)
 						else:
 							self._logger.warn("Previous command was from an unknown user.")
@@ -149,17 +172,18 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def on_shutdown(self):
 		self.send_msg("Shutting down. Goodbye.", with_image=False)
 	
+	def get_settings_preprocessors(self):
+		return dict(), dict(
+			chat=lambda x: int(x),
+			notification_height=lambda x: float(x),
+			notification_time=lambda x: int(x)
+		)
+	
 	def on_settings_save(self, data):
 		self._logger.debug("Saving data: " + str(data))
 		if not re.match("^[0-9]+:[a-zA-Z0-9]+$", data['token']):
 			self._logger.warn("Not saving token because it doesn't seem to have the right format.")
 			data['token'] = ""
-		if not re.match("^[0-9]+$", data['chat']):
-			self._logger.warn("Not saving chat_id because it seems to have a wrong format.")
-			data['chat'] = ""
-		if not re.match("^[0-9]+(\.[0-9])?$", data['height']):
-			self._logger.warn("Height is not a float. Using default 5.0 instead.")
-			data['height'] = "5.0"
 		old_token = self._settings.get(["token"])
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		if data['token']!="" and data['token']!=old_token:
@@ -170,8 +194,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return dict(
 			token = "",
 			chat = "",
-			notification_height = "5.0",
-			notification_time = "15",
+			notification_height = 5.0,
+			notification_time = 15,
 			message_at_print_started = True,
 			message_at_print_done = True,
 			message_at_print_failed = True,
@@ -286,12 +310,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as e:
 			self._logger.debug("Exception: " + str(e))
 
-	def send_msg(self, message, with_image=False, responses=None):
+	def send_msg(self, message, with_image=False, responses=None, force_reply=False):
 		try:
 			self._logger.debug("Sending a message: " + message + " with_image=" + str(with_image))
 			data = {'chat_id': self._settings.get(['chat'])}
 			# We always send hide_keyboard unless we send an actual keyboard
 			data['reply_markup'] = json.dumps({'hide_keyboard': True})
+			if force_reply:
+				data['reply_markup'] = json.dumps({'force_reply': True})
 			if responses:
 				keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True}
 				data['reply_markup'] = json.dumps(keyboard)
