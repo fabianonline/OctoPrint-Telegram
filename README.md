@@ -13,10 +13,16 @@ or manually using this URL:
 To allow the plugin to send messages via telegram, you have to register a telegram bot. Follow these steps:
 
 * Contact [@botfather](http://telegram.me/botfather) in Telegram Messenger.
+
+    ![Screenshot](../screenshots/newbot1.png?raw)
 * Send `/newbot`. Enter a name for the bot, e.g. "Fabians Octoprinter Bot". Then enter a username for the bot, e.g. "FabiansOctoprinterBot". This username has to end in "bot".
 * The Botfather hands you a token. You need this to use your bot. Keep this token secret!
+    
+    ![Screenshot](../screenshots/newbot2.png?raw)
 * While you're there, you could also (these steps are optional!):
  * Give your bot a nice profile picture. Send `/setuserpic`, select the bot and send the Octoprint logo.
+
+    ![Screenshot](../screenshots/newbot3.png?raw)
  * Tell the Botfather which commands are available. This enables Telegram to auto-complete commands to your bot. Send `/setcommands`, select the bot and then send this (one message with multiple lines):
  ```
  abort - Aborts the currently running print.
@@ -26,6 +32,8 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  help - Displays the help.
  settings - Display and modify settings.
  ```
+
+    ![Screenshot](../screenshots/newbot4.png?raw)
 * Send a message to your new bot. Any message is okay, Telegram's default `/start` is fine as well.
 * Now check the configuration.
 
