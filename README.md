@@ -3,6 +3,13 @@
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages. Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized events.
 
+## Screenshots
+![Screenshot](../screenshots/features1.png?raw)
+![Screenshot](../screenshots/features2.png?raw)
+![Screenshot](../screenshots/features3.png?raw)
+![Screenshot](../screenshots/features4.png?raw)
+![Screenshot](../screenshots/features5.png?raw)
+
 ## Setup
 
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
@@ -34,7 +41,12 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  ```
 
     ![Screenshot](../screenshots/newbot4.png?raw)
-* Send a message to your new bot. Any message is okay, Telegram's default `/start` is fine as well.
+* Now enter Octoprint's settings and select Telegram.
+* Enter the token you got from BotFather into the field "Telegram Token".
+* Save and exit the settings.
+* Send a message (any message will do) to your new bot.
+* Again enter the settings for this plugin.
+* Underneath the "Chat-ID" field will be a block about "known chats". Your Telegram account will be listed there. Copy it's ID (the number at the beginning of the line) into the text field. This is necessary to let the plugin know which telegram user shall get the notifications and is allowed to control Octoprint via Telegram.
 * Now check the configuration.
 
 
