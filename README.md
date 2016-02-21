@@ -3,6 +3,13 @@
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages. Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized events.
 
+## Screenshots
+![Screenshot](../screenshots/features1.png?raw)
+![Screenshot](../screenshots/features2.png?raw)
+![Screenshot](../screenshots/features3.png?raw)
+![Screenshot](../screenshots/features4.png?raw)
+![Screenshot](../screenshots/features5.png?raw)
+
 ## Setup
 
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
@@ -13,10 +20,16 @@ or manually using this URL:
 To allow the plugin to send messages via telegram, you have to register a telegram bot. Follow these steps:
 
 * Contact [@botfather](http://telegram.me/botfather) in Telegram Messenger.
+
+    ![Screenshot](../screenshots/newbot1.png?raw)
 * Send `/newbot`. Enter a name for the bot, e.g. "Fabians Octoprinter Bot". Then enter a username for the bot, e.g. "FabiansOctoprinterBot". This username has to end in "bot".
 * The Botfather hands you a token. You need this to use your bot. Keep this token secret!
+    
+    ![Screenshot](../screenshots/newbot2.png?raw)
 * While you're there, you could also (these steps are optional!):
  * Give your bot a nice profile picture. Send `/setuserpic`, select the bot and send the Octoprint logo.
+
+    ![Screenshot](../screenshots/newbot3.png?raw)
  * Tell the Botfather which commands are available. This enables Telegram to auto-complete commands to your bot. Send `/setcommands`, select the bot and then send this (one message with multiple lines):
  ```
  abort - Aborts the currently running print.
@@ -26,7 +39,14 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  help - Displays the help.
  settings - Display and modify settings.
  ```
-* Send a message to your new bot. Any message is okay, Telegram's default `/start` is fine as well.
+
+    ![Screenshot](../screenshots/newbot4.png?raw)
+* Now enter Octoprint's settings and select Telegram.
+* Enter the token you got from BotFather into the field "Telegram Token".
+* Save and exit the settings.
+* Send a message (any message will do) to your new bot.
+* Again enter the settings for this plugin.
+* Underneath the "Chat-ID" field will be a block about "known chats". Your Telegram account will be listed there. Copy it's ID (the number at the beginning of the line) into the text field. This is necessary to let the plugin know which telegram user shall get the notifications and is allowed to control Octoprint via Telegram.
 * Now check the configuration.
 
 
