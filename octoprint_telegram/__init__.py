@@ -181,8 +181,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def on_settings_save(self, data):
 		self._logger.debug("Saving data: " + str(data))
-		if not re.match("^[0-9]+:[a-zA-Z0-9]+$", data['token']):
-			self._logger.warn("Not saving token because it doesn't seem to have the right format.")
+		data['token'] = data['token'].strip()
+		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
+			self._logger.error("Not saving token because it doesn't seem to have the right format.")
 			data['token'] = ""
 		old_token = self._settings.get(["token"])
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
