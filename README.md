@@ -53,7 +53,7 @@ To allow the plugin to send messages via telegram, you have to register a telegr
 ## Configuration
 
 * Configuration is done via Octoprint's settings dialog.
-* Token: Enter your bot token here. You got this from @botfather, when you created your bot there.
+* Token: Enter your bot token here. You got this from @botfather, when you created your bot there. After saving and re-opening of the settings, the current connection status will be shown.
 * Chat-ID: Which Telegram chat the plugin uses for communication. Commands from other chats are ignored, so you don't have to worry about other people controlling your Octoprint. Known chats (chats that have been active during the time octoprint is running) are listed below - find your chat and copy the ID into this field. If you're missing a chat in the list of known chats, close the settings, send any message to your bot and then re-open the settings. It should now be listed.
 * Send notification every: Whenever the current z value grows by this value (or more) or the given time has passed since the last notification, a message will be sent.
  * Setting the height to 1.0mm would send messages at z=1.0, z=2.0, z=3.0 and so on.

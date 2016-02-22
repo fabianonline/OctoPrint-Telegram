@@ -23,6 +23,8 @@ $(function() {
             [],
             [],
             999);
+            
+        self.connection_state_str = ko.observable("Unknown");
         
         self.requestData = function() {
             $.ajax({
@@ -34,6 +36,7 @@ $(function() {
         };
         
         self.fromResponse = function(response) {
+            self.connection_state_str(response.connection_state_str);
             var entries = response.known_chats;
             if (entries === undefined) return;
             self.listHelper.updateItems(entries);
