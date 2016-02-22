@@ -214,12 +214,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		data['token'] = data['token'].strip()
 		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
 			self._logger.error("Not saving token because it doesn't seem to have the right format.")
+			self.connection_state_str = "The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb"
 			data['token'] = ""
 		old_token = self._settings.get(["token"])
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
-		if data['token']!="" and data['token']!=old_token:
+		if data['token']!=old_token:
 			self.stop_listening()
+		if data['token']!="":
 			self.start_listening()
+		else:
+			self.connection_state_str = "No token given."
 	
 	def get_settings_defaults(self):
 		return dict(
