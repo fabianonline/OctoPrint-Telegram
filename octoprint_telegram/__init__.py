@@ -64,9 +64,18 @@ class TelegramListener(threading.Thread):
 					self._logger.debug(str(message))
 					if message['update_id'] >= self.update_offset:
 						self.update_offset = message['update_id']+1
-					if message['message']['chat']['type']!='private':
+					if not message['message'] or not message['message']['chat'] or message['message']['chat']['type']!='private':
+						self._logger.warn("Chat is non-private")
 						continue
-					self.main.known_chats[str(message['message']['chat']['id'])] = message['message']['chat']['first_name'] + " " + message['message']['chat']['last_name'] + " (" + message['message']['chat']['username'] + ")"
+					chat = message['message']['chat']
+					chat_str = ""
+					if "first_name" in chat:
+						chat_str += chat['first_name'] + " - "
+					if "last_name" in chat:
+						chat_str += chat['last_name'] + " - "
+					if "username" in chat:
+						chat_str += "@" + chat['username']
+					self.main.known_chats[str(chat['id'])] = chat_str
 					self._logger.debug("Known chats: " + str(self.main.known_chats))
 					if self.first_contact:
 						continue
