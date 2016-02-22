@@ -5,6 +5,9 @@
 		<div class="controls">
 			<input type="text" class="input-block-level" data-bind="value: settings.settings.plugins.telegram.token" />
 			<span class="help-block">You can get this by creating a bot on telegram.</span>
+			<span class="help-block">The connection status at the time of opening the settings was:
+				<span data-bind="text: connection_state_str"></span>
+			</span>
 		</div>
 	</div>
 	<div class="control-group">

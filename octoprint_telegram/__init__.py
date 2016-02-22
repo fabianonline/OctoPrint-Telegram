@@ -10,10 +10,29 @@ class TelegramListener(threading.Thread):
 		self.first_contact = True
 		self.main = main
 		self.do_stop = False
+		self.username = "UNKNOWN"
 		self._logger = main._logger.getChild("listener")
 	
 	def run(self):
 		self._logger.debug("Listener is running.")
+		response = requests.get(self.main.bot_url + "/getMe")
+		self._logger.debug("getMe returned: " + str(response.json()))
+		self._logger.debug("getMe status code: " + str(response.status_code))
+		try:
+			json = response.json()
+			if not 'ok' in json or not json['ok']:
+				if json['description']:
+					self.set_status("Telegram returned error code {}: {}".format(json['error_code'], json['description']))
+				else:
+					self.set_status("Telegram returned an unspecified error.")
+				return
+			else:
+				self.set_status("Connected as @{}.".format(json['result']['username']), ok=True)
+				self.username = "@" + json['result']['username']
+		except Exception as ex:
+			self.set_status("An exception occurred while trying to initially connect to telegram. Exception was: {}".format(ex))
+			return
+		
 		while not self.do_stop:
 			self._logger.debug("listener: sending request with offset " + str(self.update_offset) + "...")
 			req = None
@@ -24,22 +43,20 @@ class TelegramListener(threading.Thread):
 					self.update_offset = 1
 				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False)
 			except Exception as ex:
-				self._logger.error("Got an exception while trying to connect to telegram API: " + str(ex))
-				self._logger.error("Waiting 2 minutes before trying again.")
+				self.set_status("Got an exception while trying to connect to telegram API: {}. Waiting 2 minutes before trying again.".format(ex))
 				time.sleep(120)
 				continue
 			if req.status_code != 200:
-				self._logger.warn("Telegram API responded with code " + str(req.status_code) + ". Waiting 2 minutes before trying again.")
+				self.set_status("Telegram API responded with code {}. Waiting 2 minutes before trying again.".format(req.status_code))
 				time.sleep(120)
 				continue
 			if req.headers['content-type'] != 'application/json':
-				self._logger.warn("Unexpected Content-Type. Expected: application/json. Was: " + req.headers['content-type'])
-				self._logger.warn("Waiting 2 minutes before trying again.")
+				self.set_status("Unexpected Content-Type. Expected: application/json. Was: {}. Waiting 2 minutes before trying again.".format(req.headers['content-type']))
 				time.sleep(120)
 				continue
 			json = req.json()
 			if not json['ok']:
-				self._logger.warn("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: " + str(json))
+				self.set_status("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: {}".format(json))
 				time.sleep(120)
 				continue
 			try:
@@ -126,6 +143,8 @@ class TelegramListener(threading.Thread):
 						self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(msg))
 			except Exception as ex:
 				self._logger.error("Exception caught! " + str(ex))
+			
+			self.set_status("Connected as {}".format(self.username), ok=True)
 				
 			if self.first_contact:
 				self.first_contact = False
@@ -134,6 +153,16 @@ class TelegramListener(threading.Thread):
 	
 	def stop(self):
 		self.do_stop = True
+	
+	def set_status(self, status, ok=False):
+		if self.do_stop:
+			self._logger.debug("Would set status but do_stop is True: %s", status)
+			return
+		if ok:
+			self._logger.debug("Setting status: %s", status)
+		else:
+			self._logger.error("Setting status: %s", status)
+		self.main.connection_state_str = status
 
 class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
                      octoprint.plugin.SettingsPlugin,
@@ -150,7 +179,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.first_contact = True
 		self.known_chats = {}
 		self.shut_up = False
-		requests.packages.urllib3.disable_warnings()
+		self.connection_state_str = "Disconnected."
+		#requests.packages.urllib3.disable_warnings()
 
 	def start_listening(self):
 		if self._settings.get(['token']) != "" and self.thread is None:
@@ -184,12 +214,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		data['token'] = data['token'].strip()
 		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
 			self._logger.error("Not saving token because it doesn't seem to have the right format.")
+			self.connection_state_str = "The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb"
 			data['token'] = ""
 		old_token = self._settings.get(["token"])
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
-		if data['token']!="" and data['token']!=old_token:
+		if data['token']!=old_token:
 			self.stop_listening()
+		if data['token']!="":
 			self.start_listening()
+		else:
+			self.connection_state_str = "No token given."
 	
 	def get_settings_defaults(self):
 		return dict(
@@ -376,7 +410,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		chats = []
 		for key, value in self.known_chats.iteritems():
 			chats.append({'id': key, 'name': value})
-		return json.dumps({'known_chats':chats})
+		return json.dumps({'known_chats':chats, 'connection_state_str':self.connection_state_str})
 	
 	def get_assets(self):
 		return dict(js=["js/telegram.js"])
