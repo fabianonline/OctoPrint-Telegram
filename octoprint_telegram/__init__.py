@@ -289,7 +289,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			z = ""
 			file = ""
 		
+			status = self._printer.get_current_data()
 			if event=="ZChange":
+				if not status['state']['flags']['printing']:
+					return
 				z = payload['new']
 				self._logger.debug("Z-Change. new_z=%.2f old_z=%.2f last_z=%.2f notification_height=%.2f notification_time=%d",
 					z,
@@ -328,7 +331,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if self.shut_up:
 				return
 			
-			status = self._printer.get_current_data()
 			self._logger.debug(str(status))
 			temps = self._printer.get_current_temperatures()
 			bed_temp = temps['bed']['actual']
