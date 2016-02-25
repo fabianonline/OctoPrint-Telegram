@@ -4,9 +4,9 @@
 		<label class="control-label">{{ _('Telegram Token') }}</label>
 		<div class="controls">
 			<input type="text" class="input-block-level" data-bind="value: settings.settings.plugins.telegram.token" />
-			<span class="help-block">You can get this by creating a bot on telegram.</span>
+			<span class="help-block">You can get this by creating a bot on telegram. If you don't know what to enter here, have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md">the documentation at github</a>.</span>
 			<span class="help-block">The connection status at the time of opening the settings was:
-				<span data-bind="text: connection_state_str"></span>
+				<strong data-bind="text: connection_state_str"></strong>
 			</span>
 		</div>
 	</div>
@@ -40,8 +40,24 @@
 	<div class="control-group">
 		<div class="controls">
 			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_startup" />
+				Send a notification when octoprint has completed startup.
+			</label>
+		</div>
+	</div>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_shutdown" />
+				Send a notification when octoprint is shutting down.
+			</label>
+		</div>
+	</div>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_started" />
-				Send a notification when a new print hast started.
+				Send a notification when a new print has started.
 			</label>
 		</div>
 	</div>

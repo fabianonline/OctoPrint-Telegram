@@ -157,7 +157,8 @@ class TelegramListener(threading.Thread):
 				
 			if self.first_contact:
 				self.first_contact = False
-				self.main.send_msg("Hello. I'm online and ready to receive your commands.", with_image=False)
+				if self.main._settings.get_boolean(["message_at_startup"]):
+					self.main.send_msg("Hello. I'm online and ready to receive your commands.")
 		self._logger.debug("Listener exits NOW.")
 	
 	def stop(self):
@@ -189,7 +190,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.known_chats = {}
 		self.shut_up = False
 		self.connection_state_str = "Disconnected."
-		#requests.packages.urllib3.disable_warnings()
+		requests.packages.urllib3.disable_warnings()
 
 	def start_listening(self):
 		if self._settings.get(['token']) != "" and self.thread is None:
@@ -209,7 +210,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.start_listening()
 	
 	def on_shutdown(self):
-		self.send_msg("Shutting down. Goodbye.", with_image=False)
+		if self._settings.get_boolean(["message_at_shutdown"]):
+			self.send_msg("Shutting down. Goodbye.")
 	
 	def get_settings_preprocessors(self):
 		return dict(), dict(
@@ -240,6 +242,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			chat = "",
 			notification_height = 5.0,
 			notification_time = 15,
+			message_at_startup = True,
+			message_at_shutdown = True,
 			message_at_print_started = True,
 			message_at_print_done = True,
 			message_at_print_failed = True,
@@ -265,6 +269,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return True
 		zdiff = self._settings.get_float(['notification_height'])
 		if zdiff and zdiff > 0.0:
+			if old_z is None:
+				return False
 			# check the zdiff
 			if abs(new_z - (old_z or 0.0)) >= 2.0:
 				# big changes in height are not interesting for notifications - we ignore them
@@ -287,7 +293,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			z = ""
 			file = ""
 		
+			status = self._printer.get_current_data()
 			if event=="ZChange":
+				if not status['state']['flags']['printing']:
+					return
 				z = payload['new']
 				self._logger.debug("Z-Change. new_z=%.2f old_z=%.2f last_z=%.2f notification_height=%.2f notification_time=%d",
 					z,
@@ -326,7 +335,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if self.shut_up:
 				return
 			
-			status = self._printer.get_current_data()
 			self._logger.debug(str(status))
 			temps = self._printer.get_current_temperatures()
 			bed_temp = temps['bed']['actual']
