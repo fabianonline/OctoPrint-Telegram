@@ -157,7 +157,8 @@ class TelegramListener(threading.Thread):
 				
 			if self.first_contact:
 				self.first_contact = False
-				self.main.send_msg("Hello. I'm online and ready to receive your commands.", with_image=False)
+				if self.main._settings.get_boolean(["message_at_startup"]):
+					self.main.send_msg("Hello. I'm online and ready to receive your commands.")
 		self._logger.debug("Listener exits NOW.")
 	
 	def stop(self):
@@ -209,7 +210,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.start_listening()
 	
 	def on_shutdown(self):
-		self.send_msg("Shutting down. Goodbye.", with_image=False)
+		if self._settings.get_boolean(["message_at_shutdown"]):
+			self.send_msg("Shutting down. Goodbye.")
 	
 	def get_settings_preprocessors(self):
 		return dict(), dict(
@@ -240,6 +242,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			chat = "",
 			notification_height = 5.0,
 			notification_time = 15,
+			message_at_startup = True,
+			message_at_shutdown = True,
 			message_at_print_started = True,
 			message_at_print_done = True,
 			message_at_print_failed = True,

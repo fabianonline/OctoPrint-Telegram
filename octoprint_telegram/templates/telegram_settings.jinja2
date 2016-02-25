@@ -40,6 +40,22 @@
 	<div class="control-group">
 		<div class="controls">
 			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_startup" />
+				Send a notification when octoprint has completed startup.
+			</label>
+		</div>
+	</div>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_shutdown" />
+				Send a notification when octoprint is shutting down.
+			</label>
+		</div>
+	</div>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_started" />
 				Send a notification when a new print hast started.
 			</label>
