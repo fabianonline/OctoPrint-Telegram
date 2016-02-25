@@ -189,7 +189,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.known_chats = {}
 		self.shut_up = False
 		self.connection_state_str = "Disconnected."
-		#requests.packages.urllib3.disable_warnings()
+		requests.packages.urllib3.disable_warnings()
 
 	def start_listening(self):
 		if self._settings.get(['token']) != "" and self.thread is None:
