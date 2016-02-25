@@ -265,6 +265,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return True
 		zdiff = self._settings.get_float(['notification_height'])
 		if zdiff and zdiff > 0.0:
+			if old_z is None:
+				return False
 			# check the zdiff
 			if abs(new_z - (old_z or 0.0)) >= 2.0:
 				# big changes in height are not interesting for notifications - we ignore them
