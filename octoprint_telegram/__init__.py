@@ -2,6 +2,7 @@ from __future__ import absolute_import
 from PIL import Image
 import threading, requests, re, time, datetime, StringIO, json
 import octoprint.plugin, octoprint.util
+from flask.ext.babel import gettext
 
 class TelegramListener(threading.Thread):
 	def __init__(self, main):
@@ -22,15 +23,16 @@ class TelegramListener(threading.Thread):
 			json = response.json()
 			if not 'ok' in json or not json['ok']:
 				if json['description']:
-					self.set_status("Telegram returned error code {}: {}".format(json['error_code'], json['description']))
+					self.set_status(gettext("Telegram returned error code %(error)s: %(message)s", error=json['error_code'], message=json['description']))
 				else:
-					self.set_status("Telegram returned an unspecified error.")
+					self.set_status(gettext("Telegram returned an unspecified error."))
 				return
 			else:
-				self.set_status("Connected as @{}.".format(json['result']['username']), ok=True)
 				self.username = "@" + json['result']['username']
+				self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
+				
 		except Exception as ex:
-			self.set_status("An exception occurred while trying to initially connect to telegram. Exception was: {}".format(ex))
+			self.set_status(gettext("An exception occurred while trying to initially connect to telegram. Exception was: %(exception)s", exception=ex))
 			return
 		
 		while not self.do_stop:
@@ -43,20 +45,20 @@ class TelegramListener(threading.Thread):
 					self.update_offset = 1
 				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False)
 			except Exception as ex:
-				self.set_status("Got an exception while trying to connect to telegram API: {}. Waiting 2 minutes before trying again.".format(ex))
+				self.set_status(gettext("Got an exception while trying to connect to telegram API: %(exception)s. Waiting 2 minutes before trying again.", exception=ex))
 				time.sleep(120)
 				continue
 			if req.status_code != 200:
-				self.set_status("Telegram API responded with code {}. Waiting 2 minutes before trying again.".format(req.status_code))
+				self.set_status(gettext("Telegram API responded with code %(status_code)s. Waiting 2 minutes before trying again.", status_code=req.status_code))
 				time.sleep(120)
 				continue
 			if req.headers['content-type'] != 'application/json':
-				self.set_status("Unexpected Content-Type. Expected: application/json. Was: {}. Waiting 2 minutes before trying again.".format(req.headers['content-type']))
+				self.set_status(gettext("Unexpected Content-Type. Expected: application/json. Was: %(type)s. Waiting 2 minutes before trying again.", type=req.headers['content-type']))
 				time.sleep(120)
 				continue
 			json = req.json()
 			if not json['ok']:
-				self.set_status("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: {}".format(json))
+				self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
 				time.sleep(120)
 				continue
 			try:
@@ -92,26 +94,26 @@ class TelegramListener(threading.Thread):
 						if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
 							if command=="/abort":
 								if self.main._printer.is_printing():
-									self.main.send_msg("Really abort the currently running print?", responses=["Yes, abort the print!", "No, don't abort the print."])
+									self.main.send_msg(gettext("Really abort the currently running print?"), responses=[gettext("Yes, abort the print!"), gettext("No, don't abort the print.")])
 								else:
-									self.main.send_msg("Currently I'm not printing, so there is nothing to stop.")
-							elif command=="Yes, abort the print!":
-								self.main.send_msg("Aborting the print.")
+									self.main.send_msg(gettext("Currently I'm not printing, so there is nothing to stop."))
+							elif command==gettext("Yes, abort the print!"):
+								self.main.send_msg(gettext("Aborting the print."))
 								self.main._printer.cancel_print()
-							elif command=="No, don't abort the print.":
-								self.main.send_msg("Okay, nevermind.")
+							elif command==gettext("No, don't abort the print."):
+								self.main.send_msg(gettext("Okay, nevermind."))
 							elif command=="/shutup":
 								self.main.shut_up = True
-								self.main.send_msg("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that.")
+								self.main.send_msg(gettext("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that."))
 							elif command=="/imsorrydontshutup":
 								self.main.shut_up = False
-								self.main.send_msg("Yay, I can talk again.")
+								self.main.send_msg(gettext("Yay, I can talk again."))
 							elif command=="/test":
-								self.main.send_msg("Is this a test?", responses=["Yes, this is a test!", "A test? Why would there be a test?"])
-							elif command=="Yes, this is a test!":
-								self.main.send_msg("I'm behaving, then.")
-							elif command=="A test? Why would there be a test?":
-								self.main.send_msg("Phew.")
+								self.main.send_msg(gettext("Is this a test?"), responses=[gettext("Yes, this is a test!"), gettext("A test? Why would there be a test?")])
+							elif command==gettext("Yes, this is a test!"):
+								self.main.send_msg(gettext("I'm behaving, then."))
+							elif command==gettext("A test? Why would there be a test?"):
+								self.main.send_msg(gettext("Phew."))
 							elif command=="/status":
 								if self.main._printer.is_printing():
 									status = self.main._printer.get_current_data()
@@ -119,30 +121,29 @@ class TelegramListener(threading.Thread):
 								else:
 									self.main.on_event("TelegramSendNotPrintingStatus", {})
 							elif command=="/settings":
-								msg = "Current settings are:\n\nNotification height: {}mm\nNotification time: {}min\n\nWhich value do you want to change?".format(
-									self.main._settings.get_float(["notification_height"]),
-									self.main._settings.get_int(["notification_time"]))
-								self.main.send_msg(msg, responses=["Change notification height", "Change notification time", "None"])
-							elif command=="None":
-								self.main.send_msg("OK.")
-							elif command=="Change notification height":
-								self.main.send_msg("Please enter new notification height.", force_reply=True)
-							elif command=="Please enter new notification height." and parameter:
+								msg = gettext("Current settings are:\n\nNotification height: %(height)fmm\nNotification time: %(time)dmin\n\nWhich value do you want to change?",
+									height=self.main._settings.get_float(["notification_height"]),
+									time=self.main._settings.get_int(["notification_time"]))
+								self.main.send_msg(msg, responses=[gettext("Change notification height"), gettext("Change notification time"), gettext("None")])
+							elif command==gettext("None"):
+								self.main.send_msg(gettext("OK."))
+							elif command==gettext("Change notification height"):
+								self.main.send_msg(gettext("Please enter new notification height."), force_reply=True)
+							elif command==gettext("Please enter new notification height.") and parameter:
 								self.main._settings.set_float(['notification_height'], parameter, force=True)
-								self.main.send_msg("Notification height is now {}mm.".format(self.main._settings.get_float(['notification_height'])))
-							elif command=="Change notification time":
-								self.main.send_msg("Please enter new notification time.", force_reply=True)
-							elif command=="Please enter new notification time." and parameter:
+								self.main.send_msg(gettext("Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])))
+							elif command==gettext("Change notification time"):
+								self.main.send_msg(gettext("Please enter new notification time."), force_reply=True)
+							elif command==gettext("Please enter new notification time.") and parameter:
 								self.main._settings.set_int(['notification_time'], parameter, force=True)
-								self.main.send_msg("Notification time is now {}mins.".format(self.main._settings.get_int(['notification_time'])))
+								self.main.send_msg(gettext("Notification time is now %(time)dmins.", self.main._settings.get_int(['notification_time'])))
 							elif command=="/help":
-								msg = "You can use following commands:\n"
-								msg+= "/abort - Aborts the currently running print. A confirmation is required.\n"
-								msg+= "/shutup - Disables automatic notifications till the next print ends.\n"
-								msg+= "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
-								msg+= "/status - Sends the current status including a current photo.\n"
-								msg+= "/settings - Displays the current notification settings and allows you to change them."
-								self.main.send_msg(msg)
+								self.main.send_msg(gettext("You can use following commands:\n"
+								                           "/abort - Aborts the currently running print. A confirmation is required.\n"
+								                           "/shutup - Disables automatic notifications till the next print ends.\n"
+								                           "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
+								                           "/status - Sends the current status including a current photo.\n"
+								                           "/settings - Displays the current notification settings and allows you to change them."))
 						else:
 							self._logger.warn("Previous command was from an unknown user.")
 					elif "document" in message['message']:
@@ -153,12 +154,12 @@ class TelegramListener(threading.Thread):
 			except Exception as ex:
 				self._logger.error("Exception caught! " + str(ex))
 			
-			self.set_status("Connected as {}".format(self.username), ok=True)
+			self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 				
 			if self.first_contact:
 				self.first_contact = False
 				if self.main._settings.get_boolean(["message_at_startup"]):
-					self.main.send_msg("Hello. I'm online and ready to receive your commands.")
+					self.main.send_msg(gettext("Hello. I'm online and ready to receive your commands."))
 		self._logger.debug("Listener exits NOW.")
 	
 	def stop(self):
@@ -189,7 +190,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.first_contact = True
 		self.known_chats = {}
 		self.shut_up = False
-		self.connection_state_str = "Disconnected."
+		self.connection_state_str = gettext("Disconnected.")
 		requests.packages.urllib3.disable_warnings()
 
 	def start_listening(self):
@@ -211,7 +212,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def on_shutdown(self):
 		if self._settings.get_boolean(["message_at_shutdown"]):
-			self.send_msg("Shutting down. Goodbye.")
+			self.send_msg(gettext("Shutting down. Goodbye."))
 	
 	def get_settings_preprocessors(self):
 		return dict(), dict(
@@ -225,7 +226,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		data['token'] = data['token'].strip()
 		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
 			self._logger.error("Not saving token because it doesn't seem to have the right format.")
-			self.connection_state_str = "The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb"
+			self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
 			data['token'] = ""
 		old_token = self._settings.get(["token"])
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
@@ -234,7 +235,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if data['token']!="":
 			self.start_listening()
 		else:
-			self.connection_state_str = "No token given."
+			self.connection_state_str = gettext("No token given.")
 	
 	def get_settings_defaults(self):
 		return dict(
@@ -248,11 +249,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			message_at_print_done = True,
 			message_at_print_failed = True,
 			messages = dict(
-				PrintStarted = "Started printing {file}.",
-				PrintFailed = "Printing {file} failed.",
-				ZChange = "Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}% done, {time_left} remaining.",
-				PrintDone = "Finished printing {file}.",
-				TelegramSendNotPrintingStatus = "Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."
+				PrintStarted = gettext("Started printing {file}."),
+				PrintFailed = gettext("Printing {file} failed."),
+				ZChange = gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining."),
+				PrintDone = gettext("Finished printing {file}."),
+				TelegramSendNotPrintingStatus = gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.")
 			)
 		)
 	
