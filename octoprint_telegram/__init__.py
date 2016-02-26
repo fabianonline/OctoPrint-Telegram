@@ -261,7 +261,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			dict(type="settings", name="Telegram", custom_bindings=True)
 		]
 	
-	def get_update_information(self):
+	def get_update_information(self, *args, **kwargs):
 		return dict(
 			telegram=dict(
 				displayName=self._plugin_name,
