@@ -261,6 +261,21 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			dict(type="settings", name="Telegram", custom_bindings=True)
 		]
 	
+	def get_update_information(self):
+		return dict(
+			telegram=dict(
+				displayName=self._plugin_name,
+				displayVersion=self._plugin_version,
+				
+				type="github_release",
+				current=self._plugin_version,
+				user="fabianonline",
+				repo="OctoPrint-Telegram",
+				
+				pip="https://github.com/fabianonline/OctoPrint-Telegram/archive/{target}.zip"
+			)
+		)
+	
 	def is_notification_necessary(self, new_z, old_z):
 		timediff = self._settings.get_int(['notification_time'])
 		if timediff and timediff > 0:
@@ -434,3 +449,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 __plugin_name__ = "Telegram Notifications"
 __plugin_implementation__ = TelegramPlugin()
+__plugin_hooks__ = {
+	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+}
