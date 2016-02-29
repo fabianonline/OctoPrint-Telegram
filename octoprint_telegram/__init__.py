@@ -16,24 +16,14 @@ class TelegramListener(threading.Thread):
 	
 	def run(self):
 		self._logger.debug("Listener is running.")
-		response = requests.get(self.main.bot_url + "/getMe")
-		self._logger.debug("getMe returned: " + str(response.json()))
-		self._logger.debug("getMe status code: " + str(response.status_code))
 		try:
-			json = response.json()
-			if not 'ok' in json or not json['ok']:
-				if json['description']:
-					self.set_status(gettext("Telegram returned error code %(error)s: %(message)s", error=json['error_code'], message=json['description']))
-				else:
-					self.set_status(gettext("Telegram returned an unspecified error."))
-				return
-			else:
-				self.username = "@" + json['result']['username']
-				self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
-				
+			self.username = self.main.test_token()
+			self._logger.debug("1")
 		except Exception as ex:
-			self.set_status(gettext("An exception occurred while trying to initially connect to telegram. Exception was: %(exception)s", exception=ex))
+			self.set_status(gettext("Got an exception while initially trying to connect to telegram: %(ex)s", ex=ex))
 			return
+		self._logger.debug("2")
+		self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 		
 		while not self.do_stop:
 			self._logger.debug("listener: sending request with offset " + str(self.update_offset) + "...")
@@ -173,6 +163,7 @@ class TelegramListener(threading.Thread):
 			self._logger.debug("Setting status: %s", status)
 		else:
 			self._logger.error("Setting status: %s", status)
+		self.connection_ok = ok
 		self.main.connection_state_str = status
 
 class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
@@ -191,6 +182,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.known_chats = {}
 		self.shut_up = False
 		self.connection_state_str = gettext("Disconnected.")
+		self.connection_ok = False
 		requests.packages.urllib3.disable_warnings()
 
 	def start_listening(self):
@@ -439,11 +431,40 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			output.close()
 		return data
 	
+	def test_token(self, token=None):
+		if token is None:
+			token = self._settings.get(["token"])
+		response = requests.get("https://api.telegram.org/bot" + token + "/getMe")
+		self._logger.debug("getMe returned: " + str(response.json()))
+		self._logger.debug("getMe status code: " + str(response.status_code))
+		json = response.json()
+		if not 'ok' in json or not json['ok']:
+			if json['description']:
+				raise(Exception(gettext("Telegram returned error code %(error)s: %(message)s", error=json['error_code'], message=json['description'])))
+			else:
+				raise(Exception(gettext("Telegram returned an unspecified error.")))
+		else:
+			return "@" + json['result']['username']
+				
+	def get_api_commands(self):
+		return dict(
+			testToken=["token"]
+		)
+	
 	def on_api_get(self, request):
 		chats = []
 		for key, value in self.known_chats.iteritems():
 			chats.append({'id': key, 'name': value})
-		return json.dumps({'known_chats':chats, 'connection_state_str':self.connection_state_str})
+		return json.dumps({'known_chats':chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+	
+	def on_api_command(self, command, data):
+		if command=="testToken":
+			self._logger.debug("Testing token %s", data['token'])
+			try:
+				username = self.test_token(data['token'])
+				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=username), 'error_msg': None, 'username': username})
+			except Exception as ex:
+				return json.dumps({'ok': False, 'connection_state_str': gettext("Error: %(error)s", error=ex), 'username': None, 'error_msg': str(ex)})
 	
 	def get_assets(self):
 		return dict(js=["js/telegram.js"])
