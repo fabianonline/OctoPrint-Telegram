@@ -371,8 +371,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			thread.run()
 		except Exception as e:
 			self._logger.debug("Exception: " + str(e))
+	
+	def send_msg(self, message, **kwargs):
+		kwargs['message'] = message
+		threading.Thread(target=self._send_msg, kwargs=kwargs).run()
 
-	def send_msg(self, message, with_image=False, responses=None, force_reply=False):
+	def _send_msg(self, message="", with_image=False, responses=None, force_reply=False, delay=0):
+		if delay > 0:
+			time.sleep(delay)
 		try:
 			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image))
 			data = {'chat_id': self._settings.get(['chat'])}
