@@ -80,6 +80,17 @@
 			</label>
 		</div>
 	</div>
+	<div class="control-group">
+		<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
+		<div class="controls">
+			<div class="input-append">
+				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
+				<span class="add-on">s</span>
+			</div>
+			<span class="help-block">Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
+				for the head and bed to reach their final positions. Set to 0 to disable.</span>
+		</div>
+	</div>
 
 	<h4>Messages</h4>
 	<div class="control-group">

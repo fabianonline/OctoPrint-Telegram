@@ -241,6 +241,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			message_at_shutdown = True,
 			message_at_print_started = True,
 			message_at_print_done = True,
+			message_at_print_done_delay = 0,
 			message_at_print_failed = True,
 			messages = dict(
 				PrintStarted = gettext("Started printing {file}."),
@@ -304,6 +305,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			file = ""
 		
 			status = self._printer.get_current_data()
+			delay = 0
 			if event=="ZChange":
 				if not status['state']['flags']['printing']:
 					return
@@ -328,6 +330,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					return
 				if not self._settings.get_boolean(["message_at_print_done"]):
 					return
+				delay = self._settings.get_int(["message_at_print_done_delay"])
 			elif event=="PrintFailed":
 				if self.shut_up:
 					self.shut_up = False
@@ -347,6 +350,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			
 			self._logger.debug(str(status))
 			temps = self._printer.get_current_temperatures()
+			self._logger.debug(str(temps))
 			bed_temp = temps['bed']['actual']
 			bed_target = temps['bed']['target']
 			e1_temp = temps['tool0']['actual']
@@ -364,11 +368,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if "filename" in payload: file = payload["filename"]
 			message = self._settings.get(["messages", event]).format(**locals())
 			self._logger.debug("Sending message: " + message)
-			thread = threading.Thread(target=self.send_msg, args=(message, True,))
-			#if event=="MovieDone":
-			#	thread = threading.Thread(target=self.send_video, args=(message, payload["movie"],))
-			thread.daemon = True
-			thread.run()
+			self.send_msg(message, with_image=True, delay=delay)
 		except Exception as e:
 			self._logger.debug("Exception: " + str(e))
 	
