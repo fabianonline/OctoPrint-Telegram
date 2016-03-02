@@ -105,7 +105,9 @@ class TelegramListener(threading.Thread):
 							elif command==gettext("A test? Why would there be a test?"):
 								self.main.send_msg(gettext("Phew."))
 							elif command=="/status":
-								if self.main._printer.is_printing():
+								if not self.main._printer.is_operational():
+									self.main.send_msg(gettext("Not connected to a printer."))
+								elif self.main._printer.is_printing():
 									status = self.main._printer.get_current_data()
 									self.main.on_event("TelegramSendPrintingStatus", {'z': (status['currentZ'] or 0.0)})
 								else:
