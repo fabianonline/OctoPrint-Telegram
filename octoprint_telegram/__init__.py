@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json
+import threading, requests, re, time, datetime, StringIO, json, random
 import octoprint.plugin, octoprint.util
 from flask.ext.babel import gettext
 
@@ -83,6 +83,7 @@ class TelegramListener(threading.Thread):
 						self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
 						if self.main._settings.get(['chat'])==str(message['message']['chat']['id']):
 							if command=="/abort":
+								self.main.track_action("command/abort")
 								if self.main._printer.is_printing():
 									self.main.send_msg(gettext("Really abort the currently running print?"), responses=[gettext("Yes, abort the print!"), gettext("No, don't abort the print.")])
 								else:
@@ -93,18 +94,22 @@ class TelegramListener(threading.Thread):
 							elif command==gettext("No, don't abort the print."):
 								self.main.send_msg(gettext("Okay, nevermind."))
 							elif command=="/shutup":
+								self.main.track_action("command/shutup")
 								self.main.shut_up = True
 								self.main.send_msg(gettext("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that."))
 							elif command=="/imsorrydontshutup":
+								self.main.track_action("command/imsorrydontshutup")
 								self.main.shut_up = False
 								self.main.send_msg(gettext("Yay, I can talk again."))
 							elif command=="/test":
+								self.main.track_action("command/test")
 								self.main.send_msg(gettext("Is this a test?"), responses=[gettext("Yes, this is a test!"), gettext("A test? Why would there be a test?")])
 							elif command==gettext("Yes, this is a test!"):
 								self.main.send_msg(gettext("I'm behaving, then."))
 							elif command==gettext("A test? Why would there be a test?"):
 								self.main.send_msg(gettext("Phew."))
 							elif command=="/status":
+								self.main.track_action("command/status")
 								if not self.main._printer.is_operational():
 									self.main.send_msg(gettext("Not connected to a printer."))
 								elif self.main._printer.is_printing():
@@ -113,6 +118,7 @@ class TelegramListener(threading.Thread):
 								else:
 									self.main.on_event("TelegramSendNotPrintingStatus", {})
 							elif command=="/settings":
+								self.main.track_action("command/settings")
 								msg = gettext("Current settings are:\n\nNotification height: %(height)fmm\nNotification time: %(time)dmin\n\nWhich value do you want to change?",
 									height=self.main._settings.get_float(["notification_height"]),
 									time=self.main._settings.get_int(["notification_time"]))
@@ -130,6 +136,7 @@ class TelegramListener(threading.Thread):
 								self.main._settings.set_int(['notification_time'], parameter, force=True)
 								self.main.send_msg(gettext("Notification time is now %(time)dmins.", self.main._settings.get_int(['notification_time'])))
 							elif command=="/help":
+								self.main.track_action("command/help")
 								self.main.send_msg(gettext("You can use following commands:\n"
 								                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 								                           "/shutup - Disables automatic notifications till the next print ends.\n"
@@ -203,6 +210,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def on_after_startup(self):
 		self.start_listening()
+		self.track_action("started")
 	
 	def on_shutdown(self):
 		if self._settings.get_boolean(["message_at_shutdown"]):
@@ -223,6 +231,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
 			data['token'] = ""
 		old_token = self._settings.get(["token"])
+		if not data['tracking_activated']:
+			data['tracking_token'] = None
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		if data['token']!=old_token:
 			self.stop_listening()
@@ -249,7 +259,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				ZChange = gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining."),
 				PrintDone = gettext("Finished printing {file}."),
 				TelegramSendNotPrintingStatus = gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.")
-			)
+			),
+			tracking_activated = False,
+			tracking_token = None,
 		)
 	
 	def get_template_configs(self):
@@ -306,6 +318,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		
 			status = self._printer.get_current_data()
 			delay = 0
+			track = True
 			if event=="ZChange":
 				if not status['state']['flags']['printing']:
 					return
@@ -341,6 +354,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				z = payload['z']
 				# Change the event type in order to generate a ZChange message
 				event = "ZChange"
+				track = False
+			elif event=="TelegramSendNotPrintingStatus":
+				track = False
 			
 			self.last_notification_time = time.time()
 			self.last_z = z
@@ -369,6 +385,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			message = self._settings.get(["messages", event]).format(**locals())
 			self._logger.debug("Sending message: " + message)
 			self.send_msg(message, with_image=True, delay=delay)
+			if track:
+				self.track_action("notification/" + event)
 		except Exception as e:
 			self._logger.debug("Exception: " + str(e))
 	
@@ -476,6 +494,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def get_assets(self):
 		return dict(js=["js/telegram.js"])
+		
+	def track_action(self, action):
+		if not self._settings.get_boolean(["tracking_activated"]):
+			return
+		if self._settings.get(["tracking_token"]) is None:
+			token = "".join(random.choice("abcdef0123456789") for i in xrange(16))
+			self._settings.set(["tracking_token"], token)
+		params = {'idsite': '3', 'rec': '1', 'url': 'http://octoprint-telegram/'+action, 'action_name': ("%20/%20".join(action.split("/"))), '_id': self._settings.get(["tracking_token"])}
+		threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params}).run()
 
 __plugin_name__ = "Telegram Notifications"
 __plugin_implementation__ = TelegramPlugin()

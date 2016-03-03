@@ -123,5 +123,18 @@
 			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.TelegramSendNotPrintingStatus"></textarea>
 		</div>
 	</div>
-	
+
+	<h4>Stuff</h4>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
+				Allow this plugin to send anonymous usage data.
+			</label>
+			<span class="help-block">I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
+			anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
+			"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
+			to me.</span>
+		</div>
+	</div>
 </form>
