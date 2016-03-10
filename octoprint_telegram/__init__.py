@@ -175,6 +175,11 @@ class TelegramListener(threading.Thread):
 		self.connection_ok = ok
 		self.main.connection_state_str = status
 
+class TelegramPluginLoggingFilter(logging.Filter):
+	def filter(self, record):
+		record.msg = re.sub("[0-9]+:[a-zA-Z0-9_\-]+", "[REDACTED]", record.msg)
+		return True
+
 class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
                      octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.StartupPlugin,
@@ -210,6 +215,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def on_after_startup(self):
 		self.set_log_level()
+		self._logger.addFilter(TelegramPluginLoggingFilter())
 		self.start_listening()
 		self.track_action("started")
 	
@@ -491,7 +497,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def on_api_command(self, command, data):
 		if command=="testToken":
-			self._logger.debug("Testing token %s", data['token'])
+			self._logger.debug("Testing token {}".format(data['token']))
 			try:
 				username = self.test_token(data['token'])
 				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=username), 'error_msg': None, 'username': username})
