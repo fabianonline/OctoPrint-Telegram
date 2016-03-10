@@ -27,7 +27,7 @@ $(function() {
         self.connection_state_str = ko.observable("Unknown");
         self.isloading = ko.observable(false);
         self.errored = ko.observable(false);
-        self.token_state_str = ko.observable(false);
+        self.token_state_str = ko.observable("Unknown");
         
         self.requestData = function() {
             self.isloading(true);
