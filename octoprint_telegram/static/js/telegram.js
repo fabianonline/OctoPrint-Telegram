@@ -25,8 +25,12 @@ $(function() {
             999);
             
         self.connection_state_str = ko.observable("Unknown");
+        self.isloading = ko.observable(false);
+        self.errored = ko.observable(false);
+        self.token_state_str = ko.observable("Unknown");
         
         self.requestData = function() {
+            self.isloading(true);
             $.ajax({
                 url: API_BASEURL + "plugin/telegram",
                 type: "GET",
@@ -35,8 +39,29 @@ $(function() {
             });
         };
         
+        self.testToken = function(data, event) {
+            self.isloading(true);
+            console.log("Testing token " + $('#settings_plugin_telegran_token').val());
+            $.ajax({
+                url: API_BASEURL + "plugin/telegram",
+                type: "POST",
+                dataType: "json",
+                data: JSON.stringify({ "command": "testToken", "token": $('#settings_plugin_telegram_token').val()}),
+                contentType: "application/json",
+                success: self.testResponse
+            });
+        }
+        
+        self.testResponse = function(response) {
+            self.isloading(false);
+            self.token_state_str(response.connection_state_str);
+            self.errored(!response.ok);
+        }
+        
         self.fromResponse = function(response) {
+            self.isloading(false);
             self.connection_state_str(response.connection_state_str);
+            self.errored(!response.connection_ok);
             var entries = response.known_chats;
             if (entries === undefined) return;
             self.listHelper.updateItems(entries);

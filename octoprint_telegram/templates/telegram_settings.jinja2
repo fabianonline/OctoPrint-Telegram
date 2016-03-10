@@ -1,12 +1,15 @@
 <form class="form-horizontal" id="settings_plugin_telegram">
 	<h3>Telegram settings</h3>
+	<p>If you don't know what to enter in this section, please have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md">the documentation at github</a>.</p>
+	<p>The current connection status is: <strong data-bind="text: connection_state_str"></strong></p>
 	<div class="control-group">
 		<label class="control-label">{{ _('Telegram Token') }}</label>
 		<div class="controls">
-			<input type="text" class="input-block-level" data-bind="value: settings.settings.plugins.telegram.token" />
-			<span class="help-block">You can get this by creating a bot on telegram. If you don't know what to enter here, have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md">the documentation at github</a>.</span>
-			<span class="help-block">The connection status at the time of opening the settings was:
-				<strong data-bind="text: connection_state_str"></strong>
+			<input type="text" class="input-block-level" id="settings_plugin_telegram_token" data-bind="value: settings.settings.plugins.telegram.token" />
+			<span class="help-block"><a href="#" data-bind="click: testToken, visible: ! isloading()">Test this token</a></span>
+			<span class="help-block" data-bind="if: token_state_str || isloading()">Token status is:
+				<strong data-bind="text: token_state_str, visible: ! isloading()"></strong>
+				<strong data-bind="if: isloading">Testing the token, please wait...</strong>
 			</span>
 		</div>
 	</div>
@@ -77,6 +80,17 @@
 			</label>
 		</div>
 	</div>
+	<div class="control-group">
+		<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
+		<div class="controls">
+			<div class="input-append">
+				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
+				<span class="add-on">s</span>
+			</div>
+			<span class="help-block">Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
+				for the head and bed to reach their final positions. Set to 0 to disable.</span>
+		</div>
+	</div>
 
 	<h4>Messages</h4>
 	<div class="control-group">
@@ -109,5 +123,27 @@
 			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.TelegramSendNotPrintingStatus"></textarea>
 		</div>
 	</div>
-	
+
+	<h4>Stuff</h4>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
+				Allow this plugin to send anonymous usage data.
+			</label>
+			<span class="help-block">I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
+			anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
+			"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
+			to me.</span>
+		</div>
+	</div>
+
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.debug" />
+				Enable logging of debug information for this plugin to octoprint.log
+			</label>
+		</div>
+	</div>
 </form>
