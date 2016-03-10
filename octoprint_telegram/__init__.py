@@ -515,7 +515,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if self._settings.get(["tracking_token"]) is None:
 			token = "".join(random.choice("abcdef0123456789") for i in xrange(16))
 			self._settings.set(["tracking_token"], token)
-		params = {'idsite': '3', 'rec': '1', 'url': 'http://octoprint-telegram/'+action, 'action_name': ("%20/%20".join(action.split("/"))), '_id': self._settings.get(["tracking_token"])}
+		params = {'idsite': '3',
+			 'rec': '1',
+			 'url': 'http://octoprint-telegram/'+action,
+			 'action_name': ("%20/%20".join(action.split("/"))),
+			 '_id': self._settings.get(["tracking_token"]),
+			 'send_image': '0',
+			 '_idvc': '1',
+			 'ua': 'Octoprint-Telegram/' + str(self._plugin_version)}
 		threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params}).run()
 
 __plugin_name__ = "Telegram Notifications"
