@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random
+import threading, requests, re, time, datetime, StringIO, json, random, logging
 import octoprint.plugin, octoprint.util
 from flask.ext.babel import gettext
 
@@ -209,12 +209,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.thread = None
 	
 	def on_after_startup(self):
+		self.set_log_level()
 		self.start_listening()
 		self.track_action("started")
 	
 	def on_shutdown(self):
 		if self._settings.get_boolean(["message_at_shutdown"]):
 			self.send_msg(gettext("Shutting down. Goodbye."))
+	
+	def set_log_level(self):
+		self._logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug"]) else logging.NOTSET)
 	
 	def get_settings_preprocessors(self):
 		return dict(), dict(
@@ -234,6 +238,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if not data['tracking_activated']:
 			data['tracking_token'] = None
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
+		self.set_log_level()
 		if data['token']!=old_token:
 			self.stop_listening()
 		if data['token']!="":
@@ -262,6 +267,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			),
 			tracking_activated = False,
 			tracking_token = None,
+			debug = False
 		)
 	
 	def get_template_configs(self):
