@@ -177,7 +177,9 @@ class TelegramListener(threading.Thread):
 
 class TelegramPluginLoggingFilter(logging.Filter):
 	def filter(self, record):
-		record.msg = re.sub("[0-9]+:[a-zA-Z0-9_\-]+", "[REDACTED]", record.msg)
+		for match in re.findall("[0-9]+:[a-zA-Z0-9_\-]+", record.msg):
+			new = re.sub("[0-9]", "1", re.sub("[a-z]", "a", re.sub("[A-Z]", "A", match)))
+			record.msg = record.msg.replace(match, new)
 		return True
 
 class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
