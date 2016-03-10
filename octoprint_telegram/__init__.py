@@ -18,11 +18,9 @@ class TelegramListener(threading.Thread):
 		self._logger.debug("Listener is running.")
 		try:
 			self.username = self.main.test_token()
-			self._logger.debug("1")
 		except Exception as ex:
 			self.set_status(gettext("Got an exception while initially trying to connect to telegram: %(ex)s", ex=ex))
 			return
-		self._logger.debug("2")
 		self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 		
 		while not self.do_stop:
@@ -70,6 +68,7 @@ class TelegramListener(threading.Thread):
 					self.main.known_chats[str(chat['id'])] = chat_str
 					self._logger.debug("Known chats: " + str(self.main.known_chats))
 					if self.first_contact:
+						self._logger.debug("Ignoring message because first_contact is True.")
 						continue
 					
 					if "text" in message['message']:
@@ -165,13 +164,14 @@ class TelegramListener(threading.Thread):
 		self.do_stop = True
 	
 	def set_status(self, status, ok=False):
-		if self.do_stop:
-			self._logger.debug("Would set status but do_stop is True: %s", status)
-			return
-		if ok:
-			self._logger.debug("Setting status: %s", status)
-		else:
-			self._logger.error("Setting status: %s", status)
+		if status != self.main.connection_state_str:
+			if self.do_stop:
+				self._logger.debug("Would set status but do_stop is True: %s", status)
+				return
+			if ok:
+				self._logger.debug("Setting status: %s", status)
+			else:
+				self._logger.error("Setting status: %s", status)
 		self.connection_ok = ok
 		self.main.connection_state_str = status
 
