@@ -62,7 +62,7 @@ $(function() {
             self.isloading(false);
             self.connection_state_str(response.connection_state_str);
             self.errored(!response.connection_ok);
-            var entries = response.known_chats;
+            var entries = response.chats;
             if (entries === undefined) return;
             self.listHelper.updateItems(entries);
         };

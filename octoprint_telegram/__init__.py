@@ -52,21 +52,42 @@ class TelegramListener(threading.Thread):
 			try:
 				for message in json['result']:
 					self._logger.debug(str(message))
+					# Get the update_id to only request newer Messages the next time
 					if message['update_id'] >= self.update_offset:
 						self.update_offset = message['update_id']+1
-					if not message['message'] or not message['message']['chat'] or message['message']['chat']['type']!='private':
-						self._logger.warn("Chat is non-private")
+					
+					if not message['message'] or not message['message']['chat']:
+						self._logger.warn("Response is missing .message or .message.chat. Skipping it.")
 						continue
+					
+					### Parse new chats
 					chat = message['message']['chat']
-					chat_str = ""
-					if "first_name" in chat:
-						chat_str += chat['first_name'] + " - "
-					if "last_name" in chat:
-						chat_str += chat['last_name'] + " - "
-					if "username" in chat:
-						chat_str += "@" + chat['username']
-					self.main.known_chats[str(chat['id'])] = chat_str
-					self._logger.debug("Known chats: " + str(self.main.known_chats))
+					chat_id = str(chat['id'])
+					data = {}
+					if chat_id in self.main.chats:
+						data = self.main.chats[chat_id]
+					else:
+						self.main.chats[chat_id] = data
+					
+					if chat['type']=='group':
+						data['private'] = False
+						data['title'] = chat['title']
+					elif chat['type']=='private':
+						data['private'] = True
+						data['title'] = ""
+						if "first_name" in chat:
+							data['title'] += chat['first_name'] + " - "
+						if "last_name" in chat:
+							data['title'] += chat['last_name'] + " - "
+						if "username" in chat:
+							data['title'] += "@" + chat['username']
+					self._logger.debug("Chats: " + repr(self.main.chats))
+					
+					from_id = str(message['message']['from']['id'])
+					if not from_id in self.main.chats or not "accept_commands" in self.main.chats['from_id'] or not self.main.chats['from_id']['accept_commands']:
+						self._logger.warn("Command from not-enabled user. Ignoring.")
+						continue
+						
 					if self.first_contact:
 						self._logger.debug("Ignoring message because first_contact is True.")
 						continue
@@ -195,7 +216,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.last_notification_time = 0
 		self.bot_url = None
 		self.first_contact = True
-		self.known_chats = {}
+		self.chats = {}
 		self.shut_up = False
 		self.connection_state_str = gettext("Disconnected.")
 		self.connection_ok = False
@@ -220,6 +241,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.addFilter(TelegramPluginLoggingFilter())
 		self.start_listening()
 		self.track_action("started")
+		self.chats = self._settings.get(["chats"])
 	
 	def on_shutdown(self):
 		if self._settings.get_boolean(["message_at_shutdown"]):
@@ -275,6 +297,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			),
 			tracking_activated = False,
 			tracking_token = None,
+			chats = dict(),
 			debug = False
 		)
 	
@@ -492,10 +515,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		)
 	
 	def on_api_get(self, request):
-		chats = []
-		for key, value in self.known_chats.iteritems():
-			chats.append({'id': key, 'name': value})
-		return json.dumps({'known_chats':chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+		return json.dumps({'chats':self.chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 	
 	def on_api_command(self, command, data):
 		if command=="testToken":

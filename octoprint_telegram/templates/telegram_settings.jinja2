@@ -13,6 +13,20 @@
 			</span>
 		</div>
 	</div>
+	<table>
+		<tr>
+			<th>Chat</th>
+			<th>Accept commands</th>
+			<th>Send notifications</th>
+		</tr>
+		<!-- ko foreach: listHelper.paginatedItems -->
+			<tr>
+				<td data-bind="text: title"></td>
+				<td><input type="checkbox" data-bind="if: private, checked: accept_commands" /></td>
+				<td><input type="checkbox" data-bind="checked: send_notifications" /></td>
+			</tr>
+		<!-- /ko -->
+	</table>
 	<div class="control-group">
 		<label class="control-label">{{ _('Chat-ID') }}</label>
 		<div class="controls">
