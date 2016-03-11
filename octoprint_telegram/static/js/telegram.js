@@ -41,7 +41,7 @@ $(function() {
         
         self.testToken = function(data, event) {
             self.isloading(true);
-            console.log("Testing token " + $('#settings_plugin_telegran_token').val());
+            console.log("Testing token " + $('#settings_plugin_telegram_token').val());
             $.ajax({
                 url: API_BASEURL + "plugin/telegram",
                 type: "POST",
