@@ -22,7 +22,7 @@
 		<!-- ko foreach: listHelper.paginatedItems -->
 			<tr>
 				<td data-bind="text: title"></td>
-				<td><input type="checkbox" data-bind="if: private, checked: accept_commands" /></td>
+				<td><input type="checkbox" data-bind="enable: private, checked: accept_commands" /></td>
 				<td><input type="checkbox" data-bind="checked: send_notifications" /></td>
 			</tr>
 		<!-- /ko -->

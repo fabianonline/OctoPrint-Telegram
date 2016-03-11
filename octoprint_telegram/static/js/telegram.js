@@ -17,9 +17,15 @@ $(function() {
         
         self.listHelper = new ItemListHelper(
             "known_chats",
+            {
+                "title": function(a, b) {
+                    if(a.title.toLocaleLowerCase() < b.title.toLocaleLowerCase()) return -1;
+                    if(a.title.toLocaleLowerCase() > b.title.toLocaleLowerCase()) return 1;
+                    return 0;
+                }
+            },
             {},
-            {},
-            "",
+            "title",
             [],
             [],
             999);
@@ -64,7 +70,15 @@ $(function() {
             self.errored(!response.connection_ok);
             var entries = response.chats;
             if (entries === undefined) return;
-            self.listHelper.updateItems(entries);
+            var array = [];
+            for(var id in entries) {
+                var data = entries[id];
+                data['id'] = id;
+                if(!('accept_commands' in data)) data['accept_commands'] = false;
+                if(!('send_notifications' in data)) data['send_notifications'] = false;
+                array.push(data);
+            }
+            self.listHelper.updateItems(array);
         };
         
         self.onSettingsShown = function() {
