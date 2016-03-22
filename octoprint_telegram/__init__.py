@@ -237,22 +237,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def on_settings_save(self, data):
 		self._logger.debug("Saving data: " + str(data))
-		data['token'] = data['token'].strip()
-		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
-			self._logger.error("Not saving token because it doesn't seem to have the right format.")
-			self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
-			data['token'] = ""
+		if "token" in data:
+			data['token'] = data['token'].strip()
+			if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
+				self._logger.error("Not saving token because it doesn't seem to have the right format.")
+				self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
+				data['token'] = ""
 		old_token = self._settings.get(["token"])
-		if not data['tracking_activated']:
+		if "tracking_activated" in data and not data['tracking_activated']:
 			data['tracking_token'] = None
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		self.set_log_level()
-		if data['token']!=old_token:
-			self.stop_listening()
-		if data['token']!="":
-			self.start_listening()
-		else:
-			self.connection_state_str = gettext("No token given.")
+		if "token" in data:
+			if data['token']!=old_token:
+				self.stop_listening()
+			if data['token']!="":
+				self.start_listening()
+			else:
+				self.connection_state_str = gettext("No token given.")
 	
 	def get_settings_defaults(self):
 		return dict(
