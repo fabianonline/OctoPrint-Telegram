@@ -383,8 +383,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug(str(status))
 			temps = self._printer.get_current_temperatures()
 			self._logger.debug(str(temps))
-			bed_temp = temps['bed']['actual']
-			bed_target = temps['bed']['target']
+			bed_temp = temps['bed']['actual'] if 'bed' in temps else 0.0
+			bed_target = temps['bed']['target'] if 'bed' in temps else 0.0 
 			e1_temp = temps['tool0']['actual']
 			e1_target = temps['tool0']['target']
 			e2_temp = e2_target = None
