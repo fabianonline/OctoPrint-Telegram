@@ -38,6 +38,8 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  status - Sends the current status including a photo.
  help - Displays the help.
  settings - Display and modify settings.
+ list - Show files and select them for printing.
+ upload - Upload a gcode file.
  ```
 
     ![Screenshot](../screenshots/newbot4.png?raw)
