@@ -513,12 +513,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		kwargs['message'] = message
 		threading.Thread(target=self._send_msg, kwargs=kwargs).run()
 
-	def _send_msg(self, message="", with_image=False, responses=None, force_reply=False, delay=0):
+	def _send_msg(self, message="", with_image=False, responses=None, force_reply=False, delay=0, chat_id=None):
 		if delay > 0:
 			time.sleep(delay)
 		try:
 			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image))
 			data = {'chat_id': self._settings.get(['chat'])}
+			if chat_id is not None:
+				data['chat_id']=chat_id
 			# We always send hide_keyboard unless we send an actual keyboard
 			data['reply_markup'] = json.dumps({'hide_keyboard': True})
 			if force_reply:
