@@ -641,6 +641,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			 'url': 'http://octoprint-telegram/'+action,
 			 'action_name': ("%20/%20".join(action.split("/"))),
 			 '_id': self._settings.get(["tracking_token"]),
+			 'uid': self._settings.get(["tracking_token"]),
+			 'cid': self._settings.get(["tracking_token"]),
 			 'send_image': '0',
 			 '_idvc': '1',
 			 'ua': 'Octoprint-Telegram/' + str(self._plugin_version)}
