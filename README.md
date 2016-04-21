@@ -10,6 +10,14 @@ Also, you can control Octoprint via messages. Send `/status` to get the current 
 ![Screenshot](../screenshots/features4.png?raw)
 ![Screenshot](../screenshots/features5.png?raw)
 
+## Contact / Help
+
+If you want to talk to other users of this plugin and maybe have some influence in the development of this plugin,
+you can join the [Octoprint-Telegram-Users-Group](https://telegram.me/joinchat/CXFirQjl9XTp5dr4OZqH9Q).
+
+If you just want to keep up to date with new versions, we also have the channel 
+[Octoprint-Telegram-News](https://telegram.me/octoprint_telegram_news).
+
 ## Setup
 
 Install via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager)
