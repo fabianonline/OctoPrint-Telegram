@@ -203,10 +203,12 @@ class TelegramListener(threading.Thread):
 								continue
 							# download the file
 							data = self.main.get_file(msg['document']['file_id'])
-							self.main._file_manager.add_folder(octoprint.filemanager.FileDestinations.LOCAL, "telegram_uploads", ignore_existing=True)
+							# self.main._file_manager.add_folder(octoprint.filemanager.FileDestinations.LOCAL, "telegram_uploads", ignore_existing=True)
 							stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
-							self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, "telegram_uploads/{}".format(file_name), stream, allow_overwrite=True)
-							self.main.send_msg("I've successfully saved the file you sent me in the folder telegram_uploads.")
+							# self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, "telegram_uploads/{}".format(file_name), stream, allow_overwrite=True)
+							target_filename = "telegram_" + file_name
+							self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+							self.main.send_msg("I've successfully saved the file you sent me as {}.".format(target_filename))
 						except Exception as ex:
 							self.main.send_msg("Something went wrong during processing of your file. Sorry. More details are in octoprint.log.")
 							self._logger.debug("Exception occured during processing of a file: " + traceback.format_exc())
