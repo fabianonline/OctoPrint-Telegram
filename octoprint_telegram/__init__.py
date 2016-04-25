@@ -223,16 +223,16 @@ class TelegramListener(threading.Thread):
 						try:
 							file_name = message['message']['document']['file_name']
 							if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
-								self.main.send_msg("Sorry, I only accept files with .gcode, .gco or .g extension.")
+								self.main.send_msg("Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=message['message']['chat']['id'])
 								continue
 							# download the file
 							data = self.main.get_file(message['message']['document']['file_id'])
 							stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
 							target_filename = "telegram_" + file_name
 							self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
-							self.main.send_msg("I've successfully saved the file you sent me as {}.".format(target_filename))
+							self.main.send_msg("I've successfully saved the file you sent me as {}.".format(target_filename), chatID=message['message']['chat']['id'])
 						except Exception as ex:
-							self.main.send_msg("Something went wrong during processing of your file. Sorry. More details are in octoprint.log.")
+							self.main.send_msg("Something went wrong during processing of your file. Sorry. More details are in octoprint.log.", chatID=message['message']['chat']['id'])
 							self._logger.debug("Exception occured during processing of a file: "+ traceback.format_exc() )
 					else:
 						self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(message))
