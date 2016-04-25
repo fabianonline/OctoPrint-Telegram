@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io
-import octoprint.plugin, octoprint.util, octoprint.filemanager
+import threading, requests, re, time, datetime, StringIO, json, random, logging
+import octoprint.plugin, octoprint.util
 from flask.ext.babel import gettext
 
 class TelegramListener(threading.Thread):
@@ -52,149 +52,173 @@ class TelegramListener(threading.Thread):
 			try:
 				for message in json['result']:
 					self._logger.debug(str(message))
+					# Get the update_id to only request newer Messages the next time
 					if message['update_id'] >= self.update_offset:
 						self.update_offset = message['update_id']+1
-					if not message['message'] or not message['message']['chat'] or message['message']['chat']['type']!='private':
-						self._logger.warn("Chat is non-private")
+					
+					if not message['message'] or not message['message']['chat']:
+						self._logger.warn("Response is missing .message or .message.chat. Skipping it.")
 						continue
-					msg = message['message']
-					chat = msg['chat']
-					chat_str = ""
-					if "first_name" in chat:
-						chat_str += chat['first_name'] + " - "
-					if "last_name" in chat:
-						chat_str += chat['last_name'] + " - "
-					if "username" in chat:
-						chat_str += "@" + chat['username']
-					self.main.known_chats[str(chat['id'])] = chat_str
-					self._logger.debug("Known chats: " + str(self.main.known_chats))
+					
+					### Parse new chats
+					chat = message['message']['chat']
+					chat_id = str(chat['id'])
+					data = {'accept_commands' : False, 'send_notifications' : False}
+					if chat_id in self.main.chats:
+						data = self.main.chats[chat_id]
+					else:
+						self.main.chats[chat_id] = data
+					
+					if chat['type']=='group':
+						data['private'] = False
+						data['title'] = chat['title']
+					elif chat['type']=='private':
+						data['private'] = True
+						data['title'] = ""
+						if "first_name" in chat:
+							data['title'] += chat['first_name'] + " - "
+						if "last_name" in chat:
+							data['title'] += chat['last_name'] + " - "
+						if "username" in chat:
+							data['title'] += "@" + chat['username']
+					self._logger.debug("Chats: " + repr(self.main.chats))
+
+					#if message from group, user allowed?
+					from_id = chat_id
+					if not data['private'] and data['accept_commands']:
+						from_id = str(message['message']['from']['id'])
+						
 					if self.first_contact:
 						self._logger.debug("Ignoring message because first_contact is True.")
 						continue
-					if self.main._settings.get(['chat'])!=str(chat['id']):
-						self.main.send_msg(gettext("Sorry, I don't know you. So I'll ignore everything you say. :-P\nIf you want me to talk to you, go to your Octoprint's instance's settings, section 'Telegram' and enter following ID as Chat-ID: %(chat_id)s", chat_id=chat['id']), chat_id=chat['id'])
-						self._logger.warn("Got a command from unknown user '" + chat_str + "' (" + str(chat['id']) + ").")
-						continue
 					
-					if "text" in msg:
+					if "text" in message['message']:
 						# We got a chat message.
-						command = msg['text']
+						msg_list = message['message']['text'].split('@')
+						command = message['message']['text'].split('@')[0]
 						parameter = None
-						if "reply_to_message" in msg and "text" in msg['reply_to_message']:
-							command = msg['reply_to_message']['text']
-							parameter = msg['text']
+						if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
+							command = message['message']['reply_to_message']['text']
+							parameter = message['message']['text']
 						
-						self._logger.info("Got a command: '" + command + "' in chat " + str(chat['id']))
-						if command=="/abort":
-							self.main.track_action("command/abort")
-							if self.main._printer.is_printing():
-								self.main.send_msg(gettext("Really abort the currently running print?"), responses=[gettext("Yes, abort the print!"), gettext("No, don't abort the print.")])
-							else:
-								self.main.send_msg(gettext("Currently I'm not printing, so there is nothing to stop."))
-						elif command==gettext("Yes, abort the print!"):
-							self.main.send_msg(gettext("Aborting the print."))
-							self.main._printer.cancel_print()
-						elif command==gettext("No, don't abort the print."):
-							self.main.send_msg(gettext("Okay, nevermind."))
-						elif command=="/shutup":
-							self.main.track_action("command/shutup")
-							self.main.shut_up = True
-							self.main.send_msg(gettext("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that."))
-						elif command=="/imsorrydontshutup":
-							self.main.track_action("command/imsorrydontshutup")
-							self.main.shut_up = False
-							self.main.send_msg(gettext("Yay, I can talk again."))
-						elif command=="/test":
-							self.main.track_action("command/test")
-							self.main.send_msg(gettext("Is this a test?"), responses=[gettext("Yes, this is a test!"), gettext("A test? Why would there be a test?")])
-						elif command==gettext("Yes, this is a test!"):
-							self.main.send_msg(gettext("I'm behaving, then."))
-						elif command==gettext("A test? Why would there be a test?"):
-							self.main.send_msg(gettext("Phew."))
-						elif command=="/status":
-							self.main.track_action("command/status")
-							if not self.main._printer.is_operational():
-								self.main.send_msg(gettext("Not connected to a printer."), with_image=True)
-							elif self.main._printer.is_printing():
-								status = self.main._printer.get_current_data()
-								self.main.on_event("TelegramSendPrintingStatus", {'z': (status['currentZ'] or 0.0)})
-							else:
-								self.main.on_event("TelegramSendNotPrintingStatus", {})
-						elif command=="/settings":
-							self.main.track_action("command/settings")
-							msg = gettext("Current settings are:\n\nNotification height: %(height)fmm\nNotification time: %(time)dmin\n\nWhich value do you want to change?",
-								height=self.main._settings.get_float(["notification_height"]),
-								time=self.main._settings.get_int(["notification_time"]))
-							self.main.send_msg(msg, responses=[gettext("Change notification height"), gettext("Change notification time"), gettext("None")])
-						elif command==gettext("None"):
-							self.main.send_msg(gettext("OK."))
-						elif command==gettext("Change notification height"):
-							self.main.send_msg(gettext("Please enter new notification height."), force_reply=True)
-						elif command==gettext("Please enter new notification height.") and parameter:
-							self.main._settings.set_float(['notification_height'], parameter, force=True)
-							self.main.send_msg(gettext("Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])))
-						elif command==gettext("Change notification time"):
-							self.main.send_msg(gettext("Please enter new notification time."), force_reply=True)
-						elif command==gettext("Please enter new notification time.") and parameter:
-							self.main._settings.set_int(['notification_time'], parameter, force=True)
-							self.main.send_msg(gettext("Notification time is now %(time)dmins.", self.main._settings.get_int(['notification_time'])))
-						elif command=="/list":
-							self.main.track_action("command/list")
-							files = self.get_flat_file_tree()
-							self.main.send_msg("File List:\n\n" + "\n".join(files) + "\n\nYou can click the command beginning with /print after a file to start printing this file.")
-						elif command=="/print":
-							self.main.send_msg("I don't know which file to print. Use /list to get a list of files and click the command beginning with /print after the correct file.")
-						elif command.startswith("/print_"):
-							self.main.track_action("command/print")
-							hash = command[7:]
-							self._logger.debug("Looking for hash: %s", hash)
-							destination, file = self.find_file_by_hash(hash)
-							self._logger.debug("Destination: %s", destination)
-							self._logger.debug("File: %s", file)
-							if file is None:
-								self.main.send_msg("I'm sorry, but I couldn't find the file you wanted me to print. Perhaps you want to have a look at /list again?")
-								continue
-							self._logger.debug("data: %s", self.main._printer.get_current_data())
-							self._logger.debug("state: %s", self.main._printer.get_current_job())
-							if destination==octoprint.filemanager.FileDestinations.SDCARD:
-								self.main._printer.select_file(file, True, printAfterSelect=False)
-							else:
-								file = self.main._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file)
-								self._logger.debug("Using full path: %s", file)
-								self.main._printer.select_file(file, False, printAfterSelect=False)
-							data = self.main._printer.get_current_data()
-							if data['job']['file']['name'] is not None:
-								self.main.send_msg(gettext("Okay. The file %(file)s is loaded. Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Yes, start printing, please."), gettext("Nope.")])
-						elif command==gettext("Yes, start printing, please."):
-							data = self.main._printer.get_current_data()
-							if data['job']['file']['name'] is None:
-								self.main.send_msg(gettext("Uh oh... No file is selected for printing. Did you select one using /list?"))
-								continue
-							if not self.main._printer.is_operational():
-								self.main.send_msg(gettext("Can't start printing: I'm not connected to a printer."))
-								continue
-							if self.main._printer.is_printing():
-								self.main.send_msg("A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort?")
-								continue
-							self.main._printer.start_print()
-							self.main.send_msg(gettext("Started the print job."))
-						elif command==gettext("Nope."):
-							self.main.send_msg("It's okay. We all make mistakes sometimes.")
-						elif command=="/upload":
-							self.main.track_action("command/upload_command_that_tells_the_user_to_just_send_a_file")
-							self.main.send_msg("To upload a gcode file, just send it to me.")
-						elif command=="/help":
-							self.main.track_action("command/help")
-							self.main.send_msg(gettext("You can use following commands:\n"
-													   "/abort - Aborts the currently running print. A confirmation is required.\n"
-													   "/shutup - Disables automatic notifications till the next print ends.\n"
-													   "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
-													   "/status - Sends the current status including a current photo.\n"
-													   "/settings - Displays the current notification settings and allows you to change them.\n"
-													   "/list - Lists all the files available for printing and lets you start printing them.\n"
-													   "\n"
-													   "Also, you can just send me a gcode file to save it to my library."))
-					elif "document" in msg:
+						self._logger.info("Got a command: '" + command + "' in chat " + str(message['message']['chat']['id']))
+						if from_id in self.main.chats and self.main.chats[from_id]['accept_commands'] and self.main.chats[from_id]['private']:
+							if command=="/abort":
+								self.main.track_action("command/abort")
+								if self.main._printer.is_printing():
+									self.main.send_msg(gettext("Really abort the currently running print?"), responses=[gettext("Yes, abort the print!"), gettext("No, don't abort the print.")],chatID=chat_id)
+								else:
+									self.main.send_msg(gettext("Currently I'm not printing, so there is nothing to stop."),chatID=chat_id)
+							elif command==gettext("Yes, abort the print!"):
+								self.main.send_msg(gettext("Aborting the print."),chatID=chat_id)
+								self.main._printer.cancel_print()
+							elif command==gettext("No, don't abort the print."):
+								self.main.send_msg(gettext("Okay, nevermind."),chatID=chat_id)
+							elif command=="/shutup":
+								self.main.track_action("command/shutup")
+								self.main.shut_up = True
+								self.main.send_msg(gettext("Okay, shutting up until the next print is finished. Use /imsorrydontshutup to let me talk again before that."),chatID=chat_id)
+							elif command=="/imsorrydontshutup":
+								self.main.track_action("command/imsorrydontshutup")
+								self.main.shut_up = False
+								self.main.send_msg(gettext("Yay, I can talk again."),chatID=chat_id)
+							elif command=="/test":
+								self.main.track_action("command/test")
+								self.main.send_msg(gettext("Is this a test?"), responses=[gettext("Yes, this is a test!"), gettext("A test? Why would there be a test?")],chatID=chat_id)
+							elif command==gettext("Yes, this is a test!"):
+								self.main.send_msg(gettext("I'm behaving, then."),chatID=chat_id)
+							elif command==gettext("A test? Why would there be a test?"):
+								self.main.send_msg(gettext("Phew."),chatID=chat_id)
+							elif command=="/status":
+								self.main.track_action("command/status")
+								if not self.main._printer.is_operational():
+									self.main.send_msg(gettext("Not connected to a printer."),chatID=chat_id)
+								elif self.main._printer.is_printing():
+									status = self.main._printer.get_current_data()
+									self.main.on_event("TelegramSendPrintingStatus", {'z': (status['currentZ'] or 0.0)},chatID=chat_id)
+								else:
+									self.main.on_event("TelegramSendNotPrintingStatus", {},chatID=chat_id)
+							elif command=="/settings":
+								self.main.track_action("command/settings")
+								msg = gettext("Current settings are:\n\nNotification height: %(height)fmm\nNotification time: %(time)dmin\n\nWhich value do you want to change?",
+									height=self.main._settings.get_float(["notification_height"]),
+									time=self.main._settings.get_int(["notification_time"]))
+								self.main.send_msg(msg, responses=[gettext("Change notification height"), gettext("Change notification time"), gettext("None")],chatID=chat_id)
+							elif command==gettext("None"):
+								self.main.send_msg(gettext("OK."),chatID=chat_id)
+							elif command==gettext("Change notification height"):
+								self.main.send_msg(gettext("Please enter new notification height."), force_reply=True,chatID=chat_id)
+							elif command==gettext("Please enter new notification height.") and parameter:
+								self.main._settings.set_float(['notification_height'], parameter, force=True)
+								self.main.send_msg(gettext("Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])),chatID=chat_id)
+							elif command==gettext("Change notification time"):
+								self.main.send_msg(gettext("Please enter new notification time."), force_reply=True,chatID=chat_id)
+							elif command==gettext("Please enter new notification time.") and parameter:
+								self.main._settings.set_int(['notification_time'], parameter, force=True)
+								self.main.send_msg(gettext("Notification time is now %(time)dmins.", self.main._settings.get_int(['notification_time'])),chatID=chat_id)
+							elif command=="/list":
+								self.main.track_action("command/list")
+								files = self.get_flat_file_tree()
+								self.main.send_msg("File List:\n\n" + "\n".join(files) + "\n\nYou can click the command beginning with /print after a file to start printing this file.",chatID=chat_id)
+							elif command=="/print":
+								self.main.send_msg("I don't know which file to print. Use /list to get a list of files and click the command beginning with /print after the correct file.",chatID=chat_id)
+							elif command.startswith("/print_"):
+								self.main.track_action("command/print")
+								hash = command[7:]
+								self._logger.debug("Looking for hash: %s", hash)
+								destination, file = self.find_file_by_hash(hash)
+								self._logger.debug("Destination: %s", destination)
+								self._logger.debug("File: %s", file)
+								if file is None:
+									self.main.send_msg("I'm sorry, but I couldn't find the file you wanted me to print. Perhaps you want to have a look at /list again?",chatID=chat_id)
+									continue
+								self._logger.debug("data: %s", self.main._printer.get_current_data())
+								self._logger.debug("state: %s", self.main._printer.get_current_job())
+								if destination==octoprint.filemanager.FileDestinations.SDCARD:
+									self.main._printer.select_file(file, True, printAfterSelect=False)
+								else:
+									file = self.main._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file)
+									self._logger.debug("Using full path: %s", file)
+									self.main._printer.select_file(file, False, printAfterSelect=False)
+								data = self.main._printer.get_current_data()
+								if data['job']['file']['name'] is not None:
+									self.main.send_msg(gettext("Okay. The file %(file)s is loaded. Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Yes, start printing, please."), gettext("Nope.")],chatID=chat_id)
+							elif command==gettext("Yes, start printing, please."):
+								data = self.main._printer.get_current_data()
+								if data['job']['file']['name'] is None:
+									self.main.send_msg(gettext("Uh oh... No file is selected for printing. Did you select one using /list?"),chatID=chat_id)
+									continue
+								if not self.main._printer.is_operational():
+									self.main.send_msg(gettext("Can't start printing: I'm not connected to a printer."),chatID=chat_id)
+									continue
+								if self.main._printer.is_printing():
+									self.main.send_msg("A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort?",chatID=chat_id)
+									continue
+								self.main._printer.start_print()
+								self.main.send_msg(gettext("Started the print job."),chatID=chat_id)
+							elif command==gettext("Nope."):
+								self.main.send_msg("It's okay. We all make mistakes sometimes.",chatID=chat_id)
+							elif command=="/upload":
+								self.main.track_action("command/upload_command_that_tells_the_user_to_just_send_a_file")
+								self.main.send_msg("To upload a gcode file, just send it to me.",chatID=chat_id)
+							elif command=="/light":
+								self.main._printer.commands("M42 P47 S255")
+								self.main.send_msg("I put the lights on.",chatID=chat_id)
+							elif command=="/darkness":
+								self.main._printer.commands("M42 P47 S0")
+								self.main.send_msg("Lights are off now.",chatID=chat_id)
+							elif command=="/help":
+								self.main.track_action("command/help")
+								self.main.send_msg(gettext("You can use following commands:\n"
+								                           "/abort - Aborts the currently running print. A confirmation is required.\n"
+								                           "/shutup - Disables automatic notifications till the next print ends.\n"
+								                           "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
+								                           "/status - Sends the current status including a current photo.\n"
+								                           "/settings - Displays the current notification settings and allows you to change them."),chatID=chat_id)
+						else:
+							self._logger.warn("Previous command was from an unknown user.")
+							self.main.send_msg("You are not allowed to do this!",chatID=chat_id)
+					elif "document" in message['message']:
 						self.main.track_action("command/upload")
 						try:
 							file_name = msg['document']['file_name']
@@ -215,7 +239,7 @@ class TelegramListener(threading.Thread):
 					else:
 						self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(msg))
 			except Exception as ex:
-				self._logger.error("Exception caught! " + traceback.format_exc())
+				self._logger.error("Exception caught! " + str(ex))
 			
 			self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 				
@@ -239,7 +263,7 @@ class TelegramListener(threading.Thread):
 				self._logger.error("Setting status: %s", status)
 		self.connection_ok = ok
 		self.main.connection_state_str = status
-	
+
 	def get_flat_file_tree(self):
 		tree = self.main._file_manager.list_files(recursive=True)
 		array = []
@@ -297,9 +321,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.last_z = 0.0
 		self.last_notification_time = 0
 		self.bot_url = None
-		self.bot_file_url = None
 		self.first_contact = True
-		self.known_chats = {}
+		self.chats = {}
 		self.shut_up = False
 		self.connection_state_str = gettext("Disconnected.")
 		self.connection_ok = False
@@ -325,6 +348,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.addFilter(TelegramPluginLoggingFilter())
 		self.start_listening()
 		self.track_action("started")
+		self.chats = self._settings.get(["chats"])
 	
 	def on_shutdown(self):
 		if self._settings.get_boolean(["message_at_shutdown"]):
@@ -335,36 +359,33 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	
 	def get_settings_preprocessors(self):
 		return dict(), dict(
-			chat=lambda x: int(x),
 			notification_height=lambda x: float(x),
 			notification_time=lambda x: int(x)
 		)
 	
 	def on_settings_save(self, data):
+		data['chats'] = self.chats
 		self._logger.debug("Saving data: " + str(data))
-		if "token" in data:
-			data['token'] = data['token'].strip()
-			if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
-				self._logger.error("Not saving token because it doesn't seem to have the right format.")
-				self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
-				data['token'] = ""
+		data['token'] = data['token'].strip()
+		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
+			self._logger.error("Not saving token because it doesn't seem to have the right format.")
+			self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
+			data['token'] = ""
 		old_token = self._settings.get(["token"])
-		if "tracking_activated" in data and not data['tracking_activated']:
+		if not data['tracking_activated']:
 			data['tracking_token'] = None
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		self.set_log_level()
-		if "token" in data:
-			if data['token']!=old_token:
-				self.stop_listening()
-			if data['token']!="":
-				self.start_listening()
-			else:
-				self.connection_state_str = gettext("No token given.")
+		if data['token']!=old_token:
+			self.stop_listening()
+		if data['token']!="":
+			self.start_listening()
+		else:
+			self.connection_state_str = gettext("No token given.")
 	
 	def get_settings_defaults(self):
 		return dict(
 			token = "",
-			chat = "",
 			notification_height = 5.0,
 			notification_time = 15,
 			message_at_startup = True,
@@ -382,6 +403,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			),
 			tracking_activated = False,
 			tracking_token = None,
+			chats = dict(),  
 			debug = False
 		)
 	
@@ -505,7 +527,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if "filename" in payload: file = payload["filename"]
 			message = self._settings.get(["messages", event]).format(**locals())
 			self._logger.debug("Sending message: " + message)
-			self.send_msg(message, with_image=True, delay=delay)
+			if "chatID" in kwargs:
+				self.send_msg(message, with_image=True, delay=delay,chatID=kwargs['chatID'])
+			else:
+				self.send_msg(message, with_image=True, delay=delay)
 			if track:
 				self.track_action("notification/" + event)
 		except Exception as e:
@@ -515,16 +540,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		kwargs['message'] = message
 		threading.Thread(target=self._send_msg, kwargs=kwargs).run()
 
-	def _send_msg(self, message="", with_image=False, responses=None, force_reply=False, delay=0, chat_id=None):
+	def _send_msg(self, message="", with_image=False, responses=None, force_reply=False, delay=0, chatID = ""):
 		if delay > 0:
 			time.sleep(delay)
 		try:
-			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image))
-			data = {'chat_id': self._settings.get(['chat'])}
-			if chat_id is not None:
-				data['chat_id']=chat_id
+			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
+			data = {}
 			# We always send hide_keyboard unless we send an actual keyboard
-			data['reply_markup'] = json.dumps({'hide_keyboard': True})
+			data['reply_markup'] = json.dumps({'hide_keyboard': True})  
+
 			if force_reply:
 				data['reply_markup'] = json.dumps({'force_reply': True})
 			if responses:
@@ -538,20 +562,40 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.debug("Sending with image.")
 				files = {'photo':("image.jpg", image_data)}
 				data['caption'] = message
-				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-				self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
+				if chatID == "":
+					chats = self._settings.get(['chats'])
+					for key in chats:
+						if chats[key]['send_notifications'] is True:
+							data['chat_id'] = key
+							self._logger.debug("Sending... " + str(key))
+							r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+							self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
+				else:
+					data['chat_id'] = chatID
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
+
 			else:
 				self._logger.debug("Sending without image.")
 				data['text'] = message
-				requests.post(self.bot_url + "/sendMessage", data=data)
+				if chatID == "":
+					chats = self._settings.get(['chats'])
+					for key in chats:
+						if chats[key]['send_notifications'] is True:
+							data['chat_id'] = key
+							self._logger.debug("Sending... " + str(key))
+							requests.post(self.bot_url + "/sendMessage", data=data)
+				else:
+					data['chat_id'] = chatID
+					requests.post(self.bot_url + "/sendMessage", data=data)
 		except Exception as ex:
 			self._logger.debug("Caught an exception in send_msg(): " + str(ex))
 	
 	def send_video(self, message, video_file):
 		files = {'video': open(video_file, 'rb')}
-		r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
+		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message}) #############################HIER
 		self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
-		
+	
 	def get_file(self, file_id):
 		self._logger.debug("Requesting file with id %s.", file_id)
 		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id})
@@ -565,7 +609,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		r = requests.get(url)
 		r.raise_for_status()
 		return r.content
-		
+
 	def take_image(self):
 		snapshot_url = self._settings.global_get(["webcam", "snapshot"])
 		self._logger.debug("Snapshot URL: " + str(snapshot_url))
@@ -611,14 +655,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				
 	def get_api_commands(self):
 		return dict(
-			testToken=["token"]
+			testToken=["token"],
+			updateChat=["ID"],
+			delChat=["ID"]
 		)
 	
 	def on_api_get(self, request):
-		chats = []
-		for key, value in self.known_chats.iteritems():
-			chats.append({'id': key, 'name': value})
-		return json.dumps({'known_chats':chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+		return json.dumps({'chats':self.chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 	
 	def on_api_command(self, command, data):
 		if command=="testToken":
@@ -628,6 +671,21 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=username), 'error_msg': None, 'username': username})
 			except Exception as ex:
 				return json.dumps({'ok': False, 'connection_state_str': gettext("Error: %(error)s", error=ex), 'username': None, 'error_msg': str(ex)})
+		elif command=="updateChat":
+			strId = str(data['ID'])
+			if strId in self.chats:								
+				self.chats[strId]['send_notifications'] = data['chatNotify']
+				self.chats[strId]['accept_commands'] = data['chatCmd']	
+			return json.dumps({'chats':self.chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+		elif command=="delChat":
+			strId = str(data['ID'])
+			self._logger.debug("Deleting Chat ID {}".format(data['ID']))
+			if strId in self.chats:	
+				del self.chats[strId]
+				self._logger.debug("Done Deleting ID {}".format(data['ID']))
+			return json.dumps({'chats':self.chats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+
+
 	
 	def get_assets(self):
 		return dict(js=["js/telegram.js"])
@@ -638,16 +696,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if self._settings.get(["tracking_token"]) is None:
 			token = "".join(random.choice("abcdef0123456789") for i in xrange(16))
 			self._settings.set(["tracking_token"], token)
-		params = {'idsite': '3',
-			 'rec': '1',
-			 'url': 'http://octoprint-telegram/'+action,
-			 'action_name': ("%20/%20".join(action.split("/"))),
-			 '_id': self._settings.get(["tracking_token"]),
-			 'uid': self._settings.get(["tracking_token"]),
-			 'cid': self._settings.get(["tracking_token"]),
-			 'send_image': '0',
-			 '_idvc': '1',
-			 'ua': 'Octoprint-Telegram/' + str(self._plugin_version)}
+		params = {'idsite': '3', 'rec': '1', 'url': 'http://octoprint-telegram/'+action, 'action_name': ("%20/%20".join(action.split("/"))), '_id': self._settings.get(["tracking_token"])}
 		threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params}).run()
 
 __plugin_name__ = "Telegram Notifications"

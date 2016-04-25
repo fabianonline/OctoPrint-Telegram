@@ -13,143 +13,197 @@
 			</span>
 		</div>
 	</div>
+	<h4>Known Chats</h4>
+	<table class="table table-condensed table-hover">
+	    <thead>
+		    <tr>
+		        <th class="settings_users_name">Chat</th>
+		        <th class="settings_users_active" style="width:70px;">Command</th>
+		        <th class="settings_users_active">Notify</th>
+		        <th class="settings_users_actions">{{ _('Action') }}</th>
+		    </tr>
+	    </thead>
+	    <tbody data-bind="foreach: listHelper.paginatedItems">
+		    <tr>
+		        <td class="settings_users_name"><span data-bind="text: title"></span>
+		        	<span class="muted" data-bind="visible: true"><br /><small>ID: <span data-bind="text: id"></span> | <span data-bind="visible: !private">GROUP</span><span data-bind="visible: private">PRIVATE</span></small></span>
+		   		</td>
+		        <td class="settings_users_active" style="width:60px;"><i data-bind="css: { 'icon-check': accept_commands, 'icon-check-empty': !accept_commands }"></i><span data-bind="visible: !private">*</span></td>
+		        <td class="settings_users_admin"><i data-bind="css: { 'icon-check': send_notifications, 'icon-check-empty': !send_notifications }"></i></td>
+		        <td class="settings_users_actions">
+		            <a href="#" class="icon-pencil" title="{{ _('Update User') }}" data-bind="click: function() { $root.showEditChatDialog($data);}"></a>&nbsp;|&nbsp;
+		            <a href="#" class="icon-trash" title="{{ _('Delete user') }}" data-bind="click:  function() { $root.delChat($data);}"></a>
+		        </td>
+		    </tr>
+	    </tbody>
+	</table>
 	<div class="control-group">
-		<label class="control-label">{{ _('Chat-ID') }}</label>
-		<div class="controls">
-			<input type="text" class="input-block-level" data-bind="value: settings.settings.plugins.telegram.chat" />
-			<span class="help-block">Which chat to use. Currently known chats are:
-				<ul data-bind="foreach: listHelper.paginatedItems">
-					<li><span data-bind="text: id"></span> - <span data-bind="text: name"></span></li>
-				</ul>
-			</span>
+		<div style="float:right;width:350px;">
+			<small>* When this is enabled, users that have command access can send commands from this group. No other users in this group can send commands.</small>
 		</div>
 	</div>
-
-	<h4>Notification settings</h4>
 	<div class="control-group">
-		<label class="control-label">{{ _('Send notification every') }}</label>
+		<label class="control-label">{{ _('Refresh Chat List') }}</label>
 		<div class="controls">
-			<div class="input-append">
-				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_height" />
-				<span class="add-on">mm</span>
+			<button class="btn" data-bind="click: requestData">{{ _('Reload') }}</button>
+			<p><small>Press this button after you send an initial random message to the bot.<br>
+			Your chat will then appear in the list.<br>
+			Don't forget to press 'Save' on settings dialog otherwise the new chat will disappear on restart of octoprint.</small></p>
+		</div>
+	
+	</div>
+ 	<div class="control-group">
+
+
+		<h4>Notification settings</h4>
+		<div class="control-group">
+			<label class="control-label">{{ _('Send notification every') }}</label>
+			<div class="controls">
+				<div class="input-append">
+					<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_height" />
+					<span class="add-on">mm</span>
+				</div>
+				<div class="input-append">
+					<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_time" />
+					<span class="add-on">min</span>
+				</div>
+				<span class="help-block">Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</span>
 			</div>
-			<div class="input-append">
-				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_time" />
-				<span class="add-on">min</span>
+		</div>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_startup" />
+					Send a notification when octoprint has completed startup.
+				</label>
 			</div>
-			<span class="help-block">Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</span>
 		</div>
-	</div>
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_startup" />
-				Send a notification when octoprint has completed startup.
-			</label>
-		</div>
-	</div>
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_shutdown" />
-				Send a notification when octoprint is shutting down.
-			</label>
-		</div>
-	</div>
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_started" />
-				Send a notification when a new print has started.
-			</label>
-		</div>
-	</div>
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_done" />
-				Send a notification when a print has finished.
-			</label>
-		</div>
-	</div>
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_failed" />
-				Send a notification when a print has failed or has been cancelled.
-			</label>
-		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
-		<div class="controls">
-			<div class="input-append">
-				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
-				<span class="add-on">s</span>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_shutdown" />
+					Send a notification when octoprint is shutting down.
+				</label>
 			</div>
-			<span class="help-block">Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
-				for the head and bed to reach their final positions. Set to 0 to disable.</span>
 		</div>
-	</div>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_started" />
+					Send a notification when a new print has started.
+				</label>
+			</div>
+		</div>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_done" />
+					Send a notification when a print has finished.
+				</label>
+			</div>
+		</div>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_failed" />
+					Send a notification when a print has failed or has been cancelled.
+				</label>
+			</div>
+		</div>
+		<div class="control-group">
+			<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
+			<div class="controls">
+				<div class="input-append">
+					<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
+					<span class="add-on">s</span>
+				</div>
+				<span class="help-block">Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
+					for the head and bed to reach their final positions. Set to 0 to disable.</span>
+			</div>
+		</div>
 
-	<h4>Messages</h4>
-	<div class="control-group">
-		<label class="control-label">{{ _('Message at print start') }}</label>
-		<div class="controls">
-			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintStarted"></textarea>
+		<h4>Messages</h4>
+		<div class="control-group">
+			<label class="control-label">{{ _('Message at print start') }}</label>
+			<div class="controls">
+				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintStarted"></textarea>
+			</div>
 		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label">{{ _('Message at print finished') }}</label>
-		<div class="controls">
-			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintDone"></textarea>
+		<div class="control-group">
+			<label class="control-label">{{ _('Message at print finished') }}</label>
+			<div class="controls">
+				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintDone"></textarea>
+			</div>
 		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label">{{ _('Message at print failure') }}</label>
-		<div class="controls">
-			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintFailed"></textarea>
+		<div class="control-group">
+			<label class="control-label">{{ _('Message at print failure') }}</label>
+			<div class="controls">
+				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintFailed"></textarea>
+			</div>
 		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label">{{ _('Message at new height') }}</label>
-		<div class="controls">
-			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.ZChange"></textarea>
+		<div class="control-group">
+			<label class="control-label">{{ _('Message at new height') }}</label>
+			<div class="controls">
+				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.ZChange"></textarea>
+			</div>
 		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label">{{ _('Message for /status when not printing') }}</label>
-		<div class="controls">
-			<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.TelegramSendNotPrintingStatus"></textarea>
+		<div class="control-group">
+			<label class="control-label">{{ _('Message for /status when not printing') }}</label>
+			<div class="controls">
+				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.TelegramSendNotPrintingStatus"></textarea>
+			</div>
 		</div>
-	</div>
 
-	<h4>Stuff</h4>
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
-				Allow this plugin to send anonymous usage data.
-			</label>
-			<span class="help-block">I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
-			anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
-			"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
-			to me.</span>
+		<h4>Stuff</h4>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
+					Allow this plugin to send anonymous usage data.
+				</label>
+				<span class="help-block">I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
+				anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
+				"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
+				to me.</span>
+			</div>
 		</div>
-	</div>
 
-	<div class="control-group">
-		<div class="controls">
-			<label class="checkbox">
-				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.debug" />
-				Enable logging of debug information for this plugin to octoprint.log
-			</label>
+		<div class="control-group">
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.debug" />
+					Enable logging of debug information for this plugin to octoprint.log
+				</label>
+			</div>
 		</div>
-	</div>
-
-	<p>If you want to talk to other users of this plugin and maybe have some influence in the development of this plugin,
-you can join the <a href="https://telegram.me/joinchat/CXFirQjl9XTp5dr4OZqH9Q" target="_blank">Octoprint-Telegram-Users-Group</a>.</p>
-
-	<p>If you just want to keep up to date with new versions, we also have the channel 
-	<a href="https://telegram.me/octoprint_telegram_news" target="_blank">Octoprint-Telegram-News</a>.</p>
+	</div>	
 </form>
+
+<div id="settings-telegramDialogEditChat" class="modal hide fade">
+    <div class="modal-header">
+        <a href="#" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
+        <h3>Edit: <span data-bind="text: currChatTitle"></span></h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal">
+            <div class="control-group">
+                <div class="controls">
+                    <label class="checkbox">
+                        <input type="checkbox" data-bind="checked: currChatCommands"> Allow to send commands <span id="telegram-groupNotify"></span>
+                    </label>
+                </div>
+            </div>
+            <div class="control-group">
+                <div class="controls">
+                    <label class="checkbox">
+                        <input type="checkbox" data-bind="checked: currChatNotify"> Send notifications
+                    </label>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _('Abort') }}</button>
+        <button class="btn btn-primary" data-bind="click: updateChat">{{ _('Confirm') }}</button>
+    </div>
+</div>
