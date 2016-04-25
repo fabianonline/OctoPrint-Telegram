@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging
-import octoprint.plugin, octoprint.util
+import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io
+import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
 
 class TelegramListener(threading.Thread):
@@ -94,7 +94,7 @@ class TelegramListener(threading.Thread):
 					
 					if "text" in message['message']:
 						# We got a chat message.
-						msg_list = message['message']['text'].split('@')
+						#msg_list = message['message']['text'].split('@')
 						command = message['message']['text'].split('@')[0]
 						parameter = None
 						if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
@@ -109,10 +109,10 @@ class TelegramListener(threading.Thread):
 									self.main.send_msg(gettext("Really abort the currently running print?"), responses=[gettext("Yes, abort the print!"), gettext("No, don't abort the print.")],chatID=chat_id)
 								else:
 									self.main.send_msg(gettext("Currently I'm not printing, so there is nothing to stop."),chatID=chat_id)
-							elif command==gettext("Yes, abort the print!"):
+							elif command==gettext("Yes, abort the print!") or parameter==gettext("Yes, abort the print!"):
 								self.main.send_msg(gettext("Aborting the print."),chatID=chat_id)
 								self.main._printer.cancel_print()
-							elif command==gettext("No, don't abort the print."):
+							elif command==gettext("No, don't abort the print.") or parameter==gettext("No, don't abort the print."):
 								self.main.send_msg(gettext("Okay, nevermind."),chatID=chat_id)
 							elif command=="/shutup":
 								self.main.track_action("command/shutup")
@@ -125,9 +125,9 @@ class TelegramListener(threading.Thread):
 							elif command=="/test":
 								self.main.track_action("command/test")
 								self.main.send_msg(gettext("Is this a test?"), responses=[gettext("Yes, this is a test!"), gettext("A test? Why would there be a test?")],chatID=chat_id)
-							elif command==gettext("Yes, this is a test!"):
+							elif command==gettext("Yes, this is a test!") or parameter==gettext("Yes, this is a test!"):
 								self.main.send_msg(gettext("I'm behaving, then."),chatID=chat_id)
-							elif command==gettext("A test? Why would there be a test?"):
+							elif command==gettext("A test? Why would there be a test?") or parameter==gettext("A test? Why would there be a test?"):
 								self.main.send_msg(gettext("Phew."),chatID=chat_id)
 							elif command=="/status":
 								self.main.track_action("command/status")
@@ -144,18 +144,18 @@ class TelegramListener(threading.Thread):
 									height=self.main._settings.get_float(["notification_height"]),
 									time=self.main._settings.get_int(["notification_time"]))
 								self.main.send_msg(msg, responses=[gettext("Change notification height"), gettext("Change notification time"), gettext("None")],chatID=chat_id)
-							elif command==gettext("None"):
+							elif command==gettext("None") or parameter==gettext("None"):
 								self.main.send_msg(gettext("OK."),chatID=chat_id)
-							elif command==gettext("Change notification height"):
+							elif command==gettext("Change notification height") or parameter==gettext("Change notification height"):
 								self.main.send_msg(gettext("Please enter new notification height."), force_reply=True,chatID=chat_id)
 							elif command==gettext("Please enter new notification height.") and parameter:
 								self.main._settings.set_float(['notification_height'], parameter, force=True)
 								self.main.send_msg(gettext("Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])),chatID=chat_id)
-							elif command==gettext("Change notification time"):
+							elif command==gettext("Change notification time") or parameter==gettext("Change notification time"):
 								self.main.send_msg(gettext("Please enter new notification time."), force_reply=True,chatID=chat_id)
 							elif command==gettext("Please enter new notification time.") and parameter:
 								self.main._settings.set_int(['notification_time'], parameter, force=True)
-								self.main.send_msg(gettext("Notification time is now %(time)dmins.", self.main._settings.get_int(['notification_time'])),chatID=chat_id)
+								self.main.send_msg(gettext("Notification time is now %(time)dmins.", time=self.main._settings.get_int(['notification_time'])),chatID=chat_id)
 							elif command=="/list":
 								self.main.track_action("command/list")
 								files = self.get_flat_file_tree()
@@ -183,7 +183,7 @@ class TelegramListener(threading.Thread):
 								data = self.main._printer.get_current_data()
 								if data['job']['file']['name'] is not None:
 									self.main.send_msg(gettext("Okay. The file %(file)s is loaded. Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Yes, start printing, please."), gettext("Nope.")],chatID=chat_id)
-							elif command==gettext("Yes, start printing, please."):
+							elif command==gettext("Yes, start printing, please.") or parameter==gettext("Yes, start printing, please."):
 								data = self.main._printer.get_current_data()
 								if data['job']['file']['name'] is None:
 									self.main.send_msg(gettext("Uh oh... No file is selected for printing. Did you select one using /list?"),chatID=chat_id)
@@ -196,7 +196,7 @@ class TelegramListener(threading.Thread):
 									continue
 								self.main._printer.start_print()
 								self.main.send_msg(gettext("Started the print job."),chatID=chat_id)
-							elif command==gettext("Nope."):
+							elif command==gettext("Nope.") or parameter==gettext("Nope."):
 								self.main.send_msg("It's okay. We all make mistakes sometimes.",chatID=chat_id)
 							elif command=="/upload":
 								self.main.track_action("command/upload_command_that_tells_the_user_to_just_send_a_file")
@@ -221,23 +221,21 @@ class TelegramListener(threading.Thread):
 					elif "document" in message['message']:
 						self.main.track_action("command/upload")
 						try:
-							file_name = msg['document']['file_name']
+							file_name = message['message']['document']['file_name']
 							if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
 								self.main.send_msg("Sorry, I only accept files with .gcode, .gco or .g extension.")
 								continue
 							# download the file
-							data = self.main.get_file(msg['document']['file_id'])
-							# self.main._file_manager.add_folder(octoprint.filemanager.FileDestinations.LOCAL, "telegram_uploads", ignore_existing=True)
+							data = self.main.get_file(message['message']['document']['file_id'])
 							stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
-							# self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, "telegram_uploads/{}".format(file_name), stream, allow_overwrite=True)
 							target_filename = "telegram_" + file_name
 							self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 							self.main.send_msg("I've successfully saved the file you sent me as {}.".format(target_filename))
 						except Exception as ex:
 							self.main.send_msg("Something went wrong during processing of your file. Sorry. More details are in octoprint.log.")
-							self._logger.debug("Exception occured during processing of a file: " + traceback.format_exc())
+							self._logger.debug("Exception occured during processing of a file: "+ traceback.format_exc() )
 					else:
-						self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(msg))
+						self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(message))
 			except Exception as ex:
 				self._logger.error("Exception caught! " + str(ex))
 			
