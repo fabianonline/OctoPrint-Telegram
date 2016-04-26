@@ -29,31 +29,36 @@ $(function() {
             [],
             [],
             999);
-        
 
+
+        self.reloadPending = 0;
+        self.reloadUsr = ko.observable(true);
         self.connection_state_str = ko.observable("Unknown");
         self.isloading = ko.observable(false);
         self.errored = ko.observable(false);
         self.token_state_str = ko.observable("Unknown");
-	self.editChatDialog = undefined;        
-	self.currChatID = ko.observable("Unknown");
+    	self.editChatDialog = undefined;        
+    	self.currChatID = ko.observable("Unknown");
         self.currChatTitle = ko.observable("Unknown");
         self.currChatPrivate = ko.observable(false);
         self.currChatCommands = ko.observable(false);
         self.currChatNotify = ko.observable(false);
 
         self.requestData = function() {
-            self.isloading(true);
-            $.ajax({
-                url: API_BASEURL + "plugin/telegram",
-                type: "GET",
-                dataType: "json",
-                success: self.fromResponse
-            });
+            if(self.reloadUsr()){
+                $.ajax({
+                    url: API_BASEURL + "plugin/telegram",
+                    type: "GET",
+                    dataType: "json",
+                    success: self.fromResponse
+                });
+                self.reloadPending = setTimeout(self.requestData,10000);
+            }
+            else
+                self.reloadPending = setTimeout(self.requestData,500);
         };
 
         self.updateChat = function() {
-            self.isloading(true);
             var data = {};
             data['command'] = "updateChat";
             data['chatNotify'] = self.currChatNotify();
@@ -117,8 +122,14 @@ $(function() {
             self.currChatPrivate(data.private);
             self.currChatNotify(data.send_notifications);
             self.currChatCommands(data.accept_commands);
-            if(!self.currChatPrivate())
-                document.getElementById("telegram-groupNotify").innerHTML="(only from known Users)";
+            if(!self.currChatPrivate()){
+                document.getElementById("telegram-groupNotify").innerHTML="(known Users)*";
+                document.getElementById("telegram-groupNotify-hint").innerHTML="* When this is enabled, users with command access can send commands from this group. No other users in this group can send commands.";
+            }
+            else{
+                document.getElementById("telegram-groupNotify").innerHTML="";
+                document.getElementById("telegram-groupNotify-hint").innerHTML="";
+            }
 	        self.editChatDialog.modal("show");
         }
 
@@ -138,6 +149,10 @@ $(function() {
                     success: self.fromResponse
                 });
             }
+        }
+
+        self.onSettingsHidden = function() {
+            clearTimeout(self.reloadPending);
         }
 
         self.onSettingsShown = function() {

@@ -666,6 +666,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Testing token {}".format(data['token']))
 			try:
 				username = self.test_token(data['token'])
+				self._settings.set(['token'], data['token'])
+				self.start_listening()
 				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=username), 'error_msg': None, 'username': username})
 			except Exception as ex:
 				return json.dumps({'ok': False, 'connection_state_str': gettext("Error: %(error)s", error=ex), 'username': None, 'error_msg': str(ex)})
