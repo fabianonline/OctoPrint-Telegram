@@ -28,16 +28,58 @@
 		        <th class="settings_users_actions">{{ _('Action') }}</th>
 		    </tr>
 	    </thead>
-	    <tbody data-bind="foreach: listHelper.paginatedItems">
+	    <tbody data-bind="foreach: chatListHelper.paginatedItems">
 		    <tr>
-		        <td class="settings_users_name"><i data-bind="css: {'icon-user': private, 'icon-group': !private}"></i>&nbsp;&nbsp;<span data-bind="text: title"></span>
-		        	<span class="muted" data-bind="visible: true"><br /><small>ID: <span data-bind="text: id"></span> | <span data-bind="visible: !private">GROUP</span><span data-bind="visible: private">PRIVATE</span></small></span>
+		        <td class="settings_users_name">
+		        	<div style="float:left;padding:0px 5px 0px 0px;margin:0px;position:relative;" >
+		        		<div style ="float:left;position:absolute;left:-4px;top:-4px;z-index:1001;padding:0px;">
+		        			<i style="color:orangered;borde:1px;" data-bind="css: { 'icon-star': newUsr}" ></i>
+		        		</div>
+		        		<div style ="float:left;position:absolute;left:-3px;top:-3px;z-index:1000;padding:0px;">
+		        			<i style="color:gainsboro;borde:1px;" data-bind="css: { 'icon-star': newUsr}" ></i>
+		        		</div>
+		        		<img data-bind="attr: {'id': 'IMAGE_' + id}" width="40px" height="40px" style="border-radius: 50%;">
+		        	</div>
+		        	<div>
+			        	<i data-bind="css: {'icon-user': private, 'icon-group': !private}"></i>&nbsp;
+			        	<span data-bind="text: title"></span>
+			        	<span class="muted" data-bind="visible: true"><br />
+			        		<small>ID: <span data-bind="text: id"></span> | <span data-bind="text: private?'PRIVATE':'GROUP'">GROUP</span></small>
+			        	</span>
+		        	</div>
 		   		</td>
-		        <td class="settings_users_active" style="width:60px;"><i data-bind="css: { 'icon-check': accept_commands, 'icon-check-empty': !accept_commands }"></i></td>
-		        <td class="settings_users_admin"><i data-bind="css: { 'icon-check': send_notifications, 'icon-check-empty': !send_notifications }"></i></td>
+		        <td class="settings_users_active" style="width:60px;">
+		        	<span data-bind="visible: !newUsr">
+			        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" style="text-decoration:none">
+			        		<i data-bind="css: { 'icon-check': true}"></i>
+			        	</a>
+			        	<span data-bind="visible: !accept_commands"><i data-bind="css: { 'icon-check-empty': true}"></i></span>
+		        	</span>
+		        	<span data-bind="visible: newUsr">
+			        	<span class="muted" ><small>Save</small></span>
+			        </span>
+		        </td>
+		        <td class="settings_users_admin">
+		        	<span data-bind="visible: !newUsr">
+			        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" style="text-decoration:none">
+			        		<i data-bind="css: { 'icon-check': true}"></i>
+			        	</a>
+			        	<span data-bind="visible: !send_notifications"><i data-bind="css: { 'icon-check-empty': true}"></i></span>
+			        </span>
+		        	<span data-bind="visible: newUsr">
+			        	<span class="muted" ><small>first</small></span>
+			        </span>
+		        </td>
 		        <td class="settings_users_actions">
-		            <a href="#" class="icon-pencil" title="{{ _('Update User') }}" data-bind="click: function() { $root.showEditChatDialog($data);}"></a>&nbsp;|&nbsp;
-		            <a href="#" class="icon-trash" title="{{ _('Delete user') }}" data-bind="click:  function() { $root.delChat($data);}"></a>
+		        	<span data-bind="visible: !newUsr">
+			            <a href="#" class="icon-pencil" title="{{ _('Update User') }}" data-bind="click: function() { $root.showEditChatDialog($data);}"></a>&nbsp;|&nbsp;
+			        </span>
+			        <span data-bind="visible: newUsr">
+			        	<span class="muted" ><small>or&nbsp;&nbsp;</small></span>
+			        </span>
+			        <a href="#" class="icon-trash" title="{{ _('Delete user') }}" data-bind="click:  function() { $root.delChat($data);}"></a>
+
+			        
 		        </td>
 		    </tr>
 	    </tbody>
@@ -47,12 +89,12 @@
 		<label class="control-label">{{ _('Refresh Chat List') }}</label>
 		<div class="controls">
 		<div style="float:left;">
-			<button class="btn" data-bind="click: requestData"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
+			<button class="btn" data-bind="click: function (){ $root.requestData(true); }"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
 
 			</div>
 				<div class="controls">
 					<label class="checkbox">
-						<input type="checkbox" data-bind="checked: reloadUsr" /> <span>Enable auto refresh</span>	
+						<input type="checkbox" data-bind="checked: reloadUsr" /> <span>Enable auto refresh (20 sec.)</span>	
 					</label>
 				</div>
 			
@@ -80,43 +122,7 @@
 				<span class="help-block"><small>Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</small></span>
 			</div>
 		</div>
-		<div class="control-group">
-		<label class="control-label">{{ _('Send notification when...') }}</label>
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_startup" />
-					...octoprint has completed startup.
-				</label>
-			</div>
 		
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_shutdown" />
-					...octoprint is shutting down.
-				</label>
-			</div>
-		
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_started" />
-					...a new print has started.
-				</label>
-			</div>
-		
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_done" />
-					...a print has finished.
-				</label>
-			</div>
-		
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.message_at_print_failed" />
-					...a print has failed or has been cancelled.
-				</label>
-			</div>
-		</div>
 		<div class="control-group">
 			<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
 			<div class="controls">
@@ -128,38 +134,18 @@
 					for the head and bed to reach their final positions. Set to 0 to disable.</small></span>
 			</div>
 		</div>
+		<div class="control-group">
+			<label class="control-label">{{ _('Send Emojis') }}</label>
+			<div class="controls">
+				<label class="checkbox">
+					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_icon" /> check to enable emojis
+				</label>
+			</div>
+		</div>
 
-		<h4>Messages</h4>
-		<div class="control-group">
-			<label class="control-label">{{ _('Message at print start') }}</label>
-			<div class="controls">
-				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintStarted"></textarea>
-			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label">{{ _('Message at print finished') }}</label>
-			<div class="controls">
-				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintDone"></textarea>
-			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label">{{ _('Message at print failure') }}</label>
-			<div class="controls">
-				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.PrintFailed"></textarea>
-			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label">{{ _('Message at new height') }}</label>
-			<div class="controls">
-				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.ZChange"></textarea>
-			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label">{{ _('Message for /status when not printing') }}</label>
-			<div class="controls">
-				<textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.TelegramSendNotPrintingStatus"></textarea>
-			</div>
-		</div>
+		<h4>Messages for...</h4>
+		<div id="telegram_msg_list"></div>
+
 
 		<h4>Stuff</h4>
 		<div class="control-group">
@@ -186,9 +172,10 @@
 	</div>	
 </form>
 
+
 <div id="settings-telegramDialogEditChat" class="modal hide fade">
     <div class="modal-header">
-        <a href="#" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>
+        <!--<a href="#" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>-->
         <h3>Edit: <span data-bind="text: currChatTitle"></span></h3>
     </div>
     <div class="modal-body">
@@ -196,26 +183,45 @@
             <div class="control-group">
                 <div class="controls">
                     <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: currChatCommands"> Allow to send commands <span id="telegram-groupNotify"></span>
+                    	<span id="telegram-acccmd-chkbox"></span>
+                        <span class="help-block"><small id="telegram-groupNotify-hint"></small></span>
                     </label>
                 </div>
             </div>
             <div class="control-group">
                 <div class="controls">
                     <label class="checkbox">
-                        <input type="checkbox" data-bind="checked: currChatNotify"> Send notifications
+                    	<span id="telegram-notify-chkbox"></span>
                     </label>
                 </div>
             </div>
-            <div class="control-group">
-                <div class="controls">
-                    <span class="help-block"><small id="telegram-groupNotify-hint"></small></span>
-                </div>
-            </div>
+            
         </form>
     </div>
     <div class="modal-footer">
-        <button class="btn" data-dismiss="modal" aria-hidden="true">{{ _('Abort') }}</button>
-        <button class="btn btn-primary" data-bind="click: updateChat">{{ _('Confirm') }}</button>
+        <!--<button class="btn" data-dismiss="modal" aria-hidden="true">{{ _('Abort') }}</button>-->
+        <button class="btn btn-primary" data-bind="click: updateChat">{{ _('Close') }}</button>
+    </div>
+</div>
+
+
+<div id="settings-telegramDialogEditCommands" class="modal hide fade">
+    <div class="modal-header">
+        <!--<a href="#" class="close" data-dismiss="modal" aria-hidden="true">&times;</a>-->
+        <h3><span data-bind="text: currChatTitle"></span></h3>
+    </div>
+    <div class="modal-body">
+        <form class="form-horizontal" >
+            <div class="control-group">
+            	<label class="control-label" id="tele-edit-control-label"></label>
+                <div class="controls" id="telegram-cmd-chkbox-grp">
+                    
+                </div>
+            </div>
+
+        </form>
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" data-dismiss="modal" aria-hidden="true">{{ _('Close') }}</button>
     </div>
 </div>
