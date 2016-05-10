@@ -1,14 +1,3 @@
-### Chat IDs
-	Flow 			10872553
-	Printer Group 	-136319137
-	Jochen 			183794323
-
-
-### Bot Token
-	FlowPrintr1bot:		183873908:AAGxjc234bKZZX1wKDvAZqFOHRdgjBZ5E2E
-	FlowsPrivateBot:	233184046:AAH-zptOgyS1ZMcK_A-fJYU5BhFUOy8fuos
-
-
 ### TODO
 
 	# Aufräumen
@@ -44,7 +33,6 @@
 	  ! is loading sign in settings javascript
 	  ! help texte für commands und messages in settings
 	  ! bei message settings die binds anzeigen
-	  ! delete knopf bei neuen Usern anzeigen
 
 	# Bugs
 		ko.applyBindings problem?
