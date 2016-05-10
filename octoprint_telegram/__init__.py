@@ -229,10 +229,10 @@ class TelegramListener(threading.Thread):
 
 							except OSError:
 								pass
-					elif "left_chat_member" in message['message]']:
+					elif "left_chat_member" in message['message']:
 						self._logger.debug("Message Del_Chat")
-						if message['message']['new_chat_member']['username'] == self.username[1:] and message['message']['chat']['id'] in self.main.chats:
-							del self.main.chats[message['message']['chat']['id']]
+						if message['message']['left_chat_member']['username'] == self.username[1:] and str(message['message']['chat']['id']) in self.main.chats:
+							del self.main.chats[str(message['message']['chat']['id'])]
 							self._logger.debug("Chat deleted")
 					# WILL BE DONE ON TOP ON FIRST MESSAGE HANDLE LINES
 					# elif "new_chat_member" in message['message']:
@@ -415,6 +415,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		tcmd = TCMD(self)
 		if current is None or current < 1:
 			# Reset Chats (there shouldn't be any chats)
+			# disabled = self._settings.get(['disabled'])
+			# if disabled is None:
+			# 	self._settings.set(['disabled'], False)
 			self._settings.set(["chats"],{'zBOTTOMOFCHATS':{'send_notifications': False,'accept_commands':False,'private':False}})
 			# Is there an chat from old plugin version chats?
 			# then migrate it
@@ -467,6 +470,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			# Update or delete new/old settings
 			if emojis is None:
 				self._settings.set(["send_icon"], False)
+
 			self._settings.set(["messages"],telegramMsgDict)	
 			self._settings.set(["message_at_startup"], None)
 			self._settings.set(["message_at_shutdown"], None)
@@ -478,6 +482,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			except Exception as ex:
 				self._logger.error("MIGRATED Save failed - " + str(ex)) 
 			self._logger.debug("MIGRATED Saved")
+
+		if current is None or current < target:
+			pass
 
 	def on_settings_save(self, data):
 		delList = []
@@ -794,11 +801,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if command=="testToken":
 			self._logger.debug("Testing token {}".format(data['token']))
 			try:
-				username = self.test_token(data['token'])
-				self._settings.set(['token'], data['token'])
-				self.stop_listening() #to start with new token if already running
-				self.start_listening()
-				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=username), 'error_msg': None, 'username': username})
+				if self._settings.get(["token"]) != data["token"]:
+					username = self.test_token(data['token'])
+					self._settings.set(['token'], data['token'])
+					self.stop_listening() #to start with new token if already running
+					self.start_listening()
+					return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=username), 'error_msg': None, 'username': username})
+				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=self.thread.username), 'error_msg': None, 'username': self.thread.username})
 			except Exception as ex:
 				return json.dumps({'ok': False, 'connection_state_str': gettext("Error: %(error)s", error=ex), 'username': None, 'error_msg': str(ex)})
 		elif command=="delChat":

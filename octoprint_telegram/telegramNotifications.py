@@ -148,9 +148,9 @@ class TMSG():
 		if "file" in payload: file = payload["file"]
 		if "gcode" in payload: file = payload["gcode"]
 		if "filename" in payload: file = payload["filename"]
-		emo = {k: v.encode("utf-8") for k, v in self.main.emojis.iteritems()}
-		#for k in self.main.emojis:
-			#emo[k] = self.main.emojis[k].encode("utf-8")
+		emo = {}; #{k: v.encode("utf-8") for k, v in self.main.emojis.iteritems()}
+		for k in self.main.emojis:
+			emo[k] = self.main.gEmo(k).encode("utf-8")
 
 		message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(**locals())
 		self._logger.debug("Sending message: " + message)

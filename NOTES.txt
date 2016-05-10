@@ -26,17 +26,13 @@
 		more icons (complete?)
 		admin user
 		send video
-		markup in notifikations messages
-	  ! bei "left_chat_member" nicht löschen sondern deaktivieren
+		markup in notifications messages
+	    bei "left_chat_member" nicht löschen sondern deaktivieren
 
 	# Design
-	  ! is loading sign in settings javascript
-	  ! help texte für commands und messages in settings
-	  ! bei message settings die binds anzeigen
+	  ! allow_users in group settings
 
-	# Bugs
-		ko.applyBindings problem?
-			->erst ein cmdSettings öffnen, dann ein anderes
-			->sind dann die settings.settings... vom ersten noch gebunden?
-			->weil kein ko.cleanNode()
+	# Known Bugs (more to come :D)
 		migrate
+			- current < 1: update chats
+			- current < target: update commands, notifications and messages
