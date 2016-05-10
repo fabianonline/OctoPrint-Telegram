@@ -88,13 +88,13 @@ $(function() {
             
             for(var id in keys) {
                 bind_text = '';
-                /*if (self.bind['bind_text'][keys[id]].indexOf(keys[id]) >= 0){
+                if(keys[id] in self.bind['bind_text']){
                     bind_text = '<span class="muted"><br /><small>Also for:';
-                    ks = self.bind['bind_text'][key[id]].sort();
+                    ks = self.bind['bind_text'][keys[id]].sort();
                     for (var k in ks)
                         bind_text += "<br>" + ks[k];
                     bind_text += "</small></span>";
-                }*/
+                }
 
                 $('#telegram_msg_list').append('<div class="control-group" id="telegramMsgText'+self.msgCnt+'"><label class="control-label">... '+keys[id]+ bind_text + '</label><div class="controls"><textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea><label class="checkbox"><input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image" />Send with image</label></div></div>');
                 ko.applyBindings(self, $("#telegramMsgText"+self.msgCnt++)[0]);
