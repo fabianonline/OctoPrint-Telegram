@@ -1,0 +1,54 @@
+### Chat IDs
+	Flow 			10872553
+	Printer Group 	-136319137
+	Jochen 			183794323
+
+
+### Bot Token
+	FlowPrintr1bot:		183873908:AAGxjc234bKZZX1wKDvAZqFOHRdgjBZ5E2E
+	FlowsPrivateBot:	233184046:AAH-zptOgyS1ZMcK_A-fJYU5BhFUOy8fuos
+
+
+### TODO
+
+	# Aufräumen
+		gettext("...")
+		css
+	  ! readme
+	  	code doku
+
+	# Commands
+		delete/download files
+		File List mehrseitig
+		command for seeing user settings
+	  ! update help
+		settings granular
+
+	# Features
+		cmd-messages in html markup?
+		tab page mit einstellungen für aktuellen print
+		add stettings per user?
+			-delay
+			-message
+			-icon etc.
+		let user add custom masseges on events
+			-custom Gcode commands
+			-custom switches
+		more icons (complete?)
+		admin user
+		send video
+		markup in notifikations messages
+	  ! bei "left_chat_member" nicht löschen sondern deaktivieren
+
+	# Design
+	  ! is loading sign in settings javascript
+	  ! help texte für commands und messages in settings
+	  ! bei message settings die binds anzeigen
+	  ! delete knopf bei neuen Usern anzeigen
+
+	# Bugs
+		ko.applyBindings problem?
+			->erst ein cmdSettings öffnen, dann ein anderes
+			->sind dann die settings.settings... vom ersten noch gebunden?
+			->weil kein ko.cleanNode()
+		migrate
