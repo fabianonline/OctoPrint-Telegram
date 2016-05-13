@@ -226,7 +226,10 @@ class TCMD():
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
 		                           "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
-		                           "/settings - Displays the current notification settings and allows you to change them."),chatID=chat_id)
+		                           "/settings - Displays the current notification settings and allows you to change them.\n"
+		                           "/list - Lists all the files available for printing and lets you start printing them.\n"
+		                           "/print - Lets you start a print. A confirmation is required.\n"
+		                           "/upload - You can just send me a gcode file to save it to my library."),chatID=chat_id)
 
 	def get_flat_file_tree(self):
 		tree = self.main._file_manager.list_files(recursive=True)

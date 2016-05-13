@@ -10,7 +10,6 @@
 		delete/download files
 		File List mehrseitig
 		command for seeing user settings
-	  ! update help
 		settings granular
 
 	# Features
@@ -31,6 +30,9 @@
 		send video
 	    bei "left_chat_member" nicht löschen sondern deaktivieren
 	  ! gEmo() auch aus message texten (.format(**locals())
+	    octoprint.util.repeated timer für notification
+	    generell octoprint.util nach brauchbarem durchsuchen (vorallem dict kram)
+	    sysCommand
 
 	# Known Bugs (more to come :D)
 
@@ -38,11 +40,4 @@
 
 		update issues
 
-		messages -> no_settings -> immer senden wenn keine chat_id in send_msg()
-
-##### Done
-
-		plugin stops if initial connect fails
-
-		migrate
-			- current < 1: update chats
+		messages -> no_settings -> immer senden wenn keine chat_id in send_msg()??

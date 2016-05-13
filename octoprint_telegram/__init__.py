@@ -106,7 +106,7 @@ class TelegramListener(threading.Thread):
 					from_id = chat_id
 					# if message is from a group, chat_id will be left as id of group 
 					# and from_id is set to id of user who send the message 
-					if data['private']:
+					if not data['private']:
 						from_id = str(message['message']['from']['id'])
 						# if group accepts only commands from known users (allow_users = true, accept_commands=false)
 						# and user is not in known chats, then he is unknown and we dont wnat to listen to him.
@@ -178,7 +178,7 @@ class TelegramListener(threading.Thread):
 						if not data['private']: #is this needed? can one send files from groups to bots?
 							from_id = str(message['message']['from']['id'])
 						# is /upload allowed?
-						if isCommandAllowed(chat_id,from_id,['/upload']):
+						if self.isCommandAllowed(chat_id,from_id,'/upload'):
 							self.main.track_action("command/upload")
 							try:
 								file_name = message['message']['document']['file_name']
@@ -248,10 +248,10 @@ class TelegramListener(threading.Thread):
 				if self.main.chats[chat_id]['commands'][command]:
 						return True
 				elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
-					if self.main.chats[from_id]['commands'][command]:
+					if self.main.chats[from_id]['commands'][command] and self.main.chats[from_id]['accept_commands']:
 						return True
 			elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
-				if self.main.chats[from_id]['commands'][command]:
+				if self.main.chats[from_id]['commands'][command] and self.main.chats[from_id]['accept_commands']:
 						return True
 		return False
 
@@ -800,6 +800,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			# If it's a regular event notification
 			if 'chatID' not in kwargs and 'event' in kwargs:
+				self._logger.debug("Send_msg() fond event: " + str(kwargs['event']))
 				for key in self.chats: 
 					if key != 'zBOTTOMOFCHATS':
 						if self.chats[key]['notifications'][kwargs['event']] and key not in self.shut_up and self.chats[key]['send_notifications']:

@@ -164,16 +164,16 @@ class TMSG():
 
 	def msgZChange(self, event, payload, **kwargs):
 		kwargs['event'] = self._prepMsg(event)
-		status = self._printer.get_current_data()
+		status = self.main._printer.get_current_data()
 		if not status['state']['flags']['printing'] or not self.is_notification_necessary(payload['new'], payload['old']):
 			return
 		self.z = payload['new']
 		self._logger.debug("Z-Change. new_z=%.2f old_z=%.2f last_z=%.2f notification_height=%.2f notification_time=%d",
-			z,
+			self.z,
 			payload['old'],
 			self.last_z,
-			self._settings.get_float(['notification_height']),
-			self._settings.get_int(['notification_time']))
+			self.main._settings.get_float(['notification_height']),
+			self.main._settings.get_int(['notification_time']))
 		self._sendNotification(payload, **kwargs)
 
 	def msgPrintStarted(self, event, payload, **kwargs):
