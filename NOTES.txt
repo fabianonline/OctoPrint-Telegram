@@ -14,7 +14,10 @@
 		settings granular
 
 	# Features
-		cmd-messages in html markup?
+		check webcam integration
+		command states für user speichern
+		markup option for send_msg()
+		markup settings (html, markup) individual for notification messages
 		tab page mit einstellungen für aktuellen print
 		add stettings per user?
 			-delay
@@ -26,13 +29,20 @@
 		more icons (complete?)
 		admin user
 		send video
-		markup in notifications messages
 	    bei "left_chat_member" nicht löschen sondern deaktivieren
-
-	# Design
-	  ! allow_users in group settings
+	  ! gEmo() auch aus message texten (.format(**locals())
 
 	# Known Bugs (more to come :D)
+
+	  ! on message migrate look for binding/ no setting changes
+
+		update issues
+
+		messages -> no_settings -> immer senden wenn keine chat_id in send_msg()
+
+##### Done
+
+		plugin stops if initial connect fails
+
 		migrate
 			- current < 1: update chats
-			- current < target: update commands, notifications and messages

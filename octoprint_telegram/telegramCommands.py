@@ -4,6 +4,76 @@ import octoprint.filemanager
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
 
+################################################################################################################
+# This class handles received commands/messages (commands in the following). commandDict{} holds the commands and their behavior.
+# Each command has its own handler. If you want to add/del commands, read the following:
+#
+#
+# 	commandDict{}
+#
+# 	The commandDict holds the command objects which define the known commands. 
+# 	Each object looks like the following:
+# 	<commandName>: { 'cmd': <commandHandle> [, 'bind_none': <Boolean>, 'bind_cmd': <bindCmdName>]}
+#
+# 		- <commandName>: The name of the command corresponds to the message text received.
+# 						 If you use emojis in commands, than you ALWAYS have to define
+# 						 a second object and set the command name to the same text without emojis.
+# 						 Otherwise the 'Send emojis" option won't work properly.
+# 						 The other values of the two objects should be the same.
+# 						 See " Enter height" ans " Enter time" as example.
+#
+# 		- 'cmd': <commandHandle>: Here you have to point to the message handle method
+#
+# 		Optional:
+#
+# 		- 'bind_none': <Boolean>: Sets the authorization for the command ALWAYS TRUE for EVERY user/group.
+# 								  So if accept_commands is activated for a user/group he is automatically 
+# 								  able to do this command.
+# 								  This is used to hide the command in user command authorization settings.
+# 								  It is only used for non critical commands: Yes, No and Cancel which only
+# 								  respond with a text message and wont cause any unwanted action.
+#
+# 		- 'bind_cmd': <bindCmdName>: This binds the authorization for the command to the authorization of
+# 									 the given bind command. So if the bind command is changed in settings,
+# 									 this command will be changed to the same value. This applies individual
+# 									 each user/group setting.
+# 									 The command is also hidden in user command authorization settings.
+# 									 This otion is for commands which depend on other commands like
+# 									 the settings. See "/settings", "Change height", "Change time" etc.
+#
+#
+# 	commandHandler
+#
+# 	This is a method to handle the command and to execute desired actions. It should always at minimum look as follows:
+#
+# 	def cmd<commandName>(self,chat_id,**kwargs):
+# 		self.main.send_msg(responseMessage,chatID=chat_id)
+#
+# 	The Name of the method should be the name of the command with 'cmd' as prefix.
+# 	At least a response should be send to the user. so do a call on self.main.send_msg()
+# 	with a responseMessage. YOU HAVE TO pass also the chat_id the handler got when called.
+# 	This ensures that always the right user gets the response.
+#
+# 	!!!!!!!!!!!!!!!!!!! IT IS IMPORTANT TO DO THIS !!!!!!!!!!!!!!!!!
+# 	If you add and or del one ore more commands, you have to increment the settings
+#	version counter in get_ettings_version() in __init__.py.
+# 	This will start settings migration to add/remove command settings to/from users.
+# 	!!!!!!!!!!!!!!!!!!! IT IS IMPORTANT TO DO THIS !!!!!!!!!!!!!!!!!
+#
+#
+#
+# 	To ADD a command:
+# 		- add an command object to commandDict
+# 		- add a handler method to the TCMD class
+#
+# 	To REMOVE a Notivication:
+# 		- do above in reverse
+#
+# 	ON BOTH DO:
+# 	- increment plugin version
+#####################################################################################################################
+
+
 class TCMD():
 	def __init__(self, main):
 		self.main = main
@@ -15,12 +85,13 @@ class TCMD():
 			gettext("No"):  {'cmd': self.cmdNo,'bind_none': True},
 			gettext("Change height"):  {'cmd': self.cmdChgHeight, 'bind_cmd': '/settings'},
 			(self.gEmo('enter') + gettext(" Enter height")):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings'},
-			gettext("Enter height")):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings'},
+			gettext(" Enter height"):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings'},
 			gettext("Change time"):  {'cmd': self.cmdChgTime, 'bind_cmd': '/settings'},
 			(self.gEmo('enter') + gettext(" Enter time")):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings'},
-			gettext("Enter time")):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings'},
+			gettext(" Enter time"):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings'},
 			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print'},
 			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/print'},
+			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print'},
 			'/print_':  {'cmd': self.cmdRunPrint, 'bind_cmd': '/print'},
 			'/test':  {'cmd': self.cmdTest},
 			'/status':  {'cmd': self.cmdStatus},
@@ -30,9 +101,7 @@ class TCMD():
 			'/imsorrydontshutup':  {'cmd': self.cmdNShutup},
 			'/list':  {'cmd': self.cmdList},
 			'/print':  {'cmd': self.cmdPrint},
-			'/light':  {'cmd': self.cmdLight},
 			'/upload':  {'cmd': self.cmdUpload},
-			'/darkness':  {'cmd': self.cmdDarkness},
 			'/help':  {'cmd': self.cmdHelp}
 		}
 
@@ -86,6 +155,10 @@ class TCMD():
 	def cmdHalt(self,chat_id,**kwargs):
 		self.main.send_msg(self.gEmo('info') + gettext(" Aborting the print."),chatID=chat_id)
 		self.main._printer.cancel_print()
+
+	def cmdDontPrint(self, chat_id, **kwargs):
+		self.main._printer.unselect_file()
+		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 							
 	def cmdShutup(self,chat_id,**kwargs):
 		self.main.track_action("command/shutup")
@@ -121,7 +194,7 @@ class TCMD():
 			self.main._printer.select_file(file, False, printAfterSelect=False)
 		data = self.main._printer.get_current_data()
 		if data['job']['file']['name'] is not None:
-			self.main.send_msg(self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Start print"), gettext("No")],chatID=chat_id)
+			self.main.send_msg(self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Start print"), gettext("Don't print")],chatID=chat_id)
 
 	def cmdStartPrint(self,chat_id,**kwargs):
 		data = self.main._printer.get_current_data()
@@ -142,14 +215,6 @@ class TCMD():
 		files = self.get_flat_file_tree()
 		self.main.send_msg(self.gEmo('save') + " File List:\n\n" + "\n".join(files) + "\n\n"+self.gEmo('info')+" You can click the command beginning with /print after a file to start printing this file.",chatID=chat_id)
 
-	def cmdLight(self,chat_id,**kwargs):
-		self.main._printer.commands("M42 P47 S255")
-		self.main.send_msg("I put the lights on.",chatID=chat_id)
-
-	def cmdDarkness(self,chat_id,**kwargs):
-		self.main._printer.commands("M42 P47 S0")
-		self.main.send_msg("Lights are off now.",chatID=chat_id)
-
 	def cmdUpload(self,chat_id,**kwargs):
 		self.main.track_action("command/upload_command_that_tells_the_user_to_just_send_a_file")
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
@@ -162,16 +227,6 @@ class TCMD():
 		                           "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them."),chatID=chat_id)
-
-	def newChat(self):
-		return {'accept_commands' : False, 
-				'send_notifications' : False, 
-				'new': True, 
-				'allow_users': False,
-				'commands': {k: False for k,v in self.commandDict.iteritems()}, 
-				'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
-				}
-
 
 	def get_flat_file_tree(self):
 		tree = self.main._file_manager.list_files(recursive=True)
