@@ -227,7 +227,7 @@ class TCMD():
 
 	def cmdSys(self,chat_id,**kwargs):
 		self.main.track_action("command/sys")
-		message = self.gEmo('info') + "You have to pass a SysCommand. The following SysCommands are knowen.\n(Click to execute)\n\n"
+		message = self.gEmo('info') + "You have to pass a SysCommand. The following SysCommands are known.\n(Click to execute)\n\n"
 		actions = self.main._settings.global_get(['system','actions'])
 		for action in actions:
 			if 'action' in action:
