@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import logging
+import logging, sarge
 import octoprint.filemanager
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
@@ -78,6 +78,7 @@ class TCMD():
 	def __init__(self, main):
 		self.main = main
 		self.gEmo = self.main.gEmo
+		self.tmpSysCmd = {}
 		self._logger = main._logger.getChild("listener")
 		self.commandDict = {
 			gettext("Yes"): {'cmd': self.cmdYes, 'bind_none': True},
@@ -92,6 +93,7 @@ class TCMD():
 			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print'},
 			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/print'},
 			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print'},
+			gettext("Exec SysCommand"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys'},
 			'/print_':  {'cmd': self.cmdRunPrint, 'bind_cmd': '/print'},
 			'/test':  {'cmd': self.cmdTest},
 			'/status':  {'cmd': self.cmdStatus},
@@ -102,13 +104,17 @@ class TCMD():
 			'/list':  {'cmd': self.cmdList},
 			'/print':  {'cmd': self.cmdPrint},
 			'/upload':  {'cmd': self.cmdUpload},
-			'/help':  {'cmd': self.cmdHelp}
+			'/help':  {'cmd': self.cmdHelp},
+			'/sys': {'cmd': self.cmdSys},
+			'/sys_': {'cmd': self.cmdSysReq, 'bind_cmd': '/sys'}
 		}
 
 	def cmdYes(self,chat_id,**kwargs):
 		self.main.send_msg(gettext("Alright."),chatID=chat_id)
 
 	def cmdNo(self,chat_id,**kwargs):
+		if chat_id in self.tmpSysCmd:
+			del self.tmpSysCmd[chat_id]
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 
 	def cmdTest(self,chat_id,**kwargs):
@@ -218,6 +224,55 @@ class TCMD():
 	def cmdUpload(self,chat_id,**kwargs):
 		self.main.track_action("command/upload_command_that_tells_the_user_to_just_send_a_file")
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
+
+	def cmdSys(self,chat_id,**kwargs):
+		self.main.track_action("command/sys")
+		message = self.gEmo('info') + "You have to pass a SysCommand. The following SysCommands are knowen.\n(Click to execute)\n\n"
+		actions = self.main._settings.global_get(['system','actions'])
+		for action in actions:
+			if 'action' in action:
+				if action['action'] != "divider":
+					message += "/sys_" + action['action'] + "\n\n"
+		self.main.send_msg(message,chatID=chat_id)
+
+	def cmdSysReq(self,chat_id,parameter,**kwargs):
+		if parameter is None or parameter is "":
+			self.cmdSys(chat_id, **kwargs)
+			return
+		actions = self.main._settings.global_get(['system','actions'])
+		if any(d['action'] == parameter for d in actions if 'action' in d):
+			self.tmpSysCmd.update({chat_id: parameter})
+			self.main.send_msg(self.gEmo('question') + " Really execute sys_" + str(parameter) + "?",responses=[gettext("Exec SysCommand"), gettext("Cancel")],chatID=chat_id)
+			return
+		self.main.send_msg(self.gEmo('warning') + " Sorry, i don't konw this sysCommand.",chatID=chat_id)
+
+	def cmdSysRun(self,chat_id,**kwargs):
+		if chat_id not in self.tmpSysCmd:
+			return
+		parameter = self.tmpSysCmd[chat_id]
+		del self.tmpSysCmd[chat_id]
+		actions = self.main._settings.global_get(['system','actions'])
+		action = (i for i in actions if i['action'] == parameter).next()
+		### The following is taken from OctoPrint/src/octoprint/server/api/__init__.py -> performSystemAction()
+		async = action["async"] if "async" in action else False
+		ignore = action["ignore"] if "ignore" in action else False
+		self._logger.info("Performing command: %s" % action["command"])
+		try:
+			# we run this with shell=True since we have to trust whatever
+			# our admin configured as command and since we want to allow
+			# shell-alike handling here...
+			p = sarge.run(action["command"], stderr=sarge.Capture(), shell=True, async=async)
+			if not async:
+				if p.returncode != 0:
+					returncode = p.returncode
+					stderr_text = p.stderr.text
+					self._logger.warn("Command failed with return code %i: %s" % (returncode, stderr_text))
+					self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id)
+					return
+			self.main.send_msg(self.gEmo('check') + " Command sys_" + parameter + " executed." ,chatID=chat_id)
+		except Exception, e:
+			self._logger.warn("Command failed: %s" % e)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception!",chatID = chat_id)
 
 	def cmdHelp(self,chat_id,**kwargs):
 		self.main.track_action("command/help")

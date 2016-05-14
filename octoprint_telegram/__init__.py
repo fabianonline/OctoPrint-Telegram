@@ -147,7 +147,7 @@ class TelegramListener(threading.Thread):
 								command = message['message']['text']
 								parameter = message['message']['reply_to_message']['text']
 						# if command is '/print_', get the hash as parameter
-						elif "/print_" in command:
+						elif "/print_" in command or "/sys_" in command:
 							parameter = command.split('_')[1]
 							command = command.split('_')[0] + "_"
 						self._logger.info("Got a command: '" + command + "' with parameter: '" + parameter + "' in chat " + str(message['message']['chat']['id']))
@@ -338,7 +338,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'question': u'\U00002753',
 			'warning': u'\U000026A0',
 			'enter': u'\U0000270F',
-			'upload': u'\U0001F4E5'
+			'upload': u'\U0001F4E5',
+			'check': u'\U00002705'
 		}
 	# all emojis will be get via this method to disable them globaly by the corrosponding setting	
 	# so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]

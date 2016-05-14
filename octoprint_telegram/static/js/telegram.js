@@ -216,20 +216,24 @@ $(function() {
 
         self.delChat = function(data) {
             if (data === undefined) return;
-            if (confirm('Do you really want to delete ' + data.title)){
-                self.isloading(true);
-                data['command'] = "delChat";
-                data['ID'] = data.id
-                console.log("Delete Chat Data " + String(data['ID']));
-                $.ajax({
-                    url: API_BASEURL + "plugin/telegram",
-                    type: "POST",
-                    dataType: "json",
-                    data: JSON.stringify(data),
-                    contentType: "application/json",
-                    success: self.fromResponse
-                });
-            }
+            var callback = function() {
+                    self.isloading(true);
+                    data['command'] = "delChat";
+                    data['ID'] = data.id
+                    console.log("Delete Chat Data " + String(data['ID']));
+                    $.ajax({
+                        url: API_BASEURL + "plugin/telegram",
+                        type: "POST",
+                        dataType: "json",
+                        data: JSON.stringify(data),
+                        contentType: "application/json",
+                        success: self.fromResponse
+                    });
+                };
+            showConfirmationDialog('Do you really want to delete ' + data.title, function (e) {
+                callback();
+            });
+  
         }
 
         self.onSettingsHidden = function() {
