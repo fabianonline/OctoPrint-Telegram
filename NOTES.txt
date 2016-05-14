@@ -1,43 +1,52 @@
-### TODO
-
-	# Aufräumen
+### CleanUp
 		gettext("...")
 		css
 	  ! readme
-	  	code doku
+	  	code documentation
 
-	# Commands
+### Commands
 		delete/download files
-		File List mehrseitig
-		command for seeing user settings
-		settings granular
+		File List multipage
+		command for getting user settings/rights
+		message/icon/delay settings
+		send video
+		user settings --> admin
 
-	# Features
-		check webcam integration
-		command states für user speichern
+### Features
+		check webcam integration to hide/prevent "with image"
+		save command states successive command messages per user to prevent false messages
 		markup option for send_msg()
 		markup settings (html, markup) individual for notification messages
-		tab page mit einstellungen für aktuellen print
+		tab page with individual settings per print
 		add stettings per user?
 			-delay
+			-notification height/time
 			-message
 			-icon etc.
-		let user add custom masseges on events
-			-custom Gcode commands
-			-custom switches
+		let user add custom 
+			-messages on events (EventManager)
+			- Gcode commands
+				- switches
 		more icons (complete?)
-		admin user
-		send video
-	    bei "left_chat_member" nicht löschen sondern deaktivieren
-	  ! gEmo() auch aus message texten (.format(**locals())
-	    octoprint.util.repeated timer für notification
-	    generell octoprint.util nach brauchbarem durchsuchen (vorallem dict kram)
-	    sysCommand
+		admin user?  --> admin
+	    on "left_chat_member" dont delete --> deactivate
+	    option to deactivate group chats if bot leaves a group to hold the settings if reentering --> deactivate
+	  ! gEmo() in message texts (.format(**locals()) to make settings send_icon work?
+	    octoprint.util.repeated timer for notification time
+	    check octoprint.util for useful things (dict!)
 
-	# Known Bugs (more to come :D)
+### Known Bugs (more to come :D)
 
 	  ! on message migrate look for binding/ no setting changes
 
-		update issues
+	  ! update issues
 
-		messages -> no_settings -> immer senden wenn keine chat_id in send_msg()??
+	  ! after print start wait for nozzel and bed heated befor starting print notification
+	  		times are from octoprint so there has to be own counter??? :(
+
+### Watchlist
+
+	Issue #14 solved?
+	TelegramAPI message Group objects (new_chat_icon, left_chat_member, etc.)
+	update user photos on startUp???
+	settings.save() on start user?

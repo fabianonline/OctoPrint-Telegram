@@ -106,7 +106,9 @@ class TCMD():
 			'/upload':  {'cmd': self.cmdUpload},
 			'/help':  {'cmd': self.cmdHelp},
 			'/sys': {'cmd': self.cmdSys},
-			'/sys_': {'cmd': self.cmdSysReq, 'bind_cmd': '/sys'}
+			'/sys_': {'cmd': self.cmdSysReq, 'bind_cmd': '/sys'},
+			'/ctrl': {'cmd': self.cmdCtrl},
+			'/ctrl_': {'cmd': self.cmdCtrlRun, 'bind_cmd': '/ctrl'}
 		}
 
 	def cmdYes(self,chat_id,**kwargs):
@@ -118,11 +120,9 @@ class TCMD():
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 
 	def cmdTest(self,chat_id,**kwargs):
-		self.main.track_action("command/test")
 		self.main.send_msg(self.gEmo('question') + gettext(" Is this a test?\n\n") , responses=[gettext("Yes"), gettext("No")],chatID=chat_id)
 
 	def cmdStatus(self,chat_id,**kwargs):
-		self.main.track_action("command/status")
 		if not self.main._printer.is_operational():
 			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer."),chatID=chat_id)
 		elif self.main._printer.is_printing():
@@ -131,7 +131,6 @@ class TCMD():
 			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 
 	def cmdSettings(self,chat_id,**kwargs):
-		self.main.track_action("command/settings")
 		msg = self.gEmo('settings') + gettext(" Current notification settings are:\n\n\n"+self.gEmo('height')+" height: %(height)fmm\n\n"+self.gEmo('clock')+" time: %(time)dmin\n\n\n"+self.gEmo('question')+"Which value do you want to change?",
 			height=self.main._settings.get_float(["notification_height"]),
 			time=self.main._settings.get_int(["notification_time"]))
@@ -152,7 +151,6 @@ class TCMD():
 		self.main.send_msg(self.gEmo('clock') + gettext(" Notification time is now %(time)dmins.", time=self.main._settings.get_int(['notification_time'])),chatID=chat_id)
 
 	def cmdAbort(self,chat_id,**kwargs):
-		self.main.track_action("command/abort")
 		if self.main._printer.is_printing():
 			self.main.send_msg(self.gEmo('question') + gettext(" Really abort the currently running print?"), responses=[gettext("Stop print"), gettext("Cancel")],chatID=chat_id)
 		else:
@@ -167,13 +165,11 @@ class TCMD():
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 							
 	def cmdShutup(self,chat_id,**kwargs):
-		self.main.track_action("command/shutup")
 		if chat_id not in self.main.shut_up:
 			self.main.shut_up[chat_id] = True
 		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished." + self.gEmo('shutup')+" Use /imsorrydontshutup to let me talk again before that. "),chatID=chat_id)
 
 	def cmdNShutup(self,chat_id,**kwargs):
-		self.main.track_action("command/imsorrydontshutup")
 		if chat_id in self.main.shut_up:
 			del self.main.shut_up[chat_id]
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id)
@@ -182,7 +178,6 @@ class TCMD():
 		self.main.send_msg(self.gEmo('info') + " Use /list to get a list of files and click the command beginning with /print after the correct file.",chatID=chat_id)
 
 	def cmdRunPrint(self,chat_id,parameter,**kwargs):
-		self.main.track_action("command/print")
 		self._logger.debug("Looking for hash: %s", parameter)
 		destination, file = self.find_file_by_hash(parameter)
 		self._logger.debug("Destination: %s", destination)
@@ -217,22 +212,19 @@ class TCMD():
 		self.main.send_msg(self.gEmo('rocket') + gettext(" Started the print job."),chatID=chat_id)
 
 	def cmdList(self,chat_id,**kwargs):
-		self.main.track_action("command/list")
 		files = self.get_flat_file_tree()
 		self.main.send_msg(self.gEmo('save') + " File List:\n\n" + "\n".join(files) + "\n\n"+self.gEmo('info')+" You can click the command beginning with /print after a file to start printing this file.",chatID=chat_id)
 
 	def cmdUpload(self,chat_id,**kwargs):
-		self.main.track_action("command/upload_command_that_tells_the_user_to_just_send_a_file")
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
 
 	def cmdSys(self,chat_id,**kwargs):
-		self.main.track_action("command/sys")
 		message = self.gEmo('info') + "You have to pass a SysCommand. The following SysCommands are known.\n(Click to execute)\n\n"
 		actions = self.main._settings.global_get(['system','actions'])
 		for action in actions:
 			if 'action' in action:
 				if action['action'] != "divider":
-					message += "/sys_" + action['action'] + "\n\n"
+					message += action['name'] + "\n/sys_" + action['action'] + "\n"
 		self.main.send_msg(message,chatID=chat_id)
 
 	def cmdSysReq(self,chat_id,parameter,**kwargs):
@@ -274,9 +266,34 @@ class TCMD():
 			self._logger.warn("Command failed: %s" % e)
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception!",chatID = chat_id)
 
+	def cmdCtrl(self,chat_id,**kwargs):
+		self.main.track_action("command/ctrl")
+		message = self.gEmo('info') + "You have to pass a Printer Control. The following Printer Controls are known.\n(Click to execute)\n\n"
+		actions = self.get_controls_recursively()
+		for action in actions:
+			message += action['name'] + "\n/ctrl_" + action['name'].replace(" ","_") + "\n"
+		self.main.send_msg(message,chatID=chat_id)
+
+	def cmdCtrlRun(self,chat_id,parameter,**kwargs):
+		if parameter is None or parameter is "":
+			self.cmdCtrl(chat_id, **kwargs)
+			return
+		param = parameter.replace('_',' ')
+		actions = self.get_controls_recursively()
+		if any(d['name'] == param for d in actions):
+			command = (d['command'] for d in actions if d['name'] == param).next()
+			if type(command) is type([]):
+				for key in command:
+					self.main._printer.commands(key)
+			else:
+				self.main._printer.commands(command)
+			self.main.send_msg(self.gEmo('check') + " Control ctrl_" + param + " executed." ,chatID=chat_id)
+		else:
+			self.main.send_msg(self.gEmo('warning') + " Control ctrl_" + param + " not found." ,chatID=chat_id)
+
 	def cmdHelp(self,chat_id,**kwargs):
 		self.main.track_action("command/help")
-		self.main.send_msg(self.gEmo('info') + gettext(" You can use following commands:\n"
+		self.main.send_msg(self.gEmo('info') + gettext(" You can use following commands:\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
 		                           "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
@@ -284,7 +301,9 @@ class TCMD():
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/list - Lists all the files available for printing and lets you start printing them.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
-		                           "/upload - You can just send me a gcode file to save it to my library."),chatID=chat_id)
+		                           "/upload - You can just send me a gcode file to save it to my library."
+		                           "/sys - Execute Octoprint System Comamnds"
+		                           "/ctrl - Use self defined controls from Octoprint"),chatID=chat_id)
 
 	def get_flat_file_tree(self):
 		tree = self.main._file_manager.list_files(recursive=True)
@@ -323,3 +342,19 @@ class TCMD():
 			if tree[key]['hash'].startswith(hash):
 				return base+key
 		return None
+
+	def get_controls_recursively(self, tree = None):
+		array = []
+		if tree == None:
+			tree = self.main._settings.global_get(['controls'])
+		for key in tree:
+			if type(key) is type({}):
+				if 'children' in key:
+					array.extend(self.get_controls_recursively(key['children']))
+				elif ('commands' in key or 'command' in key) and not 'confirm' in key and not 'regex' in key and not 'input' in key and not 'script' in key:
+					# rename 'commands' to 'command' so its easier to handle later on
+					newKey = {}
+					newKey['name'] = key['name']
+					newKey['command'] = key['command'] if 'command' in key else key['commands']
+					array.append(newKey)
+		return array

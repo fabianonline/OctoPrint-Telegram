@@ -146,9 +146,9 @@ class TelegramListener(threading.Thread):
 							if command not in self.main.tcmd.commandDict:
 								command = message['message']['text']
 								parameter = message['message']['reply_to_message']['text']
-						# if command is '/print_', get the hash as parameter
-						elif "/print_" in command or "/sys_" in command:
-							parameter = command.split('_')[1]
+						# if command is '/print_', '/sys_' or '/ctrl_', get the parameter
+						elif "/print_" in command or "/sys_" in command or "/ctrl_" in command:
+							parameter = '_'.join(command.split('_')[1:])
 							command = command.split('_')[0] + "_"
 						self._logger.info("Got a command: '" + command + "' with parameter: '" + parameter + "' in chat " + str(message['message']['chat']['id']))
 						# is command  known? 
@@ -160,11 +160,14 @@ class TelegramListener(threading.Thread):
 						# check if user is allowed to execute the command
 						if self.isCommandAllowed(chat_id,from_id,command):
 							# messageRespondID is needed to send command replys only to the sender
-							# if message is from a chat
+							# if message is from a group
 							self.main.messageResponseID = message['message']['message_id']
+							# Track command
+							if command.startswith("/"):
+								self.track_action("command/" + comamnd[1:])
 							# execute command
 							self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter)
-							# we dont need the ID anymore
+							# we dont need the messageResponseID anymore
 							self.main.messageResponseID = None
 						else:
 							# user was not alloed to execute this command
@@ -179,7 +182,7 @@ class TelegramListener(threading.Thread):
 							from_id = str(message['message']['from']['id'])
 						# is /upload allowed?
 						if self.isCommandAllowed(chat_id,from_id,'/upload'):
-							self.main.track_action("command/upload")
+							self.main.track_action("command/upload_exec")
 							try:
 								file_name = message['message']['document']['file_name']
 								if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
@@ -187,9 +190,9 @@ class TelegramListener(threading.Thread):
 									continue
 								# download the file
 								target_filename = "telegram_" + file_name
-								requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 								# for parameter no_markup see _send_edit_msg()
 								self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id, noMarkup=True)
+								requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 								data = self.main.get_file(message['message']['document']['file_id'])
 								stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
 								self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
@@ -782,15 +785,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				del self.chats[strId]
 				# do self._settings.save() here???????
 			return json.dumps({'chats':{k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
-		
-	def track_action(self, action):
-		if not self._settings.get_boolean(["tracking_activated"]):
-			return
-		if self._settings.get(["tracking_token"]) is None:
-			token = "".join(random.choice("abcdef0123456789") for i in xrange(16))
-			self._settings.set(["tracking_token"], token)
-		params = {'idsite': '3', 'rec': '1', 'url': 'http://octoprint-telegram/'+action, 'action_name': ("%20/%20".join(action.split("/"))), '_id': self._settings.get(["tracking_token"])}
-		threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params}).run()
 
 ##########
 ### Telegram API-Functions
@@ -1003,6 +997,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data = output.getvalue()
 			output.close()
 		return data
+	def track_action(self, action):
+		if not self._settings.get_boolean(["tracking_activated"]):
+			return
+		if self._settings.get(["tracking_token"]) is None:
+			token = "".join(random.choice("abcdef0123456789") for i in xrange(16))
+			self._settings.set(["tracking_token"], token)
+		params = {'idsite': '3', 'rec': '1', 'url': 'http://octoprint-telegram/'+action, 'action_name': ("%20/%20".join(action.split("/"))), '_id': self._settings.get(["tracking_token"])}
+		threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params}).run()
 
 __plugin_name__ = "Telegram Notifications"
 __plugin_implementation__ = TelegramPlugin()
