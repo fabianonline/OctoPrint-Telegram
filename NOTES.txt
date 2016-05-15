@@ -44,6 +44,8 @@
 	  ! after print start wait for nozzel and bed heated befor starting print notification
 	  		times are from octoprint so there has to be own counter??? :(
 
+	    check systems.actions[].confirm when doing sysCommand
+
 ### Watchlist
 
 	Issue #14 solved?

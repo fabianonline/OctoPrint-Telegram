@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import logging, sarge
+import logging, sarge, hashlib
 import octoprint.filemanager
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
@@ -79,7 +79,7 @@ class TCMD():
 		self.main = main
 		self.gEmo = self.main.gEmo
 		self.tmpSysCmd = {}
-		self._logger = main._logger.getChild("listener")
+		self._logger = main._logger.getChild("TCMD")
 		self.commandDict = {
 			gettext("Yes"): {'cmd': self.cmdYes, 'bind_none': True},
 			gettext("Cancel"): {'cmd': self.cmdNo, 'bind_none': True},
@@ -93,7 +93,7 @@ class TCMD():
 			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print'},
 			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/print'},
 			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print'},
-			gettext("Exec SysCommand"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys'},
+			gettext("Do System Command"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys'},
 			'/print_':  {'cmd': self.cmdRunPrint, 'bind_cmd': '/print'},
 			'/test':  {'cmd': self.cmdTest},
 			'/status':  {'cmd': self.cmdStatus},
@@ -219,12 +219,15 @@ class TCMD():
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
 
 	def cmdSys(self,chat_id,**kwargs):
-		message = self.gEmo('info') + "You have to pass a SysCommand. The following SysCommands are known.\n(Click to execute)\n\n"
-		actions = self.main._settings.global_get(['system','actions'])
-		for action in actions:
-			if 'action' in action:
-				if action['action'] != "divider":
-					message += action['name'] + "\n/sys_" + action['action'] + "\n"
+		message = self.gEmo('info') + " You have to pass a System Command. The following System Commands are known.\n(Click to execute)\n\n"
+		empty = True
+		for action in self.main._settings.global_get(['system','actions']):
+			empty = False
+			if action['action'] != "divider":
+				message += action['name'] + "\n/sys_" + self.hashMe(action['action'], 6) + "\n"
+			else:
+				message += "---------------------------\n"
+		if empty: message += "No System Commands found..."
 		self.main.send_msg(message,chatID=chat_id)
 
 	def cmdSysReq(self,chat_id,parameter,**kwargs):
@@ -232,11 +235,12 @@ class TCMD():
 			self.cmdSys(chat_id, **kwargs)
 			return
 		actions = self.main._settings.global_get(['system','actions'])
-		if any(d['action'] == parameter for d in actions if 'action' in d):
+		command = next((d for d in actions if 'action' in d and self.hashMe(d['action'], 6) == parameter) , False)
+		if command :
 			self.tmpSysCmd.update({chat_id: parameter})
-			self.main.send_msg(self.gEmo('question') + " Really execute sys_" + str(parameter) + "?",responses=[gettext("Exec SysCommand"), gettext("Cancel")],chatID=chat_id)
+			self.main.send_msg(self.gEmo('question') + " Really execute "+command['name']+"?",responses=[gettext("Do System Command"), gettext("Cancel")],chatID=chat_id)
 			return
-		self.main.send_msg(self.gEmo('warning') + " Sorry, i don't konw this sysCommand.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id)
 
 	def cmdSysRun(self,chat_id,**kwargs):
 		if chat_id not in self.tmpSysCmd:
@@ -244,7 +248,7 @@ class TCMD():
 		parameter = self.tmpSysCmd[chat_id]
 		del self.tmpSysCmd[chat_id]
 		actions = self.main._settings.global_get(['system','actions'])
-		action = (i for i in actions if i['action'] == parameter).next()
+		action = next((i for i in actions if self.hashMe(i['action'], 6) == parameter), False)
 		### The following is taken from OctoPrint/src/octoprint/server/api/__init__.py -> performSystemAction()
 		async = action["async"] if "async" in action else False
 		ignore = action["ignore"] if "ignore" in action else False
@@ -261,38 +265,37 @@ class TCMD():
 					self._logger.warn("Command failed with return code %i: %s" % (returncode, stderr_text))
 					self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id)
 					return
-			self.main.send_msg(self.gEmo('check') + " Command sys_" + parameter + " executed." ,chatID=chat_id)
+			self.main.send_msg(self.gEmo('check') + " Command " + action["name"] + " executed." ,chatID=chat_id)
 		except Exception, e:
 			self._logger.warn("Command failed: %s" % e)
-			self.main.send_msg(self.gEmo('warning') + " Command failed with exception!",chatID = chat_id)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id)
 
 	def cmdCtrl(self,chat_id,**kwargs):
-		self.main.track_action("command/ctrl")
-		message = self.gEmo('info') + "You have to pass a Printer Control. The following Printer Controls are known.\n(Click to execute)\n\n"
-		actions = self.get_controls_recursively()
-		for action in actions:
-			message += action['name'] + "\n/ctrl_" + action['name'].replace(" ","_") + "\n"
+		message = self.gEmo('info') + " You have to pass a Printer Control Command. The following Printer Controls are known.\n(Click to execute)\n\n"
+		empty = True
+		for action in self.get_controls_recursively():
+			empty=False
+			message += action['name'] + "\n/ctrl_" + action['hash'] + "\n"
+		if empty: message += "No Printer Control Command found..."
 		self.main.send_msg(message,chatID=chat_id)
 
 	def cmdCtrlRun(self,chat_id,parameter,**kwargs):
 		if parameter is None or parameter is "":
 			self.cmdCtrl(chat_id, **kwargs)
 			return
-		param = parameter.replace('_',' ')
 		actions = self.get_controls_recursively()
-		if any(d['name'] == param for d in actions):
-			command = (d['command'] for d in actions if d['name'] == param).next()
-			if type(command) is type([]):
-				for key in command:
+		command = next((d for d in actions if d['hash'] == parameter), False)
+		if command:
+			if type(command['command']) is type([]):
+				for key in command['command']:
 					self.main._printer.commands(key)
 			else:
-				self.main._printer.commands(command)
-			self.main.send_msg(self.gEmo('check') + " Control ctrl_" + param + " executed." ,chatID=chat_id)
+				self.main._printer.commands(command['command'])
+			self.main.send_msg(self.gEmo('check') + " Control Command " + command['name'] + " executed." ,chatID=chat_id)
 		else:
-			self.main.send_msg(self.gEmo('warning') + " Control ctrl_" + param + " not found." ,chatID=chat_id)
+			self.main.send_msg(self.gEmo('warning') + " Control Command ctrl_" + parameter + " not found." ,chatID=chat_id)
 
 	def cmdHelp(self,chat_id,**kwargs):
-		self.main.track_action("command/help")
 		self.main.send_msg(self.gEmo('info') + gettext(" You can use following commands:\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
@@ -343,18 +346,25 @@ class TCMD():
 				return base+key
 		return None
 
-	def get_controls_recursively(self, tree = None):
+	def get_controls_recursively(self, tree = None, base = "", first = ""):
 		array = []
 		if tree == None:
 			tree = self.main._settings.global_get(['controls'])
 		for key in tree:
 			if type(key) is type({}):
+				if base == "":
+					first = " "+key['name']+" "
 				if 'children' in key:
-					array.extend(self.get_controls_recursively(key['children']))
+					array.extend(self.get_controls_recursively(key['children'], base + " " + key['name'],first))
 				elif ('commands' in key or 'command' in key) and not 'confirm' in key and not 'regex' in key and not 'input' in key and not 'script' in key:
 					# rename 'commands' to 'command' so its easier to handle later on
 					newKey = {}
-					newKey['name'] = key['name']
-					newKey['command'] = key['command'] if 'command' in key else key['commands']
+					command = key['command'] if 'command' in key else key['commands']
+					newKey['name'] = base.replace(first,"") + " " + key['name']
+					newKey['hash'] = self.hashMe(base + " " + key['name'] + str(command), 6)
+					newKey['command'] = command
 					array.append(newKey)
 		return array
+
+	def hashMe(self, text, length):
+		return hashlib.md5(text).hexdigest()[0:length]

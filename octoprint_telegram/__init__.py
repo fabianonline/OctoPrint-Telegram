@@ -6,6 +6,7 @@ from flask.ext.babel import gettext
 from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
+from .emojiDict import telegramEmojiDict # dict of known notification messages
 
 ####################################################
 #        TelegramListener Thread Class
@@ -164,7 +165,7 @@ class TelegramListener(threading.Thread):
 							self.main.messageResponseID = message['message']['message_id']
 							# Track command
 							if command.startswith("/"):
-								self.track_action("command/" + comamnd[1:])
+								self.main.track_action("command/" + command[1:])
 							# execute command
 							self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter)
 							# we dont need the messageResponseID anymore
@@ -344,6 +345,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'upload': u'\U0001F4E5',
 			'check': u'\U00002705'
 		}
+		self.emojis.update(telegramEmojiDict)
 	# all emojis will be get via this method to disable them globaly by the corrosponding setting	
 	# so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]
 	def gEmo(self,key):

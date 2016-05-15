@@ -92,9 +92,6 @@ from flask.ext.babel import gettext
 #
 #####################################################################################################################################################
 
-
-
-
 telegramMsgDict = {
 			'PrinterStart': {
 				'text': "{emo[rocket]} " + gettext("Hello. I'm online and ready to receive your commands."),
@@ -131,6 +128,17 @@ telegramMsgDict = {
 			}
 		}
 
+# class to handle emojis on notifigation message format
+class EmojiFormatter():
+	def __init__(self,main):
+		self.main = main
+
+	def __format__(self,format):
+		if format in self.main.emojis:
+			return self.main.gEmo(format).encode("utf-8")
+		return ""
+
+
 class TMSG():
 	def __init__(self, main):
 		self.main = main
@@ -138,7 +146,7 @@ class TMSG():
 		self.last_notification_time = 0
 		self.track = True
 		self.z = ""
-		self._logger = main._logger.getChild("listener")
+		self._logger = main._logger.getChild("TMSG")
 		
 		self.msgCmdDict = {
 			'PrinterStart': self.msgPrinterStart_Shutdown,
@@ -206,9 +214,9 @@ class TMSG():
 	def _sendNotification(self, payload, **kwargs):
 		status = self.main._printer.get_current_data()
 		kwargs['with_image'] = self.main._settings.get(['messages',str(kwargs['event']),'image'])
-		self._logger.debug(str(status))
+		self._logger.debug("Printer Status" + str(status))
+		# define locals for string formatting
 		z = self.z
-		# is the if useful? i got an error sometimes
 		temps = self.main._printer.get_current_temperatures()
 		self._logger.debug("TEMPS - " + str(temps))
 		bed_temp = temps['bed']['actual'] if 'bed' in temps else 0.0
@@ -225,11 +233,13 @@ class TMSG():
 		if "file" in payload: file = payload["file"]
 		if "gcode" in payload: file = payload["gcode"]
 		if "filename" in payload: file = payload["filename"]
-		emo = {}
-		for k in self.main.emojis:
-			emo[k] = self.main.gEmo(k).encode("utf-8")
-
-		message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(**locals())
+		emo = EmojiFormatter(self.main)
+		try:
+			# call format with emo class object to handle emojis, otherwise use locals
+			message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())
+		except Exception as ex:
+			self._logger.debug("Exception on formatting message: " + str(ex))
+			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+kwargs['event']+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + kwargs['event'] + "'."
 		self._logger.debug("Sending Notification: " + message)
 		self.main.send_msg(message, **kwargs)
 
@@ -237,6 +247,8 @@ class TMSG():
 			self.main.track_action("notification/" + kwargs['event'])
 		self.track = True
 
+	# Helper to determine if notification will be send on gcode ZChange event
+	# depends on notification time and notification height
 	def is_notification_necessary(self, new_z, old_z):
 		timediff = self.main._settings.get_int(['notification_time'])
 		if timediff and timediff > 0:
