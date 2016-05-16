@@ -217,6 +217,7 @@ class TMSG():
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z
+		event = kwargs['event']
 		temps = self.main._printer.get_current_temperatures()
 		self._logger.debug("TEMPS - " + str(temps))
 		bed_temp = temps['bed']['actual'] if 'bed' in temps else 0.0

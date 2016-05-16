@@ -10,8 +10,7 @@ $(function() {
 
         // assign the injected parameters, e.g.:
         // self.loginStateViewModel = parameters[0];
-        //if(parameters!=null)
-            self.settings = parameters[0];
+        self.settings = parameters[0];
         //else
          //   self.settings=self.settings;
         console.log(String(self.settings));
@@ -41,10 +40,12 @@ $(function() {
         self.isloading = ko.observable(false);
         self.errored = ko.observable(false);
         self.token_state_str = ko.observable("Unknown");
-    	self.editChatDialog = undefined;        
+    	self.editChatDialog = undefined;  
+        self.varInfoDialog = undefined;      
+        self.emoInfoDialog = undefined;  
     	self.currChatID = "Unknown";
         self.currChatTitle = ko.observable("Unknown");
-        self.bind_cmd = {};
+        self.bind_cmd = {}; 
     
         self.requestData = function(ignore,update) {
 
@@ -88,7 +89,6 @@ $(function() {
             self.bind['bind_text'] = response.bind_text;
             $("#telegram_msg_list").empty();
             keys = self.bind["notifications"].sort();
-            
             for(var id in keys) {
                 bind_text = '';
                 if(keys[id] in self.bind['bind_text']){
@@ -98,13 +98,31 @@ $(function() {
                         bind_text += "<br>" + ks[k];
                     bind_text += "</small></span>";
                 }
-
-                $('#telegram_msg_list').append('<div class="control-group" id="telegramMsgText'+self.msgCnt+'"><label class="control-label">... '+keys[id]+ bind_text + '</label><div class="controls"><textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea><label class="checkbox"><input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image" />Send with image</label></div></div>');
+                img = "camera";
+                if(self.settings.settings.plugins.telegram.messages[keys[id]].image()){
+                    img = "ban-circle";
+                    btn = "warning";
+                    txt = "No Image";
+                }
+                else{
+                    img = "camera";
+                    btn = "success";
+                    txt = "Send Image";
+                }
+                $('#telegram_msg_list').append('<div class="control-group" id="telegramMsgText'+self.msgCnt+'"><label class="control-label">... '+keys[id]+ bind_text + '</label><div class="controls text-right"><textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea><label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'"><input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image, click: toggleImg(\''+self.msgCnt+'\')"/><i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> <span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label></div></div>');
                 ko.applyBindings(self, $("#telegramMsgText"+self.msgCnt++)[0]);
             }
             self.isloading(false);
         }
-    
+
+        self.toggleImg = function(data){
+            $('#chkImg'+data).toggleClass("icon-ban-circle icon-camera");
+            $('#chkBtn'+data).toggleClass("btn-success btn-warning");
+            if($('#chkTxt'+data).text()==="Send Image")
+                $('#chkTxt'+data).text("No Image");
+            else
+                $('#chkTxt'+data).text("Send Image");
+        }
 
         self.updateChat = function(data) {
             self.requestData(true,true);
@@ -174,7 +192,7 @@ $(function() {
 
             //ko.cleanNode($("#telegram-notify-chkbox-box")[0]);
             $("#telegram-notify-chkbox").empty();
-            $('#telegram-notify-chkbox').append('<input id="telegram-notify-chkbox-box" type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\'send_notifications\']"> Send notifications<span class=\"help-block\"><small>After enabling this option, the enabled notifications will be received. You have to enable individual notifications by clicking the blue checkbox in the list after closing this dialog.</small></span>');
+            $('#telegram-notify-chkbox').append('<input id="telegram-notify-chkbox-box" type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\'send_notifications\']"> Send notifications<span class=\"help-block\"><small>After enabling this option, the enabled notifications will be received. You have to enable individual notifications by clicking the blue notify button in the list after closing this dialog.</small></span>');
             ko.applyBindings(self, $("#telegram-notify-chkbox-box")[0]);
 
             self.currChatTitle(data.title);
@@ -183,12 +201,12 @@ $(function() {
             $('#telegram-groupNotify-hint').empty();
             $('#telegram-user-allowed-chkbox').empty();
             if(!data.private){
-                $('#telegram-groupNotify-hint').append("After enabling this option, EVERY user of this group is allowed to send enabled commands. You have to set permissions for individual commands by clicking the blue checkbox in the list after closing this dialog. If 'Allow user commands' is enabled, these users still use their private settings in addition to the group settings.");
+                $('#telegram-groupNotify-hint').append("After enabling this option, EVERY user of this group is allowed to send enabled commands. You have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog. If 'Allow user commands' is enabled, these users still use their private settings in addition to the group settings.");
                 $('#telegram-user-allowed-chkbox').append("<div class=\"control-group\"><div class=\"controls\"><label class=\"checkbox\"><input id=\"telegram-user-allowed-chkbox-box\" type=\"checkbox\" data-bind=\"checked: settings.settings.plugins.telegram.chats['"+data['id']+"']['allow_users']\"> Allow user commands <span class=\"help-block\"><small>When this is enabled, users with command access are allowed to send their individual enabled commands from this group. No other user in this group is allowed to send commands.</small></span></label></div></div>");
                 ko.applyBindings(self, $("#telegram-user-allowed-chkbox-box")[0]);
             }
             else
-                $('#telegram-groupNotify-hint').append("After enabling this option, you have to set permissions for individual commands by clicking the blue checkbox in the list after closing this dialog.");
+                $('#telegram-groupNotify-hint').append("After enabling this option, you have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog.");
             
 	        self.editChatDialog.modal("show");
         }
@@ -212,7 +230,6 @@ $(function() {
                 $('#tele-edit-control-label').append("<strong>Get Notification at...</strong>")
             self.editCmdDialog.modal("show");
         }
-        
 
         self.delChat = function(data) {
             if (data === undefined) return;
@@ -247,6 +264,8 @@ $(function() {
             self.testToken();
             self.editChatDialog = $("#settings-telegramDialogEditChat");
             self.editCmdDialog = $("#settings-telegramDialogEditCommands");
+            self.varInfoDialog = $('#settings-telegramDialogVarInfo');
+            self.emoInfoDialog = $('#settings-telegramDialogEmoInfo');
         }
 
         self.onServerDisconnect = function(){

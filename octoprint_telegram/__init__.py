@@ -87,8 +87,8 @@ class TelegramListener(threading.Thread):
 					self.main.chats = self.main._settings.get(["chats"])
 					chat = message['message']['chat']
 					chat_id = str(chat['id'])
-					data = {} # empty data for new user
-					# if we know the user or chat, load the data
+					data = self.main.newChat # data for new user
+					# if we know the user or chat, overwrite data with user data
 					if chat_id in self.main.chats:
 						data = self.main.chats[chat_id]
 					# update data or get data for new user
@@ -111,18 +111,18 @@ class TelegramListener(threading.Thread):
 						from_id = str(message['message']['from']['id'])
 						# if group accepts only commands from known users (allow_users = true, accept_commands=false)
 						# and user is not in known chats, then he is unknown and we dont wnat to listen to him.
-						if self.main.chats[chat_id]['allow_users'] and from_id not in self.main.chats and not self.main.chats[chat_id]['accept_commands']:
-							self._logger.warn("Previous command was from an unknown user.")
-							self.main.send_msg("I don't know you! Certainly you are a nice Person " + self.gEmo('heart'),chatID=chat_id)
-							continue
+						if chat_id in self.main.chats:
+							if self.main.chats[chat_id]['allow_users'] and from_id not in self.main.chats and not self.main.chats[chat_id]['accept_commands']:
+								self._logger.warn("Previous command was from an unknown user.")
+								self.main.send_msg("I don't know you! Certainly you are a nice Person " + self.gEmo('heart'),chatID=chat_id)
+								continue
 					# if we dont know the user or group, create new user
 					# send welcome message and skip message
 					if chat_id not in self.main.chats:
-						data = self.main.newChat
 						self.main.chats[chat_id] = data
 						self.main.send_msg(self.gEmo('info') + "Now i know you. Before you can do anything, go to OctoPrint Settings and edit some rights.",chatID=chat_id)
 						kwargs = {'chat_id':int(chat_id)}
-						threading.Thread(target=self.get_usrPic, kwargs=kwargs).run()
+						threading.Thread(target=self.main.get_usrPic, kwargs=kwargs).run()
 						self._logger.debug("Got new User")
 						continue
 					# if octoprint just started we only check connection. so discard messages
@@ -343,7 +343,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'warning': u'\U000026A0',
 			'enter': u'\U0000270F',
 			'upload': u'\U0001F4E5',
-			'check': u'\U00002705'
+			'check': u'\U00002705',
+			'lamp': u'\U0001F4A1',
+			'movie': u'\U0001F3AC',
+			'finish': u'\U0001F3C1',
+			'cam': u'\U0001F3A6',
+			'hooray': u'\U0001F389',
+			'error': u'\U000026D4',
+			'play': u'\U000025B6',
+			'stop': u'\U000025FC'
 		}
 		self.emojis.update(telegramEmojiDict)
 	# all emojis will be get via this method to disable them globaly by the corrosponding setting	
@@ -696,7 +704,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				current=self._plugin_version,
 				user="fabianonline",
 				repo="OctoPrint-Telegram",
-				pip="https://github.com/fabianonline/OctoPrint-Telegram/archive/{target}.zip"
+				pip="https://github.com/fabianonline/OctoPrint-Telegram/archive/{target_version}.zip"
 			)
 		)
 
