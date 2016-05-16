@@ -60,7 +60,8 @@
 				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" style="text-decoration:none"  title="Edit command rights">
 				        		<i class="icon-off icon-large"></i>
 				        	</a>
-				        	<span data-bind="visible: !accept_commands"><i class="icon-remove icon-large"></i></span>
+				        	<span data-bind="visible: !accept_commands && !allow_users"><i class="icon-remove icon-large"></i></span>
+				        	<span data-bind="visible: !accept_commands && allow_users"><i class="icon-off icon-large"></i></span>
 			        	</span>
 			        	<span data-bind="visible: newUsr">
 				        	<span class="muted" ><small>Save</small></span>

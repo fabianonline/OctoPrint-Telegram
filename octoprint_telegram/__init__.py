@@ -737,9 +737,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def on_api_get(self, request):
 		# got an user-update with this command. so lets do that
-		if 'id' in request.args and 'cmd' in request.args and 'note' in request.args:
+		if 'id' in request.args and 'cmd' in request.args and 'note' in request.args  and 'allow' in request.args:
 			self.chats[request.args['id']]['accept_commands'] = self.str2bool(str(request.args['cmd']))
 			self.chats[request.args['id']]['send_notifications'] = self.str2bool(str(request.args['note']))
+			self.chats[request.args['id']]['allow_users'] = self.str2bool(str(request.args['allow']))
 			self._logger.debug("Updated chat - " + str(request.args['id']))
 		# user img request, return default if no pic found or group_default if gr
 		if 'id' in request.args and 'img' in request.args:
