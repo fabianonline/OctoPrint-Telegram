@@ -94,11 +94,11 @@ from flask.ext.babel import gettext
 
 telegramMsgDict = {
 			'PrinterStart': {
-				'text': "{emo[rocket]} " + gettext("Hello. I'm online and ready to receive your commands."),
+				'text': "{emo:rocket} " + gettext("Hello. I'm online and ready to receive your commands."),
 				'image': False,
 			},
 			'PrinterShutdown': {
-				'text': "{emo[octo]} {emo[shutdown]} " + gettext("Shutting down. Goodbye."),
+				'text': "{emo:octo} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
 			},
 			'PrintStarted': {
