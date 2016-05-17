@@ -48,8 +48,8 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  list - Lists all the files available for printing and lets you start printing them.
  print - Lets you start a print. A confirmation is required.
  upload - You can just send me a gcode file to save it to my library.
- sys - Execute Octoprint System Comamnds
- ctrl - Use self defined controls from Octoprint
+ sys - Execute Octoprint System Commands.
+ ctrl - Use self defined controls from Octoprint.
  ```
 
     ![Screenshot](../screenshots/newbot4.png?raw)
