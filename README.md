@@ -40,31 +40,33 @@ To allow the plugin to send messages via telegram, you have to register a telegr
     ![Screenshot](../screenshots/newbot3.png?raw)
  * Tell the Botfather which commands are available. This enables Telegram to auto-complete commands to your bot. Send `/setcommands` to @botfather, select the bot and then send this (one message with multiple lines):
  ```
- abort - Aborts the currently running print.
+ abort - Aborts the currently running print. A confirmation is required.
  shutup - Disables automatic notifications till the next print ends.
  imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.
- status - Sends the current status including a photo.
- help - Displays the help.
- settings - Display and modify settings.
- list - Show files and select them for printing.
- upload - Upload a gcode file.
+ status - Sends the current status including a current photo.
+ settings - Displays the current notification settings and allows you to change them.
+ list - Lists all the files available for printing and lets you start printing them.
+ print - Lets you start a print. A confirmation is required.
+ upload - You can just send me a gcode file to save it to my library.
+ sys - Execute Octoprint System Commands.
+ ctrl - Use self defined controls from Octoprint.
  ```
 
     ![Screenshot](../screenshots/newbot4.png?raw)
 * Now enter Octoprint's settings and select Telegram.
 * Enter the token you got from BotFather into the field "Telegram Token".
-* Save and exit the settings.
+* Hit the "Test Token" button. It should report success.
 * Send a message (any message will do) to your new bot.
-* Again enter the settings for this plugin.
-* Underneath the "Chat-ID" field will be a block about "known chats". Your Telegram account will be listed there. Copy it's ID (the number at the beginning of the line) into the text field. This is necessary to let the plugin know which telegram user shall get the notifications and is allowed to control Octoprint via Telegram.
-* Now check the configuration.
+* Now hit reload under the known user list. The chat should appear in the list.
+* Save settings to accept new user(s) in list
+* Now reopen octoprit settings and check/set the configurations for new users.
 
 
 ## Configuration
 
 * Configuration is done via Octoprint's settings dialog.
-* Token: Enter your bot token here. You got this from @botfather, when you created your bot there. After saving and re-opening of the settings, the current connection status will be shown.
-* Chat-ID: Which Telegram chat the plugin uses for communication. Commands from other chats are ignored, so you don't have to worry about other people controlling your Octoprint. Known chats (chats that have been active during the time octoprint is running) are listed below - find your chat and copy the ID into this field. If you're missing a chat in the list of known chats, close the settings, send any message to your bot and then re-open the settings. It should now be listed.
+* Token: Enter your bot token here. You got this from @botfather, when you created your bot there. After hitting 'Test Token', the current connection status will be shown.
+* Known Chats: This list shows all known users. Here you can edit their rights and set notifications.
 * Send notification every: Whenever the current z value grows by this value (or more) or the given time has passed since the last notification, a message will be sent.
  * Setting the height to 1.0mm would send messages at z=1.0, z=2.0, z=3.0 and so on.
  * Having the height at 1.0mm with a layer height of 0.3 would send messages at z=1.2, z=2.4, z=3.6 and so on.
