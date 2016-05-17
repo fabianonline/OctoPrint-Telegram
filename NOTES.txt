@@ -1,3 +1,7 @@
+### Migration
+	  ! on message migrate look for binding/ no setting changes
+	  	migrate message markdown
+
 ### CleanUp
 		gettext("...")
 		css
@@ -37,7 +41,7 @@
 
 ### Known Bugs (more to come :D)
 
-	  ! on message migrate look for binding/ no setting changes
+	 	token test messages in settings (connection state not up to date)
 
 	  ! update issues
 

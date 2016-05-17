@@ -42,10 +42,12 @@ $(function() {
         self.token_state_str = ko.observable("Unknown");
     	self.editChatDialog = undefined;  
         self.varInfoDialog = undefined;      
-        self.emoInfoDialog = undefined;  
+        self.emoInfoDialog = undefined;
+        self.mupInfoDialog = undefined;  
     	self.currChatID = "Unknown";
         self.currChatTitle = ko.observable("Unknown");
         self.bind_cmd = {}; 
+        self.markupFrom = [];
     
         self.requestData = function(ignore,update) {
 
@@ -109,11 +111,62 @@ $(function() {
                     btn = "success";
                     txt = "Send Image";
                 }
-                $('#telegram_msg_list').append('<div class="control-group" id="telegramMsgText'+self.msgCnt+'"><label class="control-label">... '+keys[id]+ bind_text + '</label><div class="controls text-right"><textarea rows="4" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea><label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'"><input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image, click: toggleImg(\''+self.msgCnt+'\')"/><i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> <span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label></div></div>');
+             if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="HTML"){
+                bOff = "info";
+                bHtml = "danger active";
+                bMd = "info";
+                self.markupFrom[self.msgCnt] = 'html';
+             }
+             else if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="Markdown"){
+                bOff = "info";
+                bHtml = "info";
+                bMd = "danger active";
+                self.markupFrom[self.msgCnt] = 'md';
+             }
+             else{
+                bOff = "danger active"
+                bHtml = "info"
+                bMd = "info"
+                self.markupFrom[self.msgCnt] = 'off';
+             }
+
+              var btnGrp = '<span class="muted"><small>Markup Selection<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
+              btnGrp += '<button id="off'+self.msgCnt+'" type="button" class="btn btn-'+bOff+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'off\',\''+keys[id]+'\')">Off</button>';
+              btnGrp += '<button id="HTML'+self.msgCnt+'" type="button" class="btn btn-'+bHtml+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'HTML\',\''+keys[id]+'\')">HTML</button>';
+              btnGrp += '<button id="Markdown'+self.msgCnt+'" type="button" class="btn btn-'+bMd+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'Markdown\',\''+keys[id]+'\')">MD</button>';
+              btnGrp += '</span><br>';
+
+              var btnImg = '<span class="muted"><small>Send with image?<br></small></span>';
+              btnImg += '<label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'">';
+              btnImg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image, click: toggleImg(\''+self.msgCnt+'\')"/>';
+              btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
+              btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label>';
+
+              var msgEdt = '<div class="control-group"><div class="controls " ><hr style="margin:0px 0px 0px -90px;"></div></div><div class="control-group" id="telegramMsgText'+self.msgCnt+'">';
+                    msgEdt += '<label class="control-label"><strong>'+keys[id]+ '</strong>'+bind_text + '</label>';
+                    msgEdt += '<div class="controls " >';
+                        msgEdt += '<div class="row">';
+                            msgEdt += '<div class="span9"><textarea rows="4" style="margin-left:7px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea></div>';
+                            msgEdt += '<div class="span3" style="text-align:center;">' +  btnGrp + btnImg + '</div>';
+                        msgEdt += '</div></div></div>';
+
+                $('#telegram_msg_list').append(msgEdt);
                 ko.applyBindings(self, $("#telegramMsgText"+self.msgCnt++)[0]);
             }
             self.isloading(false);
         }
+
+
+        self.toggleMarkup = function(data,sender,msg){
+            
+            if(self.markupFrom[data] !== sender){
+                $('#'+sender+data).toggleClass("btn-info btn-danger");
+                $('#'+self.markupFrom[data]+data).toggleClass("btn-info btn-danger");
+                self.settings.settings.plugins.telegram.messages[msg].markup(sender);
+            }
+            self.markupFrom[data] = sender;
+        }
+
 
         self.toggleImg = function(data){
             $('#chkImg'+data).toggleClass("icon-ban-circle icon-camera");
@@ -146,6 +199,15 @@ $(function() {
             self.isloading(false);
             self.token_state_str(response.connection_state_str);
             self.errored(!response.ok);
+            if(!response.ok){
+                $('#teleErrored').addClass("text-error");
+                $('#teleErrored').removeClass("text-success");
+            }
+            else{
+                $('#teleErrored').addClass("text-success");
+                $('#teleErrored').removeClass("text-error");
+            }
+
         }
         
         self.fromResponse = function(response) {
@@ -153,7 +215,7 @@ $(function() {
             if(response.hasOwnProperty("connection_state_str"))
                 self.connection_state_str(response.connection_state_str);
             if(response.hasOwnProperty("connection_ok"))
-                self.errored(!response.connection_ok);
+                //self.errored(!response.connection_ok);
             var entries = response.chats;
             if (entries === undefined) return;
             var array = [];
@@ -269,6 +331,7 @@ $(function() {
             self.editCmdDialog = $("#settings-telegramDialogEditCommands");
             self.varInfoDialog = $('#settings-telegramDialogVarInfo');
             self.emoInfoDialog = $('#settings-telegramDialogEmoInfo');
+            self.mupInfoDialog = $('#settings-telegramDialogMupInfo');
         }
 
         self.onServerDisconnect = function(){

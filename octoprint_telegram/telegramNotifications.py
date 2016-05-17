@@ -96,30 +96,37 @@ telegramMsgDict = {
 			'PrinterStart': {
 				'text': "{emo:rocket} " + gettext("Hello. I'm online and ready to receive your commands."),
 				'image': False,
+				'markup': "off"
 			},
 			'PrinterShutdown': {
 				'text': "{emo:octo} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
+				'markup': "off"
 			},
 			'PrintStarted': {
 				'text': gettext("Started printing {file}."),
 				'image': True,
+				'markup': "off"
 			},
 			'PrintFailed': {
 				'text': gettext("Printing {file} failed."),
 				'image': True,
+				'markup': "off"
 			},
 			'ZChange': {
 				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining."),
 				'image': True,
+				'markup': "off"
 			},
 			'PrintDone': {
 				'text': gettext("Finished printing {file}."),
 				'image': True,
+				'markup': "off"
 			},
 			'StatusNotPrinting': {
 				'text': gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
+				'markup': "off",
 				'no_setting': True
 			},
 			'StatusPrinting': {
@@ -242,6 +249,9 @@ class TMSG():
 			self._logger.debug("Exception on formatting message: " + str(ex))
 			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+kwargs['event']+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + kwargs['event'] + "'."
 		self._logger.debug("Sending Notification: " + message)
+		# Do we want to send with Markup?
+		kwargs['markup'] = self.main._settings.get(["messages",kwargs['event'],"markup"]) 
+		# finally send MSG
 		self.main.send_msg(message, **kwargs)
 
 		if self.track:

@@ -11,18 +11,22 @@
 	<div class="control-group">
 		<label class="control-label">{{ _('Test Token') }}</label>
 		<div class="controls">
-			<button class="btn" data-bind="click: testToken, visible: ! isloading()" title="Test the token"><i class="icon-key"></i>&nbsp;Test this token</button>
+			<button class="btn" data-bind="click: testToken, disable:isloading()" title="Test the token"><i class="icon-key"></i>&nbsp;Test this token</button>
 			<span class="help-inline" class="muted"> <small>Click to test token and start listener.</small></span>
-			<span class="help-block" data-bind="if: token_state_str || isloading()">Token status is:
-				<strong data-bind="text: token_state_str, visible: ! isloading()"></strong>
-				<strong data-bind="if: isloading">Testing the token, please wait...</strong>
-			</span>
+			<p><span class="help-block" data-bind="if: token_state_str || isloading()">Token status is:
+				<strong id="teleErrored" data-bind="text: token_state_str, visible: ! isloading()"></strong>
+				<strong class="text-warning" data-bind="if: isloading">Testing the token, please wait...</strong>
+			</span></p>
 		</div>
 	</div>
+	
+	<br>
+	<hr>
+
 	<h4>Known Chats</h4>
 	<div style="float:left;padding:0px 0px 0px 0px;margin:0px;position:relative;" >
 		<div style ="position:absolute;left:0px;top:0px;z-index:1010;padding:0px;width:100%;height:100%;background-color:white;" data-bind="visible: isloading()">
-		<span style ="position:absolute;left:50%;top:50%;z-index:1011;" class="icon-spinner icon-spin icon-large" title="{{ _('Request in progress...') }}"></span>
+			<span style ="position:absolute;left:50%;top:50%;z-index:1011;" class="icon-spinner icon-spin icon-large" title="{{ _('Request in progress...') }}"></span>
 		</div>
 		<table class="table table-condensed table-hover table-striped">
 		    <thead>
@@ -92,102 +96,110 @@
 			    </tr>
 		    </tbody>
 		</table>
+		<div class="control-group">
+			<label class="control-label">{{ _('Refresh Chat List') }}</label>
+			<div class="controls">
+				<div style="float:left;">
+					<button class="btn" data-bind="click: function (){ $root.requestData(true); }" title="Reload list"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
+
+				</div>
+				<div class="controls">
+					<label class="checkbox">
+						<input type="checkbox" data-bind="checked: reloadUsr" title="Check to enable auto Refresh" /> <span>Enable auto refresh (20 sec.)</span>	
+					</label>
+				</div>
+				<div style="float:left;">	
+					<span class="help-block"><small>Press this button or enable auto refresh after you send an initial random message to the bot.<br>
+					Your chat will then appear in the list.</small></span>
+				</div>
+			</div>
+		</div>
+	</div>
+	<br>
+	<br>
+	<br>
+ 	&nbsp;
+	<hr>
+
+	<h4>Notification settings</h4>
+	<div class="control-group">
+		<label class="control-label">{{ _('Send notification every') }}</label>
+		<div class="controls">
+			<div class="input-append">
+				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_height" />
+				<span class="add-on">mm</span>
+			</div>
+			<div class="input-append">
+				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_time" />
+				<span class="add-on">min</span>
+			</div>
+			<span class="help-block"><small>Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</small></span>
+		</div>
+	</div>
+	
+	<div class="control-group">
+		<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
+		<div class="controls">
+			<div class="input-append">
+				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
+				<span class="add-on">s</span>
+			</div>
+			<span class="help-block"><small>Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
+				for the head and bed to reach their final positions. Set to 0 to disable.</small></span>
+		</div>
 	</div>
 	<div class="control-group">
-		<label class="control-label">{{ _('Refresh Chat List') }}</label>
+		<label class="control-label">{{ _('Send Emojis') }}</label>
 		<div class="controls">
-			<div style="float:left;">
-				<button class="btn" data-bind="click: function (){ $root.requestData(true); }" title="Reload list"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
-
-			</div>
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: reloadUsr" title="Check to enable auto Refresh" /> <span>Enable auto refresh (20 sec.)</span>	
-				</label>
-			</div>
-			<div style="float:left;">	
-				<span class="help-block"><small>Press this button or enable auto refresh after you send an initial random message to the bot.<br>
-				Your chat will then appear in the list.</small></span>
-			</div>
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_icon" /> 
+			</label>
+			<span class="help-block"><small>Check to enable emojis in notifications and command dialogs.</small></span>
 		</div>
-	
 	</div>
- 	<div class="control-group">
+	<br>
+	<br>
+	<hr>
 
-
-		<h4>Notification settings</h4>
-		<div class="control-group">
-			<label class="control-label">{{ _('Send notification every') }}</label>
-			<div class="controls">
-				<div class="input-append">
-					<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_height" />
-					<span class="add-on">mm</span>
-				</div>
-				<div class="input-append">
-					<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_time" />
-					<span class="add-on">min</span>
-				</div>
-				<span class="help-block"><small>Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</small></span>
-			</div>
+	<h4>Messages at...</h4>
+	<div class="control-group">
+		<div class="controls form-inline">
+		{{ _('Message formatting information:') }}
+			<label class="btn-group">
+				<button title="Click to open information dialog" class="btn btn-info" data-bind="click: function() {$root.mupInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Markup') }}</button>
+				<button title="Click to open information dialog" class="btn btn-info" data-bind="click: function() {$root.varInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Variables') }}</button>
+				<button title="Click to open information dialog" class="btn btn-info" data-bind="click: function() {$root.emoInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Emojis') }}</button>
+			</label>
 		</div>
+	</div> 
+	<div id="telegram_msg_list"><!-- message settings get listed here --></div>
+	<br>
+	<br>
+	<hr>
+
+	<h4>Stuff</h4>
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
+				Allow this plugin to send anonymous usage data.
+			</label>
+			<span class="help-block"><small>I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
+			anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
+			"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
+			to me.</small></span>
+		</div>
+	</div>
+
+	<div class="control-group">
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.debug" />
+				Enable logging of debug information for this plugin to octoprint.log
+			</label>
+		</div>
+	</div>
 		
-		<div class="control-group">
-			<label class="control-label">{{ _('Delay for finished prints notification') }}</label>
-			<div class="controls">
-				<div class="input-append">
-					<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
-					<span class="add-on">s</span>
-				</div>
-				<span class="help-block"><small>Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
-					for the head and bed to reach their final positions. Set to 0 to disable.</small></span>
-			</div>
-		</div>
-		<div class="control-group">
-			<label class="control-label">{{ _('Send Emojis') }}</label>
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_icon" /> 
-				</label>
-				<span class="help-block"><small>Check to enable emojis in notifications and command dialogs.</small></span>
-			</div>
-		</div>
-
-		<h4>Messages at...</h4>
-		<div class="control-group">
-			<div class="controls">
-			{{ _('Message formatting information:') }}
-				<div class="input-append input-prepend">
-					<button title="Click to open information dialog" class="btn btn-primary" data-bind="click: function() {$root.varInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Variables') }}</button>
-					<button title="Click to open information dialog" class="btn btn-primary btn-append" data-bind="click: function() {$root.emoInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Emojis') }}</button>
-				</div>
-			</div>
-		</div> 
-		<div id="telegram_msg_list"></div>
-
-
-		<h4>Stuff</h4>
-		<div class="control-group">
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
-					Allow this plugin to send anonymous usage data.
-				</label>
-				<span class="help-block"><small>I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
-				anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
-				"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
-				to me.</small></span>
-			</div>
-		</div>
-
-		<div class="control-group">
-			<div class="controls">
-				<label class="checkbox">
-					<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.debug" />
-					Enable logging of debug information for this plugin to octoprint.log
-				</label>
-			</div>
-		</div>
-	</div>	
 </form>
 
 
@@ -257,17 +269,17 @@
 		    </thead>
 		    <tbody >
 			    <tr>
-			    	<td style="border-right:1px dashed #ddd">{file}</td>
+			    	<td style="vertical-align: middle;border-right:1px dashed #ddd">{file}</td>
 			    	<td>The currently printing file.
 			    		<span class="muted"><small>Only useful while printing</small></span>
 			    	</td>
 			    </tr>
-			    <tr><td style="border-right:1px dashed #ddd">{z}</td><td>The current z value.</td></tr>
-			    <tr><td style="border-right:1px dashed #ddd">{percent}</td><td>The current percentage of the print progress.<span class="muted"><small>Only useful for height change notifications</small></span></td></tr>
-			    <tr><td style="border-right:1px dashed #ddd">{time_done}<br>{time_left}</td><td>Time done / left in the print.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
-			    <tr><td style="border-right:1px dashed #ddd">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td>Temperatures of bed, extruder 1 and extruder 2.</td></tr>
-			    <tr><td style="border-right:1px dashed #ddd">{bed_target},<br>{e1_target},<br>{e2_target}</td><td>Target temperatures of bed, extruder 1 and extruder 2.</td></tr>
-			    <tr><td style="border-right:1px dashed #ddd">{event}</td><td>The name of the event which caused the notification.</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{z}</td><td style="vertical-align: middle;">The current z value.</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{percent}</td><td style="vertical-align: middle;">The current percentage of the print progress.<span class="muted"><small>Only useful for height change notifications</small></span></td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{time_done}<br>{time_left}</td><td style="vertical-align: middle;">Time done / left in the print.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td style="vertical-align: middle;">Temperatures of bed, extruder 1 and extruder 2.</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_target},<br>{e1_target},<br>{e2_target}</td><td style="vertical-align: middle;">Target temperatures of bed, extruder 1 and extruder 2.</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{event}</td><td style="vertical-align: middle;">The name of the event which caused the notification.</td></tr>
 		    </tbody>
 		</table>
 		<b>Note:</b> On startup and a few moments after startup of OctoPrint the temeratures can't be retrieved from the printer and will be shown as '0.0'
@@ -318,6 +330,60 @@
 	    		Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
 	    		Icon images taken from: <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">timwhitlock.info</a>
 			</small></span>
+    	</p>
+      
+    </div>
+  
+</div>
+
+
+
+<div id="settings-telegramDialogMupInfo" class="modal hide fade">
+    <div class="modal-header">
+    	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+       <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Markup') }}</h4></nobr>
+    </div>
+    <div class="modal-body">
+    	<p>You can use simple markup in messages. Markup for messages is activated by the markup options besides the message text fields. You can choose using HTML markup or the markdown variant. The list below shows the different markups you are able to use.</p> 
+			<table class="table table-condensed table-striped" style="table-layout: auto">
+			    <thead>
+				    <tr>
+				        <th style="border-right:1px dashed #ddd;text-align:center;">{{_('Markdown') }}</th>
+				        <th style="border-right:1px dashed #ddd;text-align:center;">{{ _('HTML') }}</th>
+				        <th style="text-align:center">{{ _('Effect') }}</th>
+			    </thead>
+			    <tbody >
+			    	<tr>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">*bold*</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;b&gt;bold&lt;/b&gt;<br>&lt;strong&gt;bold&lt;/strong&gt;</td>
+				    	<td style="vertical-align: middle;"><strong>bold</strong></td>
+				  	</tr>
+				    <tr>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">_italic_</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;i&gt;italic&lt;/i&gt;<br>&lt;em&gt;italic&lt;/em&gt;</td>
+				    	<td style="vertical-align: middle;"><em>italic</em></td>
+				  	</tr>
+				  	<tr>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">[linkText](url)</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;a href="url"&gt;linkText&lt;/a&gt;</td>
+				    	<td style="vertical-align: middle;"><a href="#">LinkText</a></td>
+				  	</tr>
+				  	<tr>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">`inline code`</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;code&gt;inline code&lt;/code&gt;</td>
+				    	<td style="vertical-align: middle;">txt <code>inline code</code> txt</td>
+				  	</tr>
+				  	<tr>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">```code block```</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;pre&gt;code block&lt;/pre&gt;</td>
+				    	<td style="vertical-align: middle;">txt <pre>code block</pre> txt</td>
+				  	</tr>
+				    </tbody>
+			</table>
+    	</p>
+    	<p>
+	    	<span class="muted"><small>
+	    		See <a href="https://core.telegram.org/bots/api#formatting-options" target="_blank">Telegram Bot API Documentation</a> for more information.</small></span>
     	</p>
       
     </div>
