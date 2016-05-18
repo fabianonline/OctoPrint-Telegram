@@ -1,7 +1,7 @@
 <form class="form-horizontal" id="settings_plugin_telegram">
-	<h3>Telegram settings</h3>
-	<p>If you don't know what to enter in this section, please have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md" target="_blank">the documentation at github</a>.</p>
-	<p>The current connection status is: <strong data-bind="text: connection_state_str"></strong></p>
+	<h3>Telegram {{ _('settings') }}</h3>
+	<p>{{ _('If you don''t know what to enter in this section, please have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md" target="_blank">the documentation at github</a>.') }}</p>
+	<p>{{ _('The current connection status is:') }} <strong data-bind="text: connection_state_str"></strong></p>
 	<div class="control-group">
 		<label class="control-label">{{ _('Telegram Bot Token') }}</label>
 		<div class="controls">
@@ -11,11 +11,11 @@
 	<div class="control-group">
 		<label class="control-label">{{ _('Test Token') }}</label>
 		<div class="controls">
-			<button class="btn" data-bind="click: testToken, disable:isloading()" title="Test the token"><i class="icon-key"></i>&nbsp;Test this token</button>
-			<span class="help-inline" class="muted"> <small>Click to test token and start listener.</small></span>
-			<p><span class="help-block" data-bind="if: token_state_str || isloading()">Token status is:
+			<button class="btn" data-bind="click: testToken, disable:isloading()" title="{{ _('Test the token') }}"><i class="icon-key"></i>&nbsp;{{ _('Test this token') }}</button>
+			<span class="help-inline" class="muted"> <small>{{ _('Click to test token and start listener.') }}</small></span>
+			<p><span class="help-block" data-bind="if: token_state_str || isloading()">{{ _('Token status is:') }}
 				<strong id="teleErrored" data-bind="text: token_state_str, visible: ! isloading()"></strong>
-				<strong class="text-warning" data-bind="if: isloading">Testing the token, please wait...</strong>
+				<strong class="text-warning" data-bind="if: isloading">{{ _('Testing the token, please wait') }}...</strong>
 			</span></p>
 		</div>
 	</div>
@@ -31,9 +31,9 @@
 		<table class="table table-condensed table-hover table-striped">
 		    <thead>
 			    <tr>
-			        <th class="settings_users_name" style="border-right:1px dashed #ddd">Chat</th>
-			        <th class="settings_users_active" style="width:70px;border-right:1px dashed #ddd">Command</th>
-			        <th class="settings_users_active" style="width:70px;border-right:1px dashed #ddd">Notify</th>
+			        <th class="settings_users_name" style="border-right:1px dashed #ddd">{{ _('Chat') }}</th>
+			        <th class="settings_users_active" style="width:70px;border-right:1px dashed #ddd">{{ _('Command') }}</th>
+			        <th class="settings_users_active" style="width:70px;border-right:1px dashed #ddd">{{ _('Notify') }}</th>
 			        <th class="settings_users_actions" style="width:70px;">{{ _('Action') }}</th>
 			    </tr>
 		    </thead>
@@ -43,13 +43,13 @@
 			        	<div style="float:left;padding:0px 5px 0px 0px;margin:0px;position:relative;" >
 			        		<span style="font-size:1.2em;" data-bind="visible: newUsr">
 				        		<div style ="float:left;position:absolute;left:-4px;top:-4px;z-index:1001;padding:0px;">
-				        			<i style="color:orangered;" class="icon-star" title="New User"></i>
+				        			<i style="color:orangered;" class="icon-star" title="{{ _('New User') }}"></i>
 				        		</div>
 				        		<div style ="float:left;position:absolute;left:-3px;top:-3px;z-index:1000;padding:0px;">
 				        			<i style="color:gainsboro;" class="icon-star" ></i>
 				        		</div>
 				        	</span>
-			        		<img data-bind="attr: {'id': 'IMAGE_' + id}" width="40px" height="40px" class="img-circle" title="User Profile Photo">
+			        		<img data-bind="attr: {'id': 'IMAGE_' + id}" width="40px" height="40px" class="img-circle" title="{{ _('User Profile Photo') }}">
 			        	</div>
 			        	<div>
 				        	<i data-bind="css: {'icon-user': private, 'icon-group': !private}"></i>&nbsp;
@@ -62,7 +62,7 @@
 			        <!-- ko if: !newUsr -->
 			        <td class="settings_users_active" style="width:70px;vertical-align: middle;border-right:1px dashed #ddd">
 			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" style="text-decoration:none"  title="Edit command rights">
+				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" style="text-decoration:none"  title="{{ _('Edit command rights') }}">
 				        		<i class="icon-off icon-large"></i>
 				        	</a>
 				        	<span data-bind="visible: !accept_commands && !allow_users"><i class="icon-remove icon-large"></i></span>
@@ -71,7 +71,7 @@
 			        </td>
 			        <td class="settings_users_admin" style="width:70px;vertical-align: middle;border-right:1px dashed #ddd">
 			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" style="text-decoration:none"  title="Edit notification settings">
+				        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" style="text-decoration:none"  title="{{ _('Edit notification settings') }}">
 				        		<i class="icon-comment icon-large"></i>
 				        	</a>
 				        	<span data-bind="visible: !send_notifications"><i class="icon-remove icon-large"></i></span>
@@ -83,11 +83,11 @@
 				            <a href="#" class="icon-pencil icon-large" title="{{ _('Update User') }}" data-bind="click: function() { $root.showEditChatDialog($data);}"></a>&nbsp;&nbsp;|&nbsp;
 				        </span>
 				        <span data-bind="visible: newUsr">
-				        	<span class="muted" ><small>Save first or&nbsp;&nbsp;</small></span>
+				        	<span class="muted" ><small>{{ _('Save first or') }}&nbsp;&nbsp;</small></span>
 				        </span>
 				        <a href="#" class="icon-trash icon-large" title="{{ _('Delete user') }}" data-bind="click:  function() { $root.delChat($data);}"></a>
 				        <span data-bind="visible: newUsr">
-				        	<span class="muted" ><small>(click)</small></span>
+				        	<span class="muted" ><small>{{ _('(click)') }}</small></span>
 				        </span>
 				        
 			        </td>
@@ -98,17 +98,17 @@
 			<label class="control-label">{{ _('Refresh Chat List') }}</label>
 			<div class="controls">
 				<div style="float:left;">
-					<button class="btn" data-bind="click: function (){ $root.requestData(true); }" title="Reload list"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
+					<button class="btn" data-bind="click: function (){ $root.requestData(true); }" title="{{ _('Reload list') }}"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
 
 				</div>
 				<div class="controls">
 					<label class="checkbox">
-						<input type="checkbox" data-bind="checked: reloadUsr" title="Check to enable auto Refresh" /> <span>Enable auto refresh (20 sec.)</span>	
+						<input type="checkbox" data-bind="checked: reloadUsr" title="{{ _('Check to enable auto Refresh') }}" /> <span>{{ _('Enable auto refresh (20 sec.)') }}</span>	
 					</label>
 				</div>
 				<div style="float:left;">	
-					<span class="help-block"><small>Press this button or enable auto refresh after you send an initial random message to the bot.<br>
-					Your chat will then appear in the list. Before you're able to edit notifications and available commands for new users, you have to save the settings first!</small></span>
+					<span class="help-block"><small>{{ _('Press this button or enable auto refresh after you send an initial random message to the bot.') }}<br>
+					{{ _('Your chat will then appear in the list. Before you''re able to edit notifications and available commands for new users, you have to save the settings first!') }}</small></span>
 				</div>
 			</div>
 		</div>
@@ -119,7 +119,7 @@
  	&nbsp;
 	<hr>
 
-	<h4>Notification settings</h4>
+	<h4>{{ _('Notification settings') }}</h4>
 	<div class="control-group">
 		<label class="control-label">{{ _('Send notification every') }}</label>
 		<div class="controls">
@@ -131,7 +131,7 @@
 				<input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.notification_time" />
 				<span class="add-on">min</span>
 			</div>
-			<span class="help-block"><small>Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.</small></span>
+			<span class="help-block"><small>{{ _('Sends a message after layer height changed by this height or this many minutes passed since the last notification. Set to 0 to disable.') }}</small></span>
 		</div>
 	</div>
 	
@@ -142,8 +142,8 @@
 				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.message_at_print_done_delay" />
 				<span class="add-on">s</span>
 			</div>
-			<span class="help-block"><small>Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
-				for the head and bed to reach their final positions. Set to 0 to disable.</small></span>
+			<span class="help-block"><small>{{ _('Wait this many seconds after a print has finished before sending a notification. This can be useful to wait
+				for the head and bed to reach their final positions. Set to 0 to disable.') }}</small></span>
 		</div>
 	</div>
 	<div class="control-group">
@@ -152,7 +152,7 @@
 			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_icon" /> 
 			</label>
-			<span class="help-block"><small>Check to enable emojis in notifications and command dialogs.</small></span>
+			<span class="help-block"><small>{{ _('Check to enable emojis in notifications and command dialogs.') }}</small></span>
 		</div>
 	</div>
 	<br>
@@ -161,13 +161,13 @@
 
 	
 	<div class="control-group">
-		<label class="control-label"><h4>Messages at...</h4></label>
+		<label class="control-label"><h4>{{ _('Messages at') }}...</h4></label>
 		<div class="controls form-inline" style="text-align:center;">
 		{{ _('Message formatting information:') }}<br>
 			<label class="btn-group">
-				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.mupInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Markup') }}</button>
-				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.varInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Variables') }}</button>
-				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.emoInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Emojis') }}</button>
+				<button title="{{ _('Click to open information dialog') }}" class="btn btn-info btn-small" data-bind="click: function() {$root.mupInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Markup') }}</button>
+				<button title="{{ _('Click to open information dialog') }}" class="btn btn-info btn-small" data-bind="click: function() {$root.varInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Variables') }}</button>
+				<button title="{{ _('Click to open information dialog') }}" class="btn btn-info btn-small" data-bind="click: function() {$root.emoInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Emojis') }}</button>
 			</label>
 		</div>
 	</div> 
@@ -176,17 +176,17 @@
 	<br>
 	<hr>
 
-	<h4>Stuff</h4>
+	<h4>{{ _('Stuff') }}</h4>
 	<div class="control-group">
 		<div class="controls">
 			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.tracking_activated" />
-				Allow this plugin to send anonymous usage data.
+				{{ _('Allow this plugin to send anonymous usage data.') }}
 			</label>
-			<span class="help-block"><small>I'd like to know how many people are using this plugin and how it is used. So I implemented a method to report
-			anonymous usage data back to me. That data doesn't contain any private information, just generic things like "the plugin was started" or
+			<span class="help-block"><small>{{ _('I''d like to know how many people are using this plugin and how it is used. So I implemented a method to report
+			anonymous usage data back to me. That data doesn''t contain any private information, just generic things like "the plugin was started" or
 			"a print finished notification has been sent". That feature is off by default. If you leave it off, no data of any kind will be sent back
-			to me.</small></span>
+			to me.') }}</small></span>
 		</div>
 	</div>
 
@@ -194,7 +194,7 @@
 		<div class="controls">
 			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.debug" />
-				Enable logging of debug information for this plugin to octoprint.log
+				{{ _('Enable logging of debug information for this plugin to octoprint.log') }}
 			</label>
 		</div>
 	</div>
@@ -204,7 +204,7 @@
 
 <div id="settings-telegramDialogEditChat" class="modal hide fade">
     <div class="modal-header">
-        <h4><i class="icon-wrench icon-large" style="color:dimgray"></i>&nbsp;&nbsp;Edit User: <span data-bind="text: currChatTitle"></span></h4>
+        <h4><i class="icon-wrench icon-large" style="color:dimgray"></i>&nbsp;&nbsp;{{ _('Edit User') }}: <span data-bind="text: currChatTitle"></span></h4>
     </div>
     <div class="modal-body">
         <form class="form-horizontal">
@@ -258,7 +258,7 @@
        <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Variables') }}</h4></nobr>
     </div>
     <div class="modal-body">
-    	Use Variables by adding <code>&#123; &lt;varName&gt; &#125;</code> to your message text (eg <code>&#123;bed_temp&#125;</code>). Usable Variables are:
+    	{{ _('Use Variables by adding <code>&#123; &lt;varName&gt; &#125;</code> to your message text (eg <code>&#123;bed_temp&#125;</code>). Usable Variables are:') }}
     	<table class="table table-condensed table-striped" style="table-layout: auto">
 		    <thead>
 			    <tr>
@@ -269,19 +269,19 @@
 		    <tbody >
 			    <tr>
 			    	<td style="vertical-align: middle;border-right:1px dashed #ddd">{file}</td>
-			    	<td>The currently printing file.
-			    		<span class="muted"><small>Only useful while printing</small></span>
+			    	<td>{{ _('The currently printing file.') }}
+			    		<span class="muted"><small>{{ _('Only useful while printing') }}</small></span>
 			    	</td>
 			    </tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{z}</td><td style="vertical-align: middle;">The current z value.</td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{percent}</td><td style="vertical-align: middle;">The current percentage of the print progress.<span class="muted"><small>Only useful for height change notifications</small></span></td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{time_done}<br>{time_left}</td><td style="vertical-align: middle;">Time done / left in the print.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td style="vertical-align: middle;">Temperatures of bed, extruder 1 and extruder 2.</td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_target},<br>{e1_target},<br>{e2_target}</td><td style="vertical-align: middle;">Target temperatures of bed, extruder 1 and extruder 2.</td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{event}</td><td style="vertical-align: middle;">The name of the event which caused the notification.</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{z}</td><td style="vertical-align: middle;">{{ _('The current z value.') }}</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{percent}</td><td style="vertical-align: middle;">{{ _('The current percentage of the print progress.') }}<span class="muted"><small>{{ _('Only useful for height change notifications') }}</small></span></td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{time_done}<br>{time_left}</td><td style="vertical-align: middle;">{{ _('Time done / left in the print.') }}<span class="muted"><small>{{ _('Only useful for height change events') }}</small></span></td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td style="vertical-align: middle;">{{ _('Temperatures of bed, extruder 1 and extruder 2.') }}</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_target},<br>{e1_target},<br>{e2_target}</td><td style="vertical-align: middle;">{{ _('Target temperatures of bed, extruder 1 and extruder 2.') }}</td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{event}</td><td style="vertical-align: middle;">{{ _('The name of the event which caused the notification.') }}</td></tr>
 		    </tbody>
 		</table>
-		<b>Note:</b> On startup and a few moments after startup of OctoPrint the temeratures can't be retrieved from the printer and will be shown as '0.0'
+		<b>{{ _('Note') }}:</b> {{ _('On startup and a few moments after startup of OctoPrint the temeratures can''t be retrieved from the printer and will be shown as ''0.0''') }}
     </div>
 </div>
 
@@ -292,9 +292,9 @@
        <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Emojis') }}</h4></nobr>
     </div>
     <div class="modal-body">
-    	<p>Add <code>&#123;emo:&lt;emoName&gt;&#125;</code> to your message text to use emojis. The <code>emoName</code> has to be set according to the 'Description' column on <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target ="_blank">this Website</a>. No emoji will be send, if 'Send emojis' is deactivated.</p>
+    	<p>{{ _('Add <code>&#123;emo:&lt;emoName&gt;&#125;</code> to your message text to use emojis. The <code>emoName</code> has to be set according to the ''Description'' column on <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target ="_blank">this Website</a>. No emoji will be send, if ''Send emojis'' is deactivated.') }}</p>
 
-    	<p><b>Example:</b><br>If you want to use <img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f62d.png" width="20" height="20"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.
+    	<p><b>{{ _('Example:</b><br>If you want to use <img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f62d.png" width="20" height="20"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.') }}</p>
 
     	<p><br><span style="font-size:1.25em;">There are a few shortcuts available:</span>
 			<table class="table table-condensed table-striped" style="table-layout: auto">
@@ -326,8 +326,8 @@
     	</p>
     	<p>
 	    	<span class="muted"><small>
-	    		Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
-	    		Icon images taken from: <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">timwhitlock.info</a>
+	    		{{_('Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a>') }}<br>
+	    		{{_('Icon images taken from: <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">timwhitlock.info</a>') }}
 			</small></span>
     	</p>
       
@@ -343,7 +343,7 @@
        <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Markup') }}</h4></nobr>
     </div>
     <div class="modal-body">
-    	<p>You can use simple markup in messages. Markup for messages is activated by the markup options besides the message text fields. You can choose using HTML markup or the markdown variant. The list below shows the different markups you are able to use.</p> 
+    	<p>{{_('You can use simple markup in messages. Markup for messages is activated by the markup options besides the message text fields. You can choose using HTML markup or the markdown variant. The list below shows the different markups you are able to use.') }}</p> 
 			<table class="table table-condensed table-striped" style="table-layout: auto">
 			    <thead>
 				    <tr>
@@ -353,38 +353,59 @@
 			    </thead>
 			    <tbody >
 			    	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">*bold*</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;b&gt;bold&lt;/b&gt;<br>&lt;strong&gt;bold&lt;/strong&gt;</td>
-				    	<td style="vertical-align: middle;"><strong>bold</strong></td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">*{{ _('bold') }}*</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;b&gt;{{ _('bold') }}&lt;/b&gt;<br>&lt;strong&gt;{{ _('bold') }}&lt;/strong&gt;</td>
+				    	<td style="vertical-align: middle;"><strong>{{ _('bold') }}</strong></td>
 				  	</tr>
 				    <tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">_italic_</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;i&gt;italic&lt;/i&gt;<br>&lt;em&gt;italic&lt;/em&gt;</td>
-				    	<td style="vertical-align: middle;"><em>italic</em></td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">_{{ _('italic') }}_</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;i&gt;{{ _('italic') }}&lt;/i&gt;<br>&lt;em&gt;{{ _('italic') }}&lt;/em&gt;</td>
+				    	<td style="vertical-align: middle;"><em>{{ _('italic') }}</em></td>
 				  	</tr>
 				  	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">[linkText](url)</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;a href="url"&gt;linkText&lt;/a&gt;</td>
-				    	<td style="vertical-align: middle;"><a href="#">LinkText</a></td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">[{{ _('linkText') }}](url)</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;a href="url"&gt;{{ _('linkText') }}&lt;/a&gt;</td>
+				    	<td style="vertical-align: middle;"><a href="#">{{ _('LinkText') }}</a></td>
 				  	</tr>
 				  	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">`inline code`</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;code&gt;inline code&lt;/code&gt;</td>
-				    	<td style="vertical-align: middle;">txt <code>inline code</code> txt</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">`{{ _('inline code') }}_`</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;code&gt;{{ _('inline code') }}&lt;/code&gt;</td>
+				    	<td style="vertical-align: middle;">txt <code>{{ _('inline code') }}</code> txt</td>
 				  	</tr>
 				  	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">```code block```</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;pre&gt;code block&lt;/pre&gt;</td>
-				    	<td style="vertical-align: middle;">txt <pre>code block</pre> txt</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">```{{ _('code block') }}```</td>
+				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;pre&gt;{{ _('code block') }}&lt;/pre&gt;</td>
+				    	<td style="vertical-align: middle;">txt <pre>{{ _('code block') }}</pre> txt</td>
 				  	</tr>
 				    </tbody>
 			</table>
     	</p>
     	<p>
 	    	<span class="muted"><small>
-	    		See <a href="https://core.telegram.org/bots/api#formatting-options" target="_blank">Telegram Bot API Documentation</a> for more information.</small></span>
+	    		{{ _('See <a href="https://core.telegram.org/bots/api#formatting-options" target="_blank">Telegram Bot API Documentation</a> for more information.') }}</small></span>
     	</p>
       
     </div>
   
 </div>
+
+<!-- Translations for javascript -->
+<span id="TrTeleAlsoFor" style="display:none;">{{ _('Also for') }}</span>
+<span id="TrTeleMuSel" style="display:none;">{{ _('Markup Selection') }}</span>
+<span id="TrTeleSendWImage" style="display:none;">{{ _('Send with image?') }}</span>
+<span id="TrTeleTogImg" style="display:none;">{{ _('Toggle ''Send with image''') }}</span>
+<span id="TrTeleNoImg" style="display:none;">{{ _('No Image') }}</span>
+<span id="TrTeleSImg" style="display:none;">{{ _('Send Image') }}</span>
+<span id="TrTeleAllowCmd" style="display:none;">{{ _('Allow to send commands') }}</span>
+<span id="TrTeleSNote" style="display:none;">{{ _('Send notifications') }}</span>
+<span id="TrTeleNoteHelp" style="display:none;">{{ _('After enabling this option, the enabled notifications will be received. You have to enable individual notifications by clicking the blue notify button in the list after closing this dialog.') }}</span>
+<span id="TrTeleCGHelp" style="display:none;">{{ _('After enabling this option, EVERY user of this group is allowed to send enabled commands. You have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog. If ''Allow user commands'' is enabled, these users still use their private settings in addition to the group settings.') }}</span>
+<span id="TrTeleAllowU" style="display:none;">{{ _('Allow user commands') }}</span>
+<span id="TrTeleAllowUHelp" style="display:none;">{{ _('When this is enabled, users with command access are allowed to send their individual enabled commands from this group. No other user in this group is allowed to send commands.') }}</span>
+<span id="TrTeleAllowHelp" style="display:none;">{{ _('After enabling this option, you have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog.') }}</span>
+<span id="TrTeleAlCmd" style="display:none;">{{ _('Allow commands') }}</span>
+<span id="TrTeleGetNote" style="display:none;">{{ _('Get Notification at') }}</span>
+<span id="TrTeleDelRly" style="display:none;">{{ _('Do you really want to delete') }}</span>
+<span id="TrTeleEdt" style="display:none;">{{ _('Edit') }}</span>
+<span id="TrTeleCmds" style="display:none;">{{ _('commands') }}</span>
+<span id="TrTeleNote" style="display:none;">{{ _('notifications') }}</span>
