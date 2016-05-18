@@ -62,18 +62,14 @@
 			        <!-- ko if: !newUsr -->
 			        <td class="settings_users_active" style="width:70px;vertical-align: middle;border-right:1px dashed #ddd">
 			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" style="text-decoration:none"  title="{{ _('Edit command rights') }}">
-				        		<i class="icon-off icon-large"></i>
-				        	</a>
+				        	<a href="#" class="icon-off icon-large" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" title="{{ _('Edit command rights') }}"></a>
 				        	<span data-bind="visible: !accept_commands && !allow_users"><i class="icon-remove icon-large"></i></span>
 				        	<span data-bind="visible: !accept_commands && allow_users"><i class="icon-off icon-large"></i></span>
 			        	</span>
 			        </td>
 			        <td class="settings_users_admin" style="width:70px;vertical-align: middle;border-right:1px dashed #ddd">
 			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" style="text-decoration:none"  title="{{ _('Edit notification settings') }}">
-				        		<i class="icon-comment icon-large"></i>
-				        	</a>
+				        	<a href="#" class="icon-comment icon-large" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" title="{{ _('Edit notification settings') }}"></a>
 				        	<span data-bind="visible: !send_notifications"><i class="icon-remove icon-large"></i></span>
 				        </span>
 			        </td>
