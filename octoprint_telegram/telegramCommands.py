@@ -68,20 +68,18 @@ class TCMD():
 			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 
 	def cmdSettings(self,chat_id,**kwargs):
-		msg = self.gEmo('settings') + gettext(" Current notification settings are:\n\n\n"+self.gEmo('height')+" height: %(height)fmm\n\n"+self.gEmo('clock')+" time: %(time)dmin\n\n\n"+self.gEmo('question')+"Which value do you want to change?",
-			height=self.main._settings.get_float(["notification_height"]),
-			time=self.main._settings.get_int(["notification_time"]))
+		msg = self.gEmo('settings') + gettext(" Current notification settings are:\n\n\n") +self.gEmo('height')+gettext(" height: %(height)fmm\n\n",height=self.main._settings.get_float(["notification_height"]))+self.gEmo('clock')+gettext(" time: %(time)dmin\n\n\n",time=self.main._settings.get_int(["notification_time"]))+self.gEmo('question')+gettext("Which value do you want to change?")
 		self.main.send_msg(msg, responses=[gettext("Change height"), gettext("Change time"), gettext("Cancel")],chatID=chat_id)
 
 	def cmdChgHeight(self,chat_id,**kwargs):
-		self.main.send_msg(self.gEmo('enter') + " " + gettext("Enter height"), force_reply=True,chatID=chat_id)
+		self.main.send_msg(self.gEmo('enter') + gettext(" Enter height"), force_reply=True,chatID=chat_id)
 
 	def cmdSetHeight(self,chat_id,parameter,**kwargs): 
 		self.main._settings.set_float(['notification_height'], parameter, force=True)
 		self.main.send_msg(self.gEmo('height') + gettext(" Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])),chatID=chat_id)
 
 	def cmdChgTime(self,chat_id,**kwargs):
-		self.main.send_msg(self.gEmo('enter') + " " +gettext("Enter time"), force_reply=True,chatID=chat_id)
+		self.main.send_msg(self.gEmo('enter') + gettext(" Enter time"), force_reply=True,chatID=chat_id)
 
 	def cmdSetTime(self,chat_id,parameter,**kwargs):
 		self.main._settings.set_int(['notification_time'], parameter, force=True)
@@ -104,7 +102,7 @@ class TCMD():
 	def cmdShutup(self,chat_id,**kwargs):
 		if chat_id not in self.main.shut_up:
 			self.main.shut_up[chat_id] = True
-		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished." + self.gEmo('shutup')+" Use /imsorrydontshutup to let me talk again before that. "),chatID=chat_id)
+		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished.") + self.gEmo('shutup')+gettext(" Use /imsorrydontshutup to let me talk again before that. "),chatID=chat_id)
 
 	def cmdNShutup(self,chat_id,**kwargs):
 		if chat_id in self.main.shut_up:
@@ -112,7 +110,7 @@ class TCMD():
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id)
 
 	def cmdPrint(self,chat_id,**kwargs):
-		self.main.send_msg(self.gEmo('info') + " Use /list to get a list of files and click the command beginning with /print after the correct file.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('info') + gettext(" Use /list to get a list of files and click the command beginning with /print after the correct file."),chatID=chat_id)
 
 	def cmdRunPrint(self,chat_id,parameter,**kwargs):
 		self._logger.debug("Looking for hash: %s", parameter)
@@ -120,7 +118,7 @@ class TCMD():
 		self._logger.debug("Destination: %s", destination)
 		self._logger.debug("File: %s", file)
 		if file is None or parameter is None or parameter is "":
-			self.main.send_msg(self.gEmo('warning') + " I'm sorry, but I couldn't find the file you wanted me to print. Perhaps you want to have a look at /list again?",chatID=chat_id)
+			self.main.send_msg(self.gEmo('warning') + gettext(" I'm sorry, but I couldn't find the file you wanted me to print. Perhaps you want to have a look at /list again?"),chatID=chat_id)
 			return
 		self._logger.debug("data: %s", self.main._printer.get_current_data())
 		self._logger.debug("state: %s", self.main._printer.get_current_job())
@@ -132,7 +130,7 @@ class TCMD():
 			self.main._printer.select_file(file, False, printAfterSelect=False)
 		data = self.main._printer.get_current_data()
 		if data['job']['file']['name'] is not None:
-			self.main.send_msg(self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Start print"), gettext("Don't print")],chatID=chat_id)
+			self.main.send_msg(self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n", file=data['job']['file']['name'])+self.gEmo('question')+gettext(" Do you want me to start printing it now?"), responses=[gettext("Start print"), gettext("Don't print")],chatID=chat_id)
 
 	def cmdStartPrint(self,chat_id,**kwargs):
 		data = self.main._printer.get_current_data()
@@ -143,20 +141,20 @@ class TCMD():
 			self.main.send_msg(self.gEmo('warning') + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id)
 			return
 		if self.main._printer.is_printing():
-			self.main.send_msg(self.gEmo('warning') + " A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort?",chatID=chat_id)
+			self.main.send_msg(self.gEmo('warning') + gettext(" A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort?"),chatID=chat_id)
 			return
 		self.main._printer.start_print()
 		self.main.send_msg(self.gEmo('rocket') + gettext(" Started the print job."),chatID=chat_id)
 
 	def cmdList(self,chat_id,**kwargs):
 		files = self.get_flat_file_tree()
-		self.main.send_msg(self.gEmo('save') + " File List:\n\n" + "\n".join(files) + "\n\n"+self.gEmo('info')+" You can click the command beginning with /print after a file to start printing this file.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('save') + gettext(" File List:\n\n") + "\n".join(files) + "\n\n"+self.gEmo('info')+gettext(" You can click the command beginning with /print after a file to start printing this file."),chatID=chat_id)
 
 	def cmdUpload(self,chat_id,**kwargs):
-		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('info') + gettext(" To upload a gcode file, just send it to me."),chatID=chat_id)
 
 	def cmdSys(self,chat_id,**kwargs):
-		message = self.gEmo('info') + " You have to pass a System Command. The following System Commands are known.\n(Click to execute)\n\n"
+		message = self.gEmo('info') + gettext(" You have to pass a System Command. The following System Commands are known.\n(Click to execute)\n\n")
 		empty = True
 		for action in self.main._settings.global_get(['system','actions']):
 			empty = False
@@ -164,7 +162,7 @@ class TCMD():
 				message += action['name'] + "\n/sys_" + self.hashMe(action['action'], 6) + "\n"
 			else:
 				message += "---------------------------\n"
-		if empty: message += "No System Commands found..."
+		if empty: message += gettext("No System Commands found...")
 		self.main.send_msg(message,chatID=chat_id)
 
 	def cmdSysReq(self,chat_id,parameter,**kwargs):
@@ -175,9 +173,9 @@ class TCMD():
 		command = next((d for d in actions if 'action' in d and self.hashMe(d['action'], 6) == parameter) , False)
 		if command :
 			self.tmpSysCmd.update({chat_id: parameter})
-			self.main.send_msg(self.gEmo('question') + " Really execute "+command['name']+"?",responses=[gettext("Do System Command"), gettext("Cancel")],chatID=chat_id)
+			self.main.send_msg(self.gEmo('question') + gettext(" Really execute %(cmd)s ?",cmd=command['name']),responses=[gettext("Do System Command"), gettext("Cancel")],chatID=chat_id)
 			return
-		self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('warning') + gettext(" Sorry, i don't know this System Command."),chatID=chat_id)
 
 	def cmdSysRun(self,chat_id,**kwargs):
 		if chat_id not in self.tmpSysCmd:
@@ -200,20 +198,20 @@ class TCMD():
 					returncode = p.returncode
 					stderr_text = p.stderr.text
 					self._logger.warn("Command failed with return code %i: %s" % (returncode, stderr_text))
-					self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id)
+					self.main.send_msg(self.gEmo('warning') + gettext(" Command failed with return code %(code)i: %(err)s" ,code=returncode, err=stderr_text),chatID=chat_id)
 					return
-			self.main.send_msg(self.gEmo('check') + " Command " + action["name"] + " executed." ,chatID=chat_id)
+			self.main.send_msg(self.gEmo('check') + gettext(" Command %(name)s executed.",name=action["name"]) ,chatID=chat_id)
 		except Exception, e:
 			self._logger.warn("Command failed: %s" % e)
-			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id)
+			self.main.send_msg(self.gEmo('warning') + gettext(" Command failed with exception: %(ex)s!",ex= e),chatID = chat_id)
 
 	def cmdCtrl(self,chat_id,**kwargs):
-		message = self.gEmo('info') + " You have to pass a Printer Control Command. The following Printer Controls are known.\n(Click to execute)\n\n"
+		message = self.gEmo('info') + gettext(" You have to pass a Printer Control Command. The following Printer Controls are known.\n(Click to execute)\n\n")
 		empty = True
 		for action in self.get_controls_recursively():
 			empty=False
 			message += action['name'] + "\n/ctrl_" + action['hash'] + "\n"
-		if empty: message += "No Printer Control Command found..."
+		if empty: message += gettext("No Printer Control Command found...")
 		self.main.send_msg(message,chatID=chat_id)
 
 	def cmdCtrlRun(self,chat_id,parameter,**kwargs):
@@ -228,9 +226,9 @@ class TCMD():
 					self.main._printer.commands(key)
 			else:
 				self.main._printer.commands(command['command'])
-			self.main.send_msg(self.gEmo('check') + " Control Command " + command['name'] + " executed." ,chatID=chat_id)
+			self.main.send_msg(self.gEmo('check') + gettext(" Control Command %(name)s executed.",name=command['name']) ,chatID=chat_id)
 		else:
-			self.main.send_msg(self.gEmo('warning') + " Control Command ctrl_" + parameter + " not found." ,chatID=chat_id)
+			self.main.send_msg(self.gEmo('warning') + gettext(" Control Command ctrl_%(para)s not found.",para=parameter) ,chatID=chat_id)
 
 	def cmdHelp(self,chat_id,**kwargs):
 		self.main.send_msg(self.gEmo('info') + gettext(" You can use following commands:\n\n"

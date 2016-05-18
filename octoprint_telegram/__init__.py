@@ -148,24 +148,24 @@ class TelegramListener(threading.Thread):
 			try:
 				file_name = message['message']['document']['file_name']
 				if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
-					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
+					self.main.send_msg(self.gEmo('warning') + gettext(" Sorry, I only accept files with .gcode, .gco or .g extension."), chatID=chat_id)
 					raise ExitThisLoopException()
 				# download the file
 				target_filename = "telegram_" + file_name
 				# for parameter no_markup see _send_edit_msg()
-				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id, noMarkup=True)
+				self.main.send_msg(self.gEmo('save') + gettext(" Saving file %(file)s...",file=target_filename), chatID=chat_id, noMarkup=True)
 				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 				data = self.main.get_file(message['message']['document']['file_id'])
 				stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
 				self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 				# for parameter msg_id see _send_edit_msg()
-				self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.getUpdateMsgId(chat_id),chatID=chat_id)
+				self.main.send_msg(self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as %(file)s.",file=target_filename),msg_id=self.getUpdateMsgId(chat_id),chatID=chat_id)
 			except Exception as ex:
-				self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.getUpdateMsgId(chat_id),chatID=chat_id)
+				self.main.send_msg(self.gEmo('warning') + gettext(" Something went wrong during processing of your file.")+self.gEmo('mistake')+gettext(" Sorry. More details are in octoprint.log."),msg_id=self.getUpdateMsgId(chat_id),chatID=chat_id)
 				self._logger.debug("Exception occured during processing of a file: "+ traceback.format_exc() )
 		else:
 			self._logger.warn("Previous file was from an unauthorized user.")
-			self.main.send_msg("Don't feed the octopuses! " + self.gEmo('octo'),chatID=chat_id)
+			self.main.send_msg(gettext("Don't feed the octopuses! ") + self.gEmo('octo'),chatID=chat_id)
 			
 	def handleTextMessage(self, message, chat_id, from_id):
 		# We got a chat message.
@@ -189,7 +189,7 @@ class TelegramListener(threading.Thread):
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message
 			self._logger.warn("Previous command was an unknown command.")
-			self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
+			self.main.send_msg(gettext("I do not understand you! ") + self.gEmo('mistake'),chatID=chat_id)
 			raise ExitThisLoopException()
 		# check if user is allowed to execute the command
 		if self.isCommandAllowed(chat_id,from_id,command):
@@ -206,7 +206,7 @@ class TelegramListener(threading.Thread):
 		else:
 			# user was not alloed to execute this command
 			self._logger.warn("Previous command was from an unauthorized user.")
-			self.main.send_msg("You are not allowed to do this! " + self.gEmo('notallowed'),chatID=chat_id)
+			self.main.send_msg(gettext("You are not allowed to do this! ") + self.gEmo('notallowed'),chatID=chat_id)
 	
 	def parseUserData(self, message):
 		self.main.chats = self.main._settings.get(["chats"])
@@ -239,13 +239,13 @@ class TelegramListener(threading.Thread):
 			if chat_id in self.main.chats:
 				if self.main.chats[chat_id]['allow_users'] and from_id not in self.main.chats and not self.main.chats[chat_id]['accept_commands']:
 					self._logger.warn("Previous command was from an unknown user.")
-					self.main.send_msg("I don't know you! Certainly you are a nice Person " + self.gEmo('heart'),chatID=chat_id)
+					self.main.send_msg(gettext("I don't know you! Certainly you are a nice Person ") + self.gEmo('heart'),chatID=chat_id)
 					raise ExitThisLoopException()
 		# if we dont know the user or group, create new user
 		# send welcome message and skip message
 		if chat_id not in self.main.chats:
 			self.main.chats[chat_id] = data
-			self.main.send_msg(self.gEmo('info') + "Now i know you. Before you can do anything, go to OctoPrint Settings and edit some rights.",chatID=chat_id)
+			self.main.send_msg(self.gEmo('info') + gettext("Now i know you. Before you can do anything, go to OctoPrint Settings and edit some rights."),chatID=chat_id)
 			kwargs = {'chat_id':int(chat_id)}
 			threading.Thread(target=self.main.get_usrPic, kwargs=kwargs).run()
 			self._logger.debug("Got new User")
@@ -561,7 +561,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				#try to get infos from telegram by sending a "you are migrated" message
 				try:
 					message = {}
-					message['text'] = "The OctoPrint Plugin " + self._plugin_name + " has been updated to new Version "+self._plugin_version+ ".\n\nPlease open your " + self._plugin_name + " settings in OctoPrint and set configurations for this chat. Until then you are not able to send or receive anything useful with this Bot.\n\nMore informations on: https://github.com/fabianonline/OctoPrint-Telegram"
+					message['text'] = gettext("The OctoPrint Plugin %(plug)s has been updated to new Version %(version)s.\n\nPlease open your %(plug)s settings in OctoPrint and set configurations for this chat. Until then you are not able to send or receive anything useful with this Bot.\n\nMore informations on: https://github.com/fabianonline/OctoPrint-Telegram",
+										plug=self._plugin_name, version =self._plugin_version )
 					message['chat_id'] = chat
 					message['disable_web_page_preview'] = True
 					r = requests.post("https://api.telegram.org/bot" + self._settings.get(['token']) + "/sendMessage", data =  message)
@@ -886,7 +887,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("SENDING UPDATE: " + str(data))
 			req = requests.post(self.bot_url + "/editMessageText", data=data)
 			if req.headers['content-type'] != 'application/json':
-				self._logger.debug(gettext("Unexpected Content-Type. Expected: application/json. Was: %(type)s. Waiting 2 minutes before trying again.", type=req.headers['content-type']))
+				self._logger.debug("Unexpected Content-Type. Expected: application/json. Was: {}. Waiting 2 minutes before trying again.".format(req.headers['content-type']))
 				return
 			myJson = req.json()
 			self._logger.debug("REQUEST RES: "+str(myJson))

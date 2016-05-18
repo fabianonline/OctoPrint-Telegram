@@ -165,7 +165,7 @@ class TMSG():
 			message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())
 		except Exception as ex:
 			self._logger.debug("Exception on formatting message: " + str(ex))
-			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+kwargs['event']+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + kwargs['event'] + "'."
+			message =  self.main.gEmo('warning') + gettext(" ERROR: I was not able to format the Notification for '%(event)s' properly. Please open your OctoPrint settings for %(plug)s and check message settings for '%(event)s'.",event=kwargs['event'],plug=self.main._plugin_name )
 		self._logger.debug("Sending Notification: " + message)
 		# Do we want to send with Markup?
 		kwargs['markup'] = self.main._settings.get(["messages",kwargs['event'],"markup"]) 
