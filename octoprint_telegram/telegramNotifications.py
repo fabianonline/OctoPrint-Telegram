@@ -169,8 +169,8 @@ class TMSG():
 	def _prepMsg(self, event):
 		status = self.main._printer.get_current_data()
 		self.z = status['currentZ'] or 0.0
-		if 'bind-msg' in telegramMsgDict[event]:
-			event = telegramMsgDict[event]['bind-msg']
+		if 'bind_msg' in telegramMsgDict[event]:
+			event = telegramMsgDict[event]['bind_msg']
 		return event
 
 	def msgPrinterStart_Shutdown(self, event, payload, **kwargs):

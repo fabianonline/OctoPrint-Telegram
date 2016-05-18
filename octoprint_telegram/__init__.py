@@ -6,8 +6,7 @@ from flask.ext.babel import gettext
 from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
-from .emojiDict import telegramEmojiDict # dict of known notification messages
-
+from .emojiDict import telegramEmojiDict # dict of known emojis
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -898,6 +897,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if delay > 0:
 			time.sleep(delay)
 		try:
+			if with_image is None:
+				with_image = False
 			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
@@ -906,9 +907,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if not noMarkup:
 				data['reply_markup'] = json.dumps({'hide_keyboard': True})  
 			# Do we want the message to be parsed in any markup?
-			if "HTML" in markup  or "Markdown" in markup:
-				data["parse_mode"] = markup
-				
+			if markup is not None:
+				if "HTML" in markup  or "Markdown" in markup:
+					data["parse_mode"] = markup
 			if force_reply:			
 				if self.messageResponseID != None:
 					data['reply_markup'] = json.dumps({'force_reply': True, 'selective': True})
@@ -923,7 +924,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				else:
 					keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True, 'force_reply': True}
 					data['reply_markup'] = json.dumps(keyboard)
-
+					
 			image_data = None
 			if with_image:
 				image_data = self.take_image()
