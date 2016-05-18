@@ -115,13 +115,13 @@ $(function() {
                 bOff = "info";
                 bHtml = "danger active";
                 bMd = "info";
-                self.markupFrom[self.msgCnt] = 'html';
+                self.markupFrom[self.msgCnt] = 'HTML';
              }
              else if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="Markdown"){
                 bOff = "info";
                 bHtml = "info";
                 bMd = "danger active";
-                self.markupFrom[self.msgCnt] = 'md';
+                self.markupFrom[self.msgCnt] = 'Markdown';
              }
              else{
                 bOff = "danger active"

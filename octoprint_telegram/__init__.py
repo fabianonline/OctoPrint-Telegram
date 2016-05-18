@@ -924,7 +924,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				else:
 					keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True, 'force_reply': True}
 					data['reply_markup'] = json.dumps(keyboard)
-					
+
 			image_data = None
 			if with_image:
 				image_data = self.take_image()
@@ -940,13 +940,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				files = {'photo':("image.jpg", image_data)}
 				data['caption'] = message
 				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-				self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
+				self._logger.debug("Sending finished. " + str(r.status_code))
 
 			else:
 				self._logger.debug("Sending without image.. " + str(chatID))
 				data['text'] = message
 				r =requests.post(self.bot_url + "/sendMessage", data=data)
-
+				self._logger.debug("Sending finished. " + str(r.status_code))
 			if r is not None and noMarkup:
 				r.raise_for_status()
 				myJson = r.json()
