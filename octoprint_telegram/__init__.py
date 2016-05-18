@@ -57,7 +57,6 @@ class TelegramListener(threading.Thread):
 				time.sleep(120)
 		
 	def loop(self):
-		iAmNew = False
 		chat_id = ""
 		json = self.getUpdates()
 		
@@ -128,7 +127,7 @@ class TelegramListener(threading.Thread):
 		self._logger.debug("Message Del_Chat_Photo")
 		try:
 			os.remove(self.main.get_plugin_data_folder()+"/pic" +message['message']['chat']['id']+".jpg")
-			elf._logger.debug("File removed")
+			self._logger.debug("File removed")
 		except OSError:
 			pass
 			
