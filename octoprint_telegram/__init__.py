@@ -267,6 +267,9 @@ class TelegramListener(threading.Thread):
 				timeout = 0
 				self.update_offset = 1
 			req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False, timeout=timeout+10)
+		except requests.exceptions.Timeout:
+			# Just start the next loop.
+			raise ExitThisLoopException()
 		except Exception as ex:
 			self.set_status(gettext("Got an exception while trying to connect to telegram API: %(exception)s. Waiting 2 minutes before trying again.", exception=ex))
 			time.sleep(120)
