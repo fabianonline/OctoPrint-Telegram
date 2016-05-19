@@ -6,8 +6,7 @@ from flask.ext.babel import gettext
 from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
-from .emojiDict import telegramEmojiDict # dict of known notification messages
-
+from .emojiDict import telegramEmojiDict # dict of known emojis
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -57,7 +56,6 @@ class TelegramListener(threading.Thread):
 				time.sleep(120)
 		
 	def loop(self):
-		iAmNew = False
 		chat_id = ""
 		json = self.getUpdates()
 		
@@ -128,7 +126,7 @@ class TelegramListener(threading.Thread):
 		self._logger.debug("Message Del_Chat_Photo")
 		try:
 			os.remove(self.main.get_plugin_data_folder()+"/pic" +message['message']['chat']['id']+".jpg")
-			elf._logger.debug("File removed")
+			self._logger.debug("File removed")
 		except OSError:
 			pass
 			
@@ -899,6 +897,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if delay > 0:
 			time.sleep(delay)
 		try:
+			if with_image is None:
+				with_image = False
 			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
@@ -907,9 +907,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if not noMarkup:
 				data['reply_markup'] = json.dumps({'hide_keyboard': True})  
 			# Do we want the message to be parsed in any markup?
-			if "HTML" in markup  or "Markdown" in markup:
-				data["parse_mode"] = markup
-				
+			if markup is not None:
+				if "HTML" in markup  or "Markdown" in markup:
+					data["parse_mode"] = markup
 			if force_reply:			
 				if self.messageResponseID != None:
 					data['reply_markup'] = json.dumps({'force_reply': True, 'selective': True})
@@ -940,13 +940,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				files = {'photo':("image.jpg", image_data)}
 				data['caption'] = message
 				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-				self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
+				self._logger.debug("Sending finished. " + str(r.status_code))
 
 			else:
 				self._logger.debug("Sending without image.. " + str(chatID))
 				data['text'] = message
 				r =requests.post(self.bot_url + "/sendMessage", data=data)
-
+				self._logger.debug("Sending finished. " + str(r.status_code))
 			if r is not None and noMarkup:
 				r.raise_for_status()
 				myJson = r.json()

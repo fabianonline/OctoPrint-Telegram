@@ -7,70 +7,7 @@ from .telegramNotifications import telegramMsgDict
 ################################################################################################################
 # This class handles received commands/messages (commands in the following). commandDict{} holds the commands and their behavior.
 # Each command has its own handler. If you want to add/del commands, read the following:
-#
-#
-# 	commandDict{}
-#
-# 	The commandDict holds the command objects which define the known commands. 
-# 	Each object looks like the following:
-# 	<commandName>: { 'cmd': <commandHandle> [, 'bind_none': <Boolean>, 'bind_cmd': <bindCmdName>]}
-#
-# 		- <commandName>: The name of the command corresponds to the message text received.
-# 						 If you use emojis in commands, than you ALWAYS have to define
-# 						 a second object and set the command name to the same text without emojis.
-# 						 Otherwise the 'Send emojis" option won't work properly.
-# 						 The other values of the two objects should be the same.
-# 						 See " Enter height" ans " Enter time" as example.
-#
-# 		- 'cmd': <commandHandle>: Here you have to point to the message handle method
-#
-# 		Optional:
-#
-# 		- 'bind_none': <Boolean>: Sets the authorization for the command ALWAYS TRUE for EVERY user/group.
-# 								  So if accept_commands is activated for a user/group he is automatically 
-# 								  able to do this command.
-# 								  This is used to hide the command in user command authorization settings.
-# 								  It is only used for non critical commands: Yes, No and Cancel which only
-# 								  respond with a text message and wont cause any unwanted action.
-#
-# 		- 'bind_cmd': <bindCmdName>: This binds the authorization for the command to the authorization of
-# 									 the given bind command. So if the bind command is changed in settings,
-# 									 this command will be changed to the same value. This applies individual
-# 									 each user/group setting.
-# 									 The command is also hidden in user command authorization settings.
-# 									 This otion is for commands which depend on other commands like
-# 									 the settings. See "/settings", "Change height", "Change time" etc.
-#
-#
-# 	commandHandler
-#
-# 	This is a method to handle the command and to execute desired actions. It should always at minimum look as follows:
-#
-# 	def cmd<commandName>(self,chat_id,**kwargs):
-# 		self.main.send_msg(responseMessage,chatID=chat_id)
-#
-# 	The Name of the method should be the name of the command with 'cmd' as prefix.
-# 	At least a response should be send to the user. so do a call on self.main.send_msg()
-# 	with a responseMessage. YOU HAVE TO pass also the chat_id the handler got when called.
-# 	This ensures that always the right user gets the response.
-#
-# 	!!!!!!!!!!!!!!!!!!! IT IS IMPORTANT TO DO THIS !!!!!!!!!!!!!!!!!
-# 	If you add and or del one ore more commands, you have to increment the settings
-#	version counter in get_ettings_version() in __init__.py.
-# 	This will start settings migration to add/remove command settings to/from users.
-# 	!!!!!!!!!!!!!!!!!!! IT IS IMPORTANT TO DO THIS !!!!!!!!!!!!!!!!!
-#
-#
-#
-# 	To ADD a command:
-# 		- add an command object to commandDict
-# 		- add a handler method to the TCMD class
-#
-# 	To REMOVE a Notivication:
-# 		- do above in reverse
-#
-# 	ON BOTH DO:
-# 	- increment plugin version
+# SEE DOCUMENTATION IN WIKI: https://github.com/fabianonline/OctoPrint-Telegram/wiki/Add%20commands%20and%20notifications
 #####################################################################################################################
 
 
