@@ -4,6 +4,7 @@
 
 ### CleanUp
 		gettext("...")
+		    - not needed for notification messages?
 		css
 	  ! readme
 	  	code documentation
@@ -19,8 +20,7 @@
 ### Features
 		check webcam integration to hide/prevent "with image"
 		save command states successive command messages per user to prevent false messages
-		markup option for send_msg()
-		markup settings (html, markup) individual for notification messages
+		messages
 		tab page with individual settings per print
 		add stettings per user?
 			-delay
@@ -31,19 +31,15 @@
 			-messages on events (EventManager)
 			- Gcode commands
 				- switches
-		more icons (complete?)
 		admin user?  --> admin
 	    on "left_chat_member" dont delete --> deactivate
 	    option to deactivate group chats if bot leaves a group to hold the settings if reentering --> deactivate
-	  ! gEmo() in message texts (.format(**locals()) to make settings send_icon work?
 	    octoprint.util.repeated timer for notification time
 	    check octoprint.util for useful things (dict!)
 
 ### Known Bugs (more to come :D)
 
 	 	token test messages in settings (connection state not up to date)
-
-	  ! update issues
 
 	  ! after print start wait for nozzel and bed heated befor starting print notification
 	  		times are from octoprint so there has to be own counter??? :(
@@ -55,4 +51,4 @@
 	Issue #14 solved?
 	TelegramAPI message Group objects (new_chat_icon, left_chat_member, etc.)
 	update user photos on startUp???
-	settings.save() on start user?
+	settings.save() on del user?
