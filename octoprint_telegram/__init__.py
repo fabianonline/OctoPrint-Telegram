@@ -264,11 +264,11 @@ class TelegramListener(threading.Thread):
 		
 		# try to check for incoming messages. wait 120sek and repeat on failure
 		try:
-			timeout = '30'
+			timeout = 30
 			if self.update_offset == 0 and self.first_contact:
-				timeout = '0'
+				timeout = 0
 				self.update_offset = 1
-			req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False)
+			req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False, timeout=timeout+10)
 		except Exception as ex:
 			self.set_status(gettext("Got an exception while trying to connect to telegram API: %(exception)s. Waiting 2 minutes before trying again.", exception=ex))
 			time.sleep(120)
