@@ -49,7 +49,7 @@
 				        			<i style="color:gainsboro;" class="icon-star" ></i>
 				        		</div>
 				        	</span>
-			        		<img data-bind="attr: {'id': 'IMAGE_' + id}" width="40px" height="40px" class="img-circle" title="{{ _('User Profile Photo') }}">
+			        		<img data-bind="attr: {src: image}" width="40px" height="40px" class="img-circle teleUsrPic" title="User Profile Photo">
 			        	</div>
 			        	<div>
 				        	<i data-bind="css: {'icon-user': private, 'icon-group': !private}"></i>&nbsp;
@@ -290,7 +290,8 @@
     <div class="modal-body">
     	<p>{{ _('Add <code>&#123;emo:&lt;emoName&gt;&#125;</code> to your message text to use emojis. The <code>emoName</code> has to be set according to the ''Description'' column on <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target ="_blank">this Website</a>. No emoji will be send, if ''Send emojis'' is deactivated.') }}</p>
 
-    	<p><b>{{ _('Example:</b><br>If you want to use <img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f62d.png" width="20" height="20"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.') }}</p>
+
+    	<p><b>Example:</b><br>If you want to use <img id="1f62d" class="teleEmojiImg"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.
 
     	<p><br><span style="font-size:1.25em;">There are a few shortcuts available:</span>
 			<table class="table table-condensed table-striped" style="table-layout: auto">
@@ -303,27 +304,27 @@
 				    </tr>
 			    </thead>
 			    <tbody >
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f419.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">octo</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f616.png" width="20" height="20"></td><td>mistake</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f514.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">notify</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f515.png" width="20" height="20"></td><td>noNotify</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f4a4.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">shutdown</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f64a.png" width="20" height="20"></td><td>shutup</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f62c.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">notallowed</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f680.png" width="20" height="20"></td><td>rocket</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f4be.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">save</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/2764.png" width="20" height="20"></td><td>heart</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/2139.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">info</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f4dd.png" width="20" height="20"></td><td>settings</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/23f0.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">clock</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/2b06.png" width="20" height="20"></td><td>height</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/2753.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">question</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/26a0.png" width="20" height="20"></td><td>warning</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/270f.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">enter</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f4e5.png" width="20" height="20"></td><td>upload</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f3a6.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">cam</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f3ac.png" width="20" height="20"></td><td>movie</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/25b6.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">play</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/25fc.png" width="20" height="20"></td><td>stop</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f3c1.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">finish</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f389.png" width="20" height="20"></td><td>hooray</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/26d4.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">error</td><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/1f4a1.png" width="20" height="20"></td><td>lamp</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img src="http://apps.timwhitlock.info/static/images/emoji/emoji-apple/2705.png" width="20" height="20"></td><td style="border-right:1px solid #ddd">check</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f419" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">octo</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f616" class="teleEmojiImg"></td><td>mistake</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f514" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">notify</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f515" class="teleEmojiImg"></td><td>noNotify</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4a4" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">shutdown</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f64a" class="teleEmojiImg"></td><td>shutup</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f62c" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">notallowed</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f680" class="teleEmojiImg"></td><td>rocket</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4be" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">save</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2764" class="teleEmojiImg"></td><td>heart</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2139" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">info</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4dd" class="teleEmojiImg"></td><td>settings</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="23f0" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">clock</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2b06" class="teleEmojiImg"></td><td>height</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2753" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">question</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="26a0" class="teleEmojiImg"></td><td>warning</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="270f" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">enter</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4e5" class="teleEmojiImg"></td><td>upload</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f3a6" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">cam</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f3ac" class="teleEmojiImg"></td><td>movie</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="25b6" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">play</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="25fc" class="teleEmojiImg"></td><td>stop</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f3c1" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">finish</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f389" class="teleEmojiImg"></td><td>hooray</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="26d4" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">error</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4a1" class="teleEmojiImg"></td><td>lamp</td></tr>
+				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2705" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">check</td><td>&nbsp;</td><td>&nbsp;</td></tr>
 			    </tbody>
 			</table>
     	</p>
     	<p>
 	    	<span class="muted"><small>
-	    		{{_('Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a>') }}<br>
-	    		{{_('Icon images taken from: <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target="_blank">timwhitlock.info</a>') }}
+	    		Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
+	    		These emoji images are taken from Github's <a href="https://github.com/github/gemoji" target="_blank">gemoji project</a>. The icons are copyright of Apple Inc. See the <a href="https://github.com/github/gemoji/blob/master/LICENSE" target="_blank">license</a> for details. 
 			</small></span>
     	</p>
       

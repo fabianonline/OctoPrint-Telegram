@@ -130,11 +130,12 @@ $(function() {
                 self.markupFrom[self.msgCnt] = 'off';
              }
 
-              var btnGrp = '<span class="muted"><small>'+self.getText('MuSel')+'<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
+
+              var btnGrp = '<span id="mupBut'+self.msgCnt+'" '+((txt === "Send Image")?'style="display:none"':'')+'><span class="muted"><small>Markup Selection<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
               btnGrp += '<button id="off'+self.msgCnt+'" type="button" class="btn btn-'+bOff+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'off\',\''+keys[id]+'\')">Off</button>';
               btnGrp += '<button id="HTML'+self.msgCnt+'" type="button" class="btn btn-'+bHtml+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'HTML\',\''+keys[id]+'\')">HTML</button>';
               btnGrp += '<button id="Markdown'+self.msgCnt+'" type="button" class="btn btn-'+bMd+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'Markdown\',\''+keys[id]+'\')">MD</button>';
-              btnGrp += '</span><br>';
+              btnGrp += '</span></span><br>';
 
               var btnImg = '<span class="muted"><small>'+self.getText('SendWImage')+'<br></small></span>';
               btnImg += '<label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="'+self.getText('TogImg')+'">';
@@ -171,10 +172,14 @@ $(function() {
         self.toggleImg = function(data){
             $('#chkImg'+data).toggleClass("icon-ban-circle icon-camera");
             $('#chkBtn'+data).toggleClass("btn-success btn-warning");
-            if($('#chkTxt'+data).text()==="Send Image")
-                $('#chkTxt'+data).text(self.getText('NoImg'));
-            else
-                $('#chkTxt'+data).text(self.getText('SImg'));
+            if($('#chkTxt'+data).text()==="Send Image"){
+                $('#chkTxt'+data).text("No Image");
+                $('#mupBut'+data).show();
+            }
+            else{
+                $('#chkTxt'+data).text("Send Image");
+                $('#mupBut'+data).hide();
+            }
         }
 
         self.updateChat = function(data) {
@@ -222,6 +227,7 @@ $(function() {
             for(var id in entries) {
                 var data = entries[id];
                 data['id'] = id;
+                data['image'] = data['image'] + "?" + $.now();
                 if(data['new'])
                     data['newUsr']=true;
                 else
@@ -229,17 +235,6 @@ $(function() {
                 array.push(data);
             }
             self.chatListHelper.updateItems(array);
-            for(var id in entries) {
-                $.ajax({ 
-                    url : API_BASEURL + "plugin/telegram?img=true&id=" + id, 
-                    type: "GET",
-                    dataType: "json",
-                    processData : false,
-                }).always(function(b64data){
-                    $("#IMAGE_"+b64data.id).attr("src", "data:image/jpg;base64,"+b64data.result);
-                });
-                
-            }
             self.isloading(false);
         };
 
@@ -336,6 +331,9 @@ $(function() {
             self.varInfoDialog = $('#settings-telegramDialogVarInfo');
             self.emoInfoDialog = $('#settings-telegramDialogEmoInfo');
             self.mupInfoDialog = $('#settings-telegramDialogMupInfo');
+            $('.teleEmojiImg').each( function(){
+                $(this).attr('src','/plugin/telegram/static/img/'+$(this).attr('id')+".png")
+            });
         }
 
         self.onServerDisconnect = function(){
