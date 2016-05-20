@@ -226,6 +226,7 @@ $(function() {
             for(var id in entries) {
                 var data = entries[id];
                 data['id'] = id;
+                data['image'] = data['image'] + "?" + $.now();
                 if(data['new'])
                     data['newUsr']=true;
                 else
@@ -233,17 +234,6 @@ $(function() {
                 array.push(data);
             }
             self.chatListHelper.updateItems(array);
-            for(var id in entries) {
-                $.ajax({ 
-                    url : API_BASEURL + "plugin/telegram?img=true&id=" + id, 
-                    type: "GET",
-                    dataType: "json",
-                    processData : false,
-                }).always(function(b64data){
-                    $("#IMAGE_"+b64data.id).attr("src", "data:image/jpg;base64,"+b64data.result);
-                });
-                
-            }
             self.isloading(false);
         };
 
