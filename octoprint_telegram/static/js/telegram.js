@@ -326,6 +326,9 @@ $(function() {
             self.varInfoDialog = $('#settings-telegramDialogVarInfo');
             self.emoInfoDialog = $('#settings-telegramDialogEmoInfo');
             self.mupInfoDialog = $('#settings-telegramDialogMupInfo');
+            $('.teleEmojiImg').each( function(){
+                $(this).attr('src','/plugin/telegram/static/img/'+$(this).attr('id')+".png")
+            });
         }
 
         self.onServerDisconnect = function(){

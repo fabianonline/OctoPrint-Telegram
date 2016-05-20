@@ -1088,7 +1088,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		return [
 				(r"/img/user/(.*)", LargeResponseHandler, dict(path=self.get_plugin_data_folder() + r"/img/user/", as_attachment=True,allow_client_caching =False)),
-				(r"/img/static/(.*)", LargeResponseHandler, dict(path=self._basefolder + "/static/img/", as_attachment=True))
+				(r"/img/static/(.*)", LargeResponseHandler, dict(path=self._basefolder + "/static/img/", as_attachment=True,allow_client_caching =True))
 				]
 
 __plugin_name__ = "Telegram Notifications"
