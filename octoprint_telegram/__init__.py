@@ -877,7 +877,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					t = threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
 			# direct message or event notification to a chat_id
 			else:
-				t = threading.Thread(target=self._send_msg, kwargs = kwargs)t.run()
+				t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 		except Exception as ex:
 			self._logger.debug("Caught an exception in send_msg(): " + str(ex))
 
