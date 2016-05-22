@@ -23,7 +23,7 @@
 	<br>
 	<hr>
 
-	<h4>Known Chats</h4>
+	<h4>{{ _('Known Chats') }}</h4>
 	<div style="float:left;padding:0px 0px 0px 0px;margin:0px;position:relative;" >
 		<div style ="position:absolute;left:0px;top:0px;z-index:1010;padding:0px;width:100%;height:100%;background-color:white;" data-bind="visible: isloading()">
 			<span style ="position:absolute;left:50%;top:50%;z-index:1011;" class="icon-spinner icon-spin icon-large" title="{{ _('Request in progress...') }}"></span>
@@ -49,7 +49,7 @@
 				        			<i style="color:gainsboro;" class="icon-star" ></i>
 				        		</div>
 				        	</span>
-			        		<img data-bind="attr: {src: image}" width="40px" height="40px" class="img-circle teleUsrPic" title="User Profile Photo">
+			        		<img data-bind="attr: {src: image}" width="40px" height="40px" class="img-circle teleUsrPic" title="{{ _('User Profile Photo') }}">
 			        	</div>
 			        	<div>
 				        	<i data-bind="css: {'icon-user': private, 'icon-group': !private}"></i>&nbsp;
@@ -323,8 +323,8 @@
     	</p>
     	<p>
 	    	<span class="muted"><small>
-	    		Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
-	    		These emoji images are taken from Github's <a href="https://github.com/github/gemoji" target="_blank">gemoji project</a>. The icons are copyright of Apple Inc. See the <a href="https://github.com/github/gemoji/blob/master/LICENSE" target="_blank">license</a> for details. 
+	    		{{ _('Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
+	    		These emoji images are taken from Github's <a href="https://github.com/github/gemoji" target="_blank">gemoji project</a>. The icons are copyright of Apple Inc. See the <a href="https://github.com/github/gemoji/blob/master/LICENSE" target="_blank">license</a> for details.') }}
 			</small></span>
     	</p>
       

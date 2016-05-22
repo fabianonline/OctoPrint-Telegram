@@ -131,7 +131,7 @@ $(function() {
              }
 
 
-              var btnGrp = '<span id="mupBut'+self.msgCnt+'" '+((txt === "Send Image")?'style="display:none"':'')+'><span class="muted"><small>Markup Selection<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
+              var btnGrp = '<span id="mupBut'+self.msgCnt+'" '+((txt === gettext("Send Image"))?'style="display:none"':'')+'><span class="muted"><small>'+gettext(Markup Selection)+'<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
               btnGrp += '<button id="off'+self.msgCnt+'" type="button" class="btn btn-'+bOff+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'off\',\''+keys[id]+'\')">Off</button>';
               btnGrp += '<button id="HTML'+self.msgCnt+'" type="button" class="btn btn-'+bHtml+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'HTML\',\''+keys[id]+'\')">HTML</button>';
               btnGrp += '<button id="Markdown'+self.msgCnt+'" type="button" class="btn btn-'+bMd+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'Markdown\',\''+keys[id]+'\')">MD</button>';
@@ -172,12 +172,12 @@ $(function() {
         self.toggleImg = function(data){
             $('#chkImg'+data).toggleClass("icon-ban-circle icon-camera");
             $('#chkBtn'+data).toggleClass("btn-success btn-warning");
-            if($('#chkTxt'+data).text()==="Send Image"){
-                $('#chkTxt'+data).text("No Image");
+            if($('#chkTxt'+data).text()===gettext("Send Image")){
+                $('#chkTxt'+data).text(gettext("No Image");
                 $('#mupBut'+data).show();
             }
             else{
-                $('#chkTxt'+data).text("Send Image");
+                $('#chkTxt'+data).text(gettext("Send Image"));
                 $('#mupBut'+data).hide();
             }
         }
