@@ -149,12 +149,13 @@ class TMSG():
 		bed_target = temps['bed']['target'] if 'bed' in temps else 0.0 
 		e1_temp = temps['tool0']['actual'] if 'tool0' in temps else 0.0
 		e1_target = temps['tool0']['target'] if 'tool0' in temps else 0.0
-		e2_temp = e2_target = None
 		e2_temp = temps['tool1']['actual'] if 'tool1' in temps else 0.0
 		e2_target = temps['tool1']['target'] if 'tool1' in temps else 0.0
 		percent = int(status['progress']['completion'] or 0)
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 		time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
+		if status['progress']['printTimeLeft'] == None:
+			time_left = gettext('[Unknown]')
 		file = ""
 		if "file" in payload: file = payload["file"]
 		if "gcode" in payload: file = payload["gcode"]

@@ -143,7 +143,7 @@ class TelegramListener(threading.Thread):
 	def handleDocumentMessage(self, message, chat_id, from_id):
 		# first we have to check if chat or group is allowed to upload
 		from_id = chat_id
-		if not data['private']: #is this needed? can one send files from groups to bots?
+		if not self.main.chats[chat_id]['private']: #is this needed? can one send files from groups to bots?
 			from_id = str(message['message']['from']['id'])
 		# is /upload allowed?
 		if self.isCommandAllowed(chat_id,from_id,'/upload'):
