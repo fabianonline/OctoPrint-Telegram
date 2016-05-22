@@ -291,9 +291,9 @@
     	<p>{{ _('Add <code>&#123;emo:&lt;emoName&gt;&#125;</code> to your message text to use emojis. The <code>emoName</code> has to be set according to the ''Description'' column on <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target ="_blank">this Website</a>. No emoji will be send, if ''Send emojis'' is deactivated.') }}</p>
 
 
-    	<p><b>Example:</b><br>If you want to use <img id="1f62d" class="teleEmojiImg"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.
+    	<p>{{ _('<b>Example:</b><br>If you want to use <img id="1f62d" class="teleEmojiImg"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.') }}</p>
 
-    	<p><br><span style="font-size:1.25em;">There are a few shortcuts available:</span>
+    	<p><br><span style="font-size:1.25em;">{{ _('There are a few shortcuts available:') }}</span>
 			<table class="table table-condensed table-striped" style="table-layout: auto">
 			    <thead>
 				    <tr>
@@ -324,7 +324,7 @@
     	<p>
 	    	<span class="muted"><small>
 	    		{{ _('Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
-	    		These emoji images are taken from Github's <a href="https://github.com/github/gemoji" target="_blank">gemoji project</a>. The icons are copyright of Apple Inc. See the <a href="https://github.com/github/gemoji/blob/master/LICENSE" target="_blank">license</a> for details.') }}
+	    		These emoji images are taken from Github''s <a href="https://github.com/github/gemoji" target="_blank">gemoji project</a>. The icons are copyright of Apple Inc. See the <a href="https://github.com/github/gemoji/blob/master/LICENSE" target="_blank">license</a> for details.') }}
 			</small></span>
     	</p>
       
@@ -385,24 +385,3 @@
     </div>
   
 </div>
-
-<!-- Translations for javascript -->
-<span id="TrTeleAlsoFor" style="display:none;">{{ _('Also for') }}</span>
-<span id="TrTeleMuSel" style="display:none;">{{ _('Markup Selection') }}</span>
-<span id="TrTeleSendWImage" style="display:none;">{{ _('Send with image?') }}</span>
-<span id="TrTeleTogImg" style="display:none;">{{ _('Toggle ''Send with image''') }}</span>
-<span id="TrTeleNoImg" style="display:none;">{{ _('No Image') }}</span>
-<span id="TrTeleSImg" style="display:none;">{{ _('Send Image') }}</span>
-<span id="TrTeleAllowCmd" style="display:none;">{{ _('Allow to send commands') }}</span>
-<span id="TrTeleSNote" style="display:none;">{{ _('Send notifications') }}</span>
-<span id="TrTeleNoteHelp" style="display:none;">{{ _('After enabling this option, the enabled notifications will be received. You have to enable individual notifications by clicking the blue notify button in the list after closing this dialog.') }}</span>
-<span id="TrTeleCGHelp" style="display:none;">{{ _('After enabling this option, EVERY user of this group is allowed to send enabled commands. You have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog. If ''Allow user commands'' is enabled, these users still use their private settings in addition to the group settings.') }}</span>
-<span id="TrTeleAllowU" style="display:none;">{{ _('Allow user commands') }}</span>
-<span id="TrTeleAllowUHelp" style="display:none;">{{ _('When this is enabled, users with command access are allowed to send their individual enabled commands from this group. No other user in this group is allowed to send commands.') }}</span>
-<span id="TrTeleAllowHelp" style="display:none;">{{ _('After enabling this option, you have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog.') }}</span>
-<span id="TrTeleAlCmd" style="display:none;">{{ _('Allow commands') }}</span>
-<span id="TrTeleGetNote" style="display:none;">{{ _('Get Notification at') }}</span>
-<span id="TrTeleDelRly" style="display:none;">{{ _('Do you really want to delete') }}</span>
-<span id="TrTeleEdt" style="display:none;">{{ _('Edit') }}</span>
-<span id="TrTeleCmds" style="display:none;">{{ _('commands') }}</span>
-<span id="TrTeleNote" style="display:none;">{{ _('notifications') }}</span>
