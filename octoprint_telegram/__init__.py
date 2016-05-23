@@ -82,7 +82,7 @@ class TelegramListener(threading.Thread):
 		if message['update_id'] >= self.update_offset:
 			self.update_offset = message['update_id']+1
 		# no message no cookies
-		if not message['message'] or not message['message']['chat']:
+		if 'message' not in message or not message['message']['chat']:
 			self._logger.warn("Response is missing .message or .message.chat. Skipping it.")
 			raise ExitThisLoopException()
 		
