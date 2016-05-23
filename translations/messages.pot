@@ -1,0 +1,968 @@
+# Translations template for OctoPrint-Telegram.
+# Copyright (C) 2016 The OctoPrint Project
+# This file is distributed under the same license as the OctoPrint-Telegram
+# project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: OctoPrint-Telegram 1.3.1\n"
+"Report-Msgid-Bugs-To: i18n@octoprint.org\n"
+"POT-Creation-Date: 2016-05-23 19:44+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.3.3\n"
+
+#: octoprint_telegram/__init__.py:53 octoprint_telegram/__init__.py:72
+#, python-format
+msgid "Connected as %(username)s."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:55
+#, python-format
+msgid ""
+"Got an exception while initially trying to connect to telegram (Listener "
+"not running: %(ex)s.  Waiting 2 minutes before trying again.)"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:154
+msgid " Sorry, I only accept files with .gcode, .gco or .g extension."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:159
+#, python-format
+msgid " Saving file %(file)s..."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:165
+#, python-format
+msgid " I've successfully saved the file you sent me as %(file)s."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:167
+msgid " Something went wrong during processing of your file."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:167
+msgid " Sorry. More details are in octoprint.log."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:171
+msgid "Don't feed the octopuses! "
+msgstr ""
+
+#: octoprint_telegram/__init__.py:195
+msgid "I do not understand you! "
+msgstr ""
+
+#: octoprint_telegram/__init__.py:214
+msgid "You are not allowed to do this! "
+msgstr ""
+
+#: octoprint_telegram/__init__.py:247
+msgid "I don't know you! Certainly you are a nice Person "
+msgstr ""
+
+#: octoprint_telegram/__init__.py:253
+msgid ""
+"Now i know you. Before you can do anything, go to OctoPrint Settings and "
+"edit some rights."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:281
+#, python-format
+msgid ""
+"Got an exception while trying to connect to telegram API: %(exception)s. "
+"Waiting 2 minutes before trying again."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:285
+#, python-format
+msgid ""
+"Telegram API responded with code %(status_code)s. Waiting 2 minutes "
+"before trying again."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:289
+#, python-format
+msgid ""
+"Unexpected Content-Type. Expected: application/json. Was: %(type)s. "
+"Waiting 2 minutes before trying again."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:294
+#, python-format
+msgid ""
+"Response didn't include 'ok:true'. Waiting 2 minutes before trying again."
+" Response was: %(response)s"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:372
+msgid "Disconnected."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:579
+#, python-format
+msgid ""
+"The OctoPrint Plugin %(plug)s has been updated to new Version "
+"%(version)s.\n"
+"\n"
+"Please open your %(plug)s settings in OctoPrint and set configurations "
+"for this chat. Until then you are not able to send or receive anything "
+"useful with this Bot.\n"
+"\n"
+"More informations on: https://github.com/fabianonline/OctoPrint-Telegram"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:745
+msgid ""
+"The previously entered token doesn't seem to have the correct format. It "
+"should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:761
+msgid "No token given."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:847 octoprint_telegram/__init__.py:848
+#, python-format
+msgid "Token valid for %(username)s."
+msgstr ""
+
+#: octoprint_telegram/__init__.py:850
+#, python-format
+msgid "Error: %(error)s"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:989
+#, python-format
+msgid "Telegram didn't respond well to getFile. The response was: %(response)s"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:1007
+#, python-format
+msgid ""
+"Telegram didn't respond well to getUserProfilePhoto . The response was: "
+"%(response)s"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:1032
+#, python-format
+msgid "Telegram returned error code %(error)s: %(message)s"
+msgstr ""
+
+#: octoprint_telegram/__init__.py:1034
+msgid "Telegram returned an unspecified error."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:22
+#: octoprint_telegram/telegramCommands.py:159
+msgid "Yes"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:27
+#: octoprint_telegram/telegramCommands.py:171
+#: octoprint_telegram/telegramCommands.py:189
+#: octoprint_telegram/telegramCommands.py:275
+msgid "Cancel"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:32
+#: octoprint_telegram/telegramCommands.py:159
+msgid "No"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:37
+#: octoprint_telegram/telegramCommands.py:171
+msgid "Change height"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:42
+#: octoprint_telegram/telegramCommands.py:47
+#: octoprint_telegram/telegramCommands.py:174
+msgid " Enter height"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:52
+#: octoprint_telegram/telegramCommands.py:171
+msgid "Change time"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:57
+#: octoprint_telegram/telegramCommands.py:62
+#: octoprint_telegram/telegramCommands.py:181
+msgid " Enter time"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:67
+#: octoprint_telegram/telegramCommands.py:232
+msgid "Start print"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:72
+#: octoprint_telegram/telegramCommands.py:189
+msgid "Stop print"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:77
+#: octoprint_telegram/telegramCommands.py:232
+msgid "Don't print"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:82
+#: octoprint_telegram/telegramCommands.py:275
+msgid "Do System Command"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:151
+msgid "Alright."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:156
+#: octoprint_telegram/telegramCommands.py:199
+msgid "Maybe next time."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:159
+msgid ""
+" Is this a test?\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:163
+msgid " Not connected to a printer."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:170
+msgid ""
+" Current notification settings are:\n"
+"\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:170
+#, python-format
+msgid ""
+" height: %(height)fmm\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:170
+#, python-format
+msgid ""
+" time: %(time)dmin\n"
+"\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:170
+msgid "Which value do you want to change?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:178
+#, python-format
+msgid " Notification height is now %(height)fmm."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:185
+#, python-format
+msgid " Notification time is now %(time)dmins."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:189
+msgid " Really abort the currently running print?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:191
+msgid " Currently I'm not printing, so there is nothing to stop."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:194
+msgid " Aborting the print."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:204
+msgid " Okay, shutting up until the next print is finished."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:204
+msgid " Use /imsorrydontshutup to let me talk again before that. "
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:209
+msgid " Yay, I can talk again."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:212
+msgid ""
+" Use /list to get a list of files and click the command beginning with "
+"/print after the correct file."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:220
+msgid ""
+" I'm sorry, but I couldn't find the file you wanted me to print. Perhaps "
+"you want to have a look at /list again?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:232
+#, python-format
+msgid ""
+" Okay. The file %(file)s is loaded.\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:232
+msgid " Do you want me to start printing it now?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:237
+msgid ""
+" Uh oh... No file is selected for printing. Did you select one using "
+"/list?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:240
+msgid " Can't start printing: I'm not connected to a printer."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:243
+msgid ""
+" A print job is already running. You can't print two thing at the same "
+"time. Maybe you want to use /abort?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:246
+msgid " Started the print job."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:250
+msgid ""
+" File List:\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:250
+msgid ""
+" You can click the command beginning with /print after a file to start "
+"printing this file."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:253
+msgid " To upload a gcode file, just send it to me."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:256
+msgid ""
+" You have to pass a System Command. The following System Commands are "
+"known.\n"
+"(Click to execute)\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:264
+msgid "No System Commands found..."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:275
+#, python-format
+msgid " Really execute %(cmd)s ?"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:277
+msgid " Sorry, i don't know this System Command."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:300
+#, python-format
+msgid " Command failed with return code %(code)i: %(err)s"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:302
+#, python-format
+msgid " Command %(name)s executed."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:305
+#, python-format
+msgid " Command failed with exception: %(ex)s!"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:308
+msgid ""
+" You have to pass a Printer Control Command. The following Printer "
+"Controls are known.\n"
+"(Click to execute)\n"
+"\n"
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:313
+msgid "No Printer Control Command found..."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:328
+#, python-format
+msgid " Control Command %(name)s executed."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:330
+#, python-format
+msgid " Control Command ctrl_%(para)s not found."
+msgstr ""
+
+#: octoprint_telegram/telegramCommands.py:333
+msgid ""
+" You can use following commands:\n"
+"\n"
+"/abort - Aborts the currently running print. A confirmation is required.\n"
+"/shutup - Disables automatic notifications till the next print ends.\n"
+"/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
+"/status - Sends the current status including a current photo.\n"
+"/settings - Displays the current notification settings and allows you to "
+"change them.\n"
+"/list - Lists all the files available for printing and lets you start "
+"printing them.\n"
+"/print - Lets you start a print. A confirmation is required.\n"
+"/upload - You can just send me a gcode file to save it to my library./sys"
+" - Execute Octoprint System Comamnds/ctrl - Use self defined controls "
+"from Octoprint"
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:15
+msgid "Hello. I'm online and ready to receive your commands."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:20
+msgid "Shutting down. Goodbye."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:25
+msgid "Started printing {file}."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:30
+msgid "Printing {file} failed."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:35
+#, python-format
+msgid ""
+"Printing at Z={z}.\n"
+"Bed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n"
+"{time_done}, {percent}%% done, {time_left} remaining."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:40
+msgid "Finished printing {file}."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:45
+msgid ""
+"Not printing.\n"
+"Bed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:158
+msgid "[Unknown]"
+msgstr ""
+
+#: octoprint_telegram/telegramNotifications.py:169
+#, python-format
+msgid ""
+" ERROR: I was not able to format the Notification for '%(event)s' "
+"properly. Please open your OctoPrint settings for %(plug)s and check "
+"message settings for '%(event)s'."
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:97
+msgid "Also for"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:107
+#: octoprint_telegram/static/js/telegram.js:176
+msgid "No Image"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:112
+#: octoprint_telegram/static/js/telegram.js:134
+#: octoprint_telegram/static/js/telegram.js:175
+#: octoprint_telegram/static/js/telegram.js:180
+msgid "Send Image"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:134
+msgid "Markup Selection"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:140
+msgid "Send with image?"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:141
+msgid "Toggle 'Send with image'"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:247
+msgid "Allow to send commands"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:252
+msgid "Send notifications"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:252
+msgid ""
+"After enabling this option, the enabled notifications will be received. "
+"You have to enable individual notifications by clicking the blue notify "
+"button in the list after closing this dialog."
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:261
+msgid ""
+"After enabling this option, EVERY user of this group is allowed to send "
+"enabled commands. You have to set permissions for individual commands by "
+"clicking the blue command icon in the list after closing this dialog. If "
+"''Allow user commands'' is enabled, these users still use their private "
+"settings in addition to the group settings."
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:262
+msgid "Allow user commands"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:262
+msgid ""
+"When this is enabled, users with command access are allowed to send their"
+" individual enabled commands from this group. No other user in this group"
+" is allowed to send commands."
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:266
+msgid ""
+"After enabling this option, you have to set permissions for individual "
+"commands by clicking the blue command icon in the list after closing this"
+" dialog."
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:279
+msgid "Edit commands"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:284
+msgid "Edit notifications"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:302
+msgid "Allow commands"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:304
+msgid "Get Notification at"
+msgstr ""
+
+#: octoprint_telegram/static/js/telegram.js:324
+msgid "Do you really want to delete"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:2
+msgid "settings"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:3
+msgid ""
+"If you dont know what to enter in this section, please have a look at <a "
+"href=\"https://github.com/fabianonline/OctoPrint-"
+"Telegram/blob/stable/README.md\" target=\"_blank\">the documentation at "
+"github</a>."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:4
+msgid "The current connection status is:"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:6
+msgid "Telegram Bot Token"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:12
+msgid "Test Token"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:14
+msgid "Test the token"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:14
+msgid "Test this token"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:15
+msgid "Click to test token and start listener."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:16
+msgid "Token status is:"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:18
+msgid "Testing the token, please wait"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:26
+msgid "Known Chats"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:29
+msgid "Request in progress..."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:34
+msgid "Chat"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:35
+msgid "Command"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:36
+msgid "Notify"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:37
+msgid "Action"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:46
+msgid "New User"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:52
+msgid "User Profile Photo"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:65
+msgid "Edit command rights"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:72
+msgid "Edit notification settings"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:79
+msgid "Update User"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:82
+msgid "Save first or"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:84
+msgid "Delete user"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:86
+msgid "(click)"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:94
+msgid "Refresh Chat List"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:97
+msgid "Reload list"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:97
+msgid "Reload"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:102
+msgid "Check to enable auto Refresh"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:102
+msgid "Enable auto refresh (20 sec.)"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:106
+msgid ""
+"Press this button or enable auto refresh after you send an initial random"
+" message to the bot."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:107
+msgid ""
+"Your chat will then appear in the list. Before youre able to edit "
+"notifications and available commands for new users, you have to save the "
+"settings first!"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:118
+msgid "Notification settings"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:120
+msgid "Send notification every"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:130
+msgid ""
+"Sends a message after layer height changed by this height or this many "
+"minutes passed since the last notification. Set to 0 to disable."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:135
+msgid "Delay for finished prints notification"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:141
+msgid ""
+"Wait this many seconds after a print has finished before sending a "
+"notification. This can be useful to wait\n"
+"\t\t\t\tfor the head and bed to reach their final positions. Set to 0 to "
+"disable."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:146
+msgid "Send Emojis"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:151
+msgid "Check to enable emojis in notifications and command dialogs."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:160
+msgid "Messages at"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:162
+msgid "Message formatting information:"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:164
+#: octoprint_telegram/templates/telegram_settings.jinja2:165
+#: octoprint_telegram/templates/telegram_settings.jinja2:166
+msgid "Click to open information dialog"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:164
+#: octoprint_telegram/templates/telegram_settings.jinja2:340
+msgid "Markup"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:165
+#: octoprint_telegram/templates/telegram_settings.jinja2:254
+msgid "Variables"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:166
+#: octoprint_telegram/templates/telegram_settings.jinja2:288
+msgid "Emojis"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:175
+msgid "Stuff"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:180
+msgid "Allow this plugin to send anonymous usage data."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:182
+msgid ""
+"Id like to know how many people are using this plugin and how it is used."
+" So I implemented a method to report\n"
+"\t\t\tanonymous usage data back to me. That data doesnt contain any "
+"private information, just generic things like \"the plugin was started\" "
+"or\n"
+"\t\t\t\"a print finished notification has been sent\". That feature is "
+"off by default. If you leave it off, no data of any kind will be sent "
+"back\n"
+"\t\t\tto me."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:193
+msgid "Enable logging of debug information for this plugin to octoprint.log"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:203
+msgid "Edit User"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:227
+msgid "Close"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:257
+msgid ""
+"Use Variables by adding <code>&#123; &lt;varName&gt; &#125;</code> to "
+"your message text (eg <code>&#123;bed_temp&#125;</code>). Usable "
+"Variables are:"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:261
+msgid "Variable"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:262
+msgid "Description"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:268
+msgid "The currently printing file."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:269
+msgid "Only useful while printing"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:272
+msgid "The current z value."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:273
+msgid "The current percentage of the print progress."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:273
+msgid "Only useful for height change notifications"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:274
+msgid "Time done / left in the print."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:274
+msgid "Only useful for height change events"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:275
+msgid "Temperatures of bed, extruder 1 and extruder 2."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:276
+msgid "Target temperatures of bed, extruder 1 and extruder 2."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:277
+msgid "The name of the event which caused the notification."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:280
+msgid "Note"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:280
+msgid ""
+"On startup and a few moments after startup of OctoPrint the temeratures "
+"cant be retrieved from the printer and will be shown as 0.0"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:291
+msgid ""
+"Add <code>&#123;emo:&lt;emoName&gt;&#125;</code> to your message text to "
+"use emojis. The <code>emoName</code> has to be set according to the "
+"Description column on <a "
+"href=\"http://apps.timwhitlock.info/emoji/tables/unicode\" target "
+"=\"_blank\">this Website</a>. No emoji will be send, if Send emojis is "
+"deactivated."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:294
+msgid ""
+"<b>Example:</b><br>If you want to use <img id=\"1f62d\" "
+"class=\"teleEmojiImg\"> in yor message you have to type "
+"<code>&#123;emo:loudly crying face&#125;</code>."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:296
+msgid "There are a few shortcuts available:"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:300
+#: octoprint_telegram/templates/telegram_settings.jinja2:302
+msgid "Emoji"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:301
+#: octoprint_telegram/templates/telegram_settings.jinja2:303
+msgid "emoName"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:326
+msgid ""
+"Data for internal icon list taken from: <a "
+"href=\"https://github.com/github/gemoji\" "
+"target=\"_blank\">github/gemoji</a><br>\n"
+"\t    \t\tThese emoji images are taken from Githubs <a "
+"href=\"https://github.com/github/gemoji\" target=\"_blank\">gemoji "
+"project</a>. The icons are copyright of Apple Inc. See the <a "
+"href=\"https://github.com/github/gemoji/blob/master/LICENSE\" "
+"target=\"_blank\">license</a> for details."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:343
+msgid ""
+"You can use simple markup in messages. Markup for messages is activated "
+"by the markup options besides the message text fields. You can choose "
+"using HTML markup or the markdown variant. The list below shows the "
+"different markups you are able to use."
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:347
+msgid "Markdown"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:348
+msgid "HTML"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:349
+msgid "Effect"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:353
+#: octoprint_telegram/templates/telegram_settings.jinja2:354
+#: octoprint_telegram/templates/telegram_settings.jinja2:355
+msgid "bold"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:358
+#: octoprint_telegram/templates/telegram_settings.jinja2:359
+#: octoprint_telegram/templates/telegram_settings.jinja2:360
+msgid "italic"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:363
+#: octoprint_telegram/templates/telegram_settings.jinja2:364
+msgid "linkText"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:365
+msgid "LinkText"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:368
+#: octoprint_telegram/templates/telegram_settings.jinja2:369
+#: octoprint_telegram/templates/telegram_settings.jinja2:370
+msgid "inline code"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:373
+#: octoprint_telegram/templates/telegram_settings.jinja2:374
+#: octoprint_telegram/templates/telegram_settings.jinja2:375
+msgid "code block"
+msgstr ""
+
+#: octoprint_telegram/templates/telegram_settings.jinja2:382
+msgid ""
+"See <a href=\"https://core.telegram.org/bots/api#formatting-options\" "
+"target=\"_blank\">Telegram Bot API Documentation</a> for more "
+"information."
+msgstr ""
+
