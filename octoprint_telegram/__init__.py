@@ -180,16 +180,16 @@ class TelegramListener(threading.Thread):
 		if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
 			command = message['message']['reply_to_message']['text']
 			parameter = message['message']['text']
-			if command not in self.main.tcmd.commandDict:
+			if not any(v['name'] == command for d, v in self.main.tcmd.commandDict.iteritems()):
 				command = message['message']['text']
 				parameter = message['message']['reply_to_message']['text']
 		# if command is '/print_', '/sys_' or '/ctrl_', get the parameter
-		elif "/print_" in command or "/sys_" in command or "/ctrl_" in command:
+		elif command.startswith("/print_") or command.startswith("/sys_") or command.startswith("/ctrl_"):
 			parameter = '_'.join(command.split('_')[1:])
 			command = command.split('_')[0] + "_"
 		self._logger.info("Got a command: '" + command + "' with parameter: '" + parameter + "' in chat " + str(message['message']['chat']['id']))
 		# is command  known? 
-		if command not in self.main.tcmd.commandDict:
+		if not any(v['name'] == command for d,v in self.main.tcmd.commandDict.iteritems()):
 			# we dont know the command so skip the message
 			self._logger.warn("Previous command was an unknown command.")
 			self.main.send_msg(gettext("I do not understand you! ") + self.gEmo('mistake'),chatID=chat_id)
@@ -203,7 +203,9 @@ class TelegramListener(threading.Thread):
 			if command.startswith("/"):
 				self.main.track_action("command/" + command[1:])
 			# execute command
-			self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter)
+			match = next((l for l,v in self.main.tcmd.commandDict.iteritems() if v['name'] == command), None)
+			if match is not None:
+				self.main.tcmd.commandDict[match]['cmd'](chat_id=chat_id,parameter=parameter)
 			# we dont need the messageResponseID anymore
 			self.main.messageResponseID = None
 		else:
@@ -297,14 +299,17 @@ class TelegramListener(threading.Thread):
 	# checks if the received command is allowed to execute by the user
 	def isCommandAllowed(self, chat_id, from_id, command):
 		if command is not None or command is not "":
+			cId = next((l for l, v in self.main.tcmd.commandDict.iteritems() if v['name'] == command), None)
+			if cId is None:
+				return False
 			if self.main.chats[chat_id]['accept_commands']:
-				if self.main.chats[chat_id]['commands'][command]:
+				if self.main.chats[chat_id]['commands'][str(cId)]:
+					return True
+				elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users'] and str(from_id) in self.main.chats:
+					if self.main.chats[from_id]['commands'][str(cId)] and self.main.chats[from_id]['accept_commands']:
 						return True
-				elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
-					if self.main.chats[from_id]['commands'][command] and self.main.chats[from_id]['accept_commands']:
-						return True
-			elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
-				if self.main.chats[from_id]['commands'][command] and self.main.chats[from_id]['accept_commands']:
+			elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users'] and str(from_id) in self.main.chats:
+				if self.main.chats[from_id]['commands'][str(cId)] and self.main.chats[from_id]['accept_commands']:
 						return True
 		return False
 
@@ -511,7 +516,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			messages = telegramMsgDict,
 			tracking_activated = False,
 			tracking_token = None,
-			chats = {'zBOTTOMOFCHATS':{'send_notifications': False,'accept_commands':False,'private':False}},
+			chats = {'zBOTTOMOFCHATS':{'send_notifications': False,'accept_commands':False,'private':False,'allow_users':False}},
 			debug = False,
 			send_icon = True
 		)
@@ -717,9 +722,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if not key == "zBOTTOMOFCHATS":
 				for cmd in self.tcmd.commandDict:
 					if 'bind_cmd' in self.tcmd.commandDict[cmd]:
-						data['chats'][key]['commands'][cmd] = data['chats'][key]['commands'][self.tcmd.commandDict[cmd]['bind_cmd']]
+						data['chats'][key]['commands'][str(cmd)] = data['chats'][key]['commands'][str(self.tcmd.commandDict[cmd]['bind_cmd'])]
 					if 'bind_none' in self.tcmd.commandDict[cmd]:
-						data['chats'][key]['commands'][cmd] = True
+						data['chats'][key]['commands'][str(cmd)] = True
 			# Look for deleted chats
 			if not key in self.chats and not key == "zBOTTOMOFCHATS":
 				delList.append(key)
@@ -814,19 +819,19 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				else:
 					bind_text[telegramMsgDict[key]['bind_msg']] = [key]
 			return json.dumps({
-				'bind_cmd':[k for k, v in self.tcmd.commandDict.iteritems() if 'bind_cmd' not in v and 'bind_none' not in v ],
+				'bind_cmd':{v['name']:k for k, v in self.tcmd.commandDict.iteritems() if 'bind_cmd' not in v and 'bind_none' not in v },
 				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
 				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
-		else:
-			retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
-			for chat in retChats:
-				if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
-					retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
-				elif int(chat) < 0:
-					retChats[chat]['image'] = "/plugin/telegram/img/static/group.jpg"
-				else:
-					retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
+		
+		retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
+		for chat in retChats:
+			if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
+				retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
+			elif int(chat) < 0:
+				retChats[chat]['image'] = "/plugin/telegram/img/static/group.jpg"
+			else:
+				retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
 
 		return json.dumps({'chats':retChats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 	
@@ -1067,6 +1072,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data = output.getvalue()
 			output.close()
 		return data
+
 	def track_action(self, action):
 		if not self._settings.get_boolean(["tracking_activated"]):
 			return

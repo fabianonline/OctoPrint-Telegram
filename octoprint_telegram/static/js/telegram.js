@@ -273,17 +273,27 @@ $(function() {
 
         self.showEditCmdDialog = function(data,option) {
             if (data === undefined) return;
-            if (option == "commands")
+            if (data === undefined) return;
+            var keys = 0;
+            if (option == "commands"){
                 txtTemp = gettext("Edit commands");
-            else
-                txtTemp = gettext("Edit notifications")
+                var keys = Object.keys(self.bind[option]);
+                keys.sort();
+            }
+            else{
+                txtTemp = gettext("Edit notifications");
+                self.bind[option].sort();
+            }
             self.currChatTitle(txtTemp + ": " +data.title);
             for(self.cmdCnt;self.cmdCnt>0;self.cmdCnt--)
                 $("#telegram-cmd-chkbox"+(self.cmdCnt-1)).remove();
-            keys = self.bind[option].sort();
+
             for(var id in keys) {
                 if( self.bind['no_setting'].indexOf(keys[id]) < 0) {
-                    $("#telegram-cmd-chkbox-grp").append('<span id="telegram-cmd-chkbox'+self.cmdCnt+'"><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\'][\''+keys[id]+'\']"> <span>'+keys[id]     +'</span><label></span>');
+                    if (option == "commands")
+                        $("#telegram-cmd-chkbox-grp").append('<span id="telegram-cmd-chkbox'+self.cmdCnt+'"><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\']['+self.bind[option][keys[id]]+']"> <span>'+keys[id]     +'</span><label></span>');
+                    else
+                        $("#telegram-cmd-chkbox-grp").append('<span id="telegram-cmd-chkbox'+self.cmdCnt+'"><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\'][\''+keys[id]+'\']"> <span>'+keys[id]     +'</span><label></span>');
                     ko.applyBindings(self, $("#telegram-cmd-chkbox"+self.cmdCnt++)[0]);
                 }
             }

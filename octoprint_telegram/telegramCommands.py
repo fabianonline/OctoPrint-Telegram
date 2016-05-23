@@ -17,133 +17,134 @@ class TCMD():
 		self.gEmo = self.main.gEmo
 		self.tmpSysCmd = {}
 		self._logger = main._logger.getChild("TCMD")
-		self.commandDict = {{
+		self.commandDict = {
+			0: {
 			'name': gettext("Yes"), 
 			'cmd': self.cmdYes, 
-			'bind_none': True, 
-			'id':0
-			},{
+			'bind_none': True
+			},
+			1: {
 			'name': gettext("Cancel"),
 			'cmd': self.cmdNo,
-			'bind_none': True,
-			'id':1
-			},{
+			'bind_none': True
+			},
+			2: {
 			'name': gettext("No"),
-			'cmd': self.cmdNo,'bind_none': True,
-			'id':2
-			},{
+			'cmd': self.cmdNo,
+			'bind_none': True
+			},
+			3: {
 			'name': gettext("Change height"),
 			'cmd': self.cmdChgHeight,
-			'bind_cmd': '/settings',
-			'id':3
-			},{
+			'bind_cmd': 16
+			},
+			4: {
 			'name': (self.gEmo('enter') + gettext(" Enter height")),
 			'cmd': self.cmdSetHeight,
-			'bind_cmd': '/settings',
-			'id':4
-			},{
+			'bind_cmd': 16
+			},
+			5: {
 			'name': gettext(" Enter height"),
 			'cmd': self.cmdSetHeight,
-			'bind_cmd': '/settings',
-			'id':5
-			},{
+			'bind_cmd': 16
+			},
+			6: {
 			'name': gettext("Change time"),
 			'cmd': self.cmdChgTime,
-			'bind_cmd': '/settings',
-			'id':6
-			},{
+			'bind_cmd': 16
+			},
+			7: {
 			'name': (self.gEmo('enter') + gettext(" Enter time")),
 			'cmd': self.cmdSetTime,
-			'bind_cmd': '/settings',
-			'id':7
-			},{
+			'bind_cmd': 16
+			},
+			8: {
 			'name': gettext(" Enter time"),
 			'cmd': self.cmdSetTime,
-			'bind_cmd': '/settings',
-			'id':8
-			},{
+			'bind_cmd': 16
+			},
+			9: {
 			'name': gettext("Start print"),
 			'cmd': self.cmdStartPrint,
-			'bind_cmd': '/print',
-			'id':9
-			},{
+			'bind_cmd': 20
+			},
+			10: {
 			'name': gettext("Stop print"),
 			'cmd': self.cmdHalt,
-			'bind_cmd': '/print',
-			'id':10
-			},{
+			'bind_cmd': 20
+			},
+			27: {
 			'name': gettext("Don't print"),
 			'cmd': self.cmdDontPrint,
-			'bind_cmd': '/print',
-			'id':11
-			},{
+			'bind_cmd': 20
+			},
+			11: {
 			'name': gettext("Do System Command"),
 			'cmd': self.cmdSysRun,
-			'bind_cmd': '/sys',
-			'id':12
-			},{
-			'id': 13,
+			'bind_cmd': 23
+			},
+			12: {
 			'name': '/print_',
 			'cmd': self.cmdRunPrint,
-			'bind_cmd': '/print'
-			},{
-			'id': 13,
+			'bind_cmd': 20
+			},
+			13: {
 			'name': '/test',
 			'cmd': self.cmdTest
-			},{
-			'id': 13,
+			},
+			14: {
 			'name': '/status',
 			'cmd': self.cmdStatus
-			},{
-			'id': 13,
+			},
+			15: {
 			'name': '/abort',
 			'cmd': self.cmdAbort
-			},{
-			'id': 13,
+			},
+			16: {
 			'name': '/settings',
 			'cmd': self.cmdSettings
-			},{
-			'id': 13,
+			},
+			17: {
 			'name': '/shutup',
 			'cmd': self.cmdShutup
-			},{
-			'id': 13,
+			},
+			18: {
 			'name': '/imsorrydontshutup',
 			'cmd': self.cmdNShutup
-			},{
-			'id': 13,
+			},
+			19: {
 			'name': '/list',
 			'cmd': self.cmdList
-			},{
-			'id': 13,
+			},
+			20: {
 			'name': '/print',
 			'cmd': self.cmdPrint
-			},{
-			'id': 13,
+			},
+			21: {
 			'name': '/upload',
 			'cmd': self.cmdUpload
-			},{
-			'id': 13,
+			},
+			22: {
 			'name': '/help',
 			'cmd': self.cmdHelp
-			},{
-			'id': 13,
+			},
+			23: {
 			'name': '/sys',
 			'cmd': self.cmdSys
-			},{
-			'id': 13,
+			},
+			24: {
 			'name': '/sys_',
 			'cmd': self.cmdSysReq,
-			'bind_cmd': '/sys'
-			},{
-			'id': 13,
+			'bind_cmd': 23
+			},
+			25: {
 			'name': '/ctrl',
 			'cmd': self.cmdCtrl
-			},{
-			'id': 13,
+			},
+			26: {
 			'name': '/ctrl_',
 			'cmd': self.cmdCtrlRun,
-			'bind_cmd': '/ctrl'}
+			'bind_cmd': 25}
 		}
 
 	def cmdYes(self,chat_id,**kwargs):
