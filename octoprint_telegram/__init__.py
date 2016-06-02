@@ -709,19 +709,20 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def on_settings_save(self, data):
 		delList = []
 		# Remove 'new'-flag and apply bindings for all chats
-		for key in data['chats']:
-			if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
-				data['chats'][key]['new'] = False
-			# Apply command bindings
-			if not key == "zBOTTOMOFCHATS":
-				for cmd in self.tcmd.commandDict:
-					if 'bind_cmd' in self.tcmd.commandDict[cmd]:
-						data['chats'][key]['commands'][cmd] = data['chats'][key]['commands'][self.tcmd.commandDict[cmd]['bind_cmd']]
-					if 'bind_none' in self.tcmd.commandDict[cmd]:
-						data['chats'][key]['commands'][cmd] = True
-			# Look for deleted chats
-			if not key in self.chats and not key == "zBOTTOMOFCHATS":
-				delList.append(key)
+		if data['chats']:
+			for key in data['chats']:
+				if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
+					data['chats'][key]['new'] = False
+				# Apply command bindings
+				if not key == "zBOTTOMOFCHATS":
+					for cmd in self.tcmd.commandDict:
+						if 'bind_cmd' in self.tcmd.commandDict[cmd]:
+							data['chats'][key]['commands'][cmd] = data['chats'][key]['commands'][self.tcmd.commandDict[cmd]['bind_cmd']]
+						if 'bind_none' in self.tcmd.commandDict[cmd]:
+							data['chats'][key]['commands'][cmd] = True
+				# Look for deleted chats
+				if not key in self.chats and not key == "zBOTTOMOFCHATS":
+					delList.append(key)
 		# Delete chats finally
 		for key in delList:
 			del data['chats'][key]
