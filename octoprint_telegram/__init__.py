@@ -467,9 +467,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
 			}
+		self.chats = self._settings.get(["chats"])
 		self.start_listening()
 		self.track_action("started")
-		self.chats = self._settings.get(["chats"])
 		# Delete user profile photos if user doesn't exist anymore
 		for f in os.listdir(self.get_plugin_data_folder()+"/img/user"):
 			fcut = f.split('.')[0][3:]
