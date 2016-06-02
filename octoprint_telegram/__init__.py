@@ -817,15 +817,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
 				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
-		else:
-			retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
-			for chat in retChats:
-				if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
-					retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
-				elif int(chat) < 0:
-					retChats[chat]['image'] = "/plugin/telegram/img/static/group.jpg"
-				else:
-					retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
+		
+		retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
+		for chat in retChats:
+			if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
+				retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
+			elif int(chat) < 0:
+				retChats[chat]['image'] = "/plugin/telegram/img/static/group.jpg"
+			else:
+				retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
 
 		return json.dumps({'chats':retChats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 	
