@@ -860,7 +860,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			# If it's a regular event notification
 			if 'chatID' not in kwargs and 'event' in kwargs:
-				self._logger.debug("Send_msg() fond event: " + str(kwargs['event']))
+				self._logger.debug("Send_msg() found event: " + str(kwargs['event']))
 				for key in self.chats: 
 					if key != 'zBOTTOMOFCHATS':
 						if self.chats[key]['notifications'][kwargs['event']] and key not in self.shut_up and self.chats[key]['send_notifications']:
