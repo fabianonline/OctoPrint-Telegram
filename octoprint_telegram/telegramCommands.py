@@ -241,9 +241,9 @@ class TCMD():
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/list - Lists all the files available for printing and lets you start printing them.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
-		                           "/upload - You can just send me a gcode file to save it to my library."
-		                           "/sys - Execute Octoprint System Comamnds"
-		                           "/ctrl - Use self defined controls from Octoprint"),chatID=chat_id)
+		                           "/upload - You can just send me a gcode file to save it to my library.\n"
+		                           "/sys - Execute Octoprint System Comamnds.\n"
+		                           "/ctrl - Use self defined controls from Octoprint."),chatID=chat_id)
 
 	def get_flat_file_tree(self):
 		tree = self.main._file_manager.list_files(recursive=True)

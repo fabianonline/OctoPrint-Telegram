@@ -82,7 +82,7 @@ class TelegramListener(threading.Thread):
 		if message['update_id'] >= self.update_offset:
 			self.update_offset = message['update_id']+1
 		# no message no cookies
-		if not message['message'] or not message['message']['chat']:
+		if 'message' not in message or not message['message']['chat']:
 			self._logger.warn("Response is missing .message or .message.chat. Skipping it.")
 			raise ExitThisLoopException()
 		
@@ -143,7 +143,7 @@ class TelegramListener(threading.Thread):
 	def handleDocumentMessage(self, message, chat_id, from_id):
 		# first we have to check if chat or group is allowed to upload
 		from_id = chat_id
-		if not data['private']: #is this needed? can one send files from groups to bots?
+		if not self.main.chats[chat_id]['private']: #is this needed? can one send files from groups to bots?
 			from_id = str(message['message']['from']['id'])
 		# is /upload allowed?
 		if self.isCommandAllowed(chat_id,from_id,'/upload'):
@@ -467,9 +467,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
 			}
+		self.chats = self._settings.get(["chats"])
 		self.start_listening()
 		self.track_action("started")
-		self.chats = self._settings.get(["chats"])
 		# Delete user profile photos if user doesn't exist anymore
 		for f in os.listdir(self.get_plugin_data_folder()+"/img/user"):
 			fcut = f.split('.')[0][3:]
@@ -709,19 +709,20 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def on_settings_save(self, data):
 		delList = []
 		# Remove 'new'-flag and apply bindings for all chats
-		for key in data['chats']:
-			if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
-				data['chats'][key]['new'] = False
-			# Apply command bindings
-			if not key == "zBOTTOMOFCHATS":
-				for cmd in self.tcmd.commandDict:
-					if 'bind_cmd' in self.tcmd.commandDict[cmd]:
-						data['chats'][key]['commands'][cmd] = data['chats'][key]['commands'][self.tcmd.commandDict[cmd]['bind_cmd']]
-					if 'bind_none' in self.tcmd.commandDict[cmd]:
-						data['chats'][key]['commands'][cmd] = True
-			# Look for deleted chats
-			if not key in self.chats and not key == "zBOTTOMOFCHATS":
-				delList.append(key)
+		if data['chats']:
+			for key in data['chats']:
+				if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
+					data['chats'][key]['new'] = False
+				# Apply command bindings
+				if not key == "zBOTTOMOFCHATS":
+					for cmd in self.tcmd.commandDict:
+						if 'bind_cmd' in self.tcmd.commandDict[cmd]:
+							data['chats'][key]['commands'][cmd] = data['chats'][key]['commands'][self.tcmd.commandDict[cmd]['bind_cmd']]
+						if 'bind_none' in self.tcmd.commandDict[cmd]:
+							data['chats'][key]['commands'][cmd] = True
+				# Look for deleted chats
+				if not key in self.chats and not key == "zBOTTOMOFCHATS":
+					delList.append(key)
 		# Delete chats finally
 		for key in delList:
 			del data['chats'][key]
@@ -817,15 +818,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
 				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
-		else:
-			retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
-			for chat in retChats:
-				if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
-					retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
-				elif int(chat) < 0:
-					retChats[chat]['image'] = "/plugin/telegram/img/static/group.jpg"
-				else:
-					retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
+		
+		retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
+		for chat in retChats:
+			if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
+				retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
+			elif int(chat) < 0:
+				retChats[chat]['image'] = "/plugin/telegram/img/static/group.jpg"
+			else:
+				retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
 
 		return json.dumps({'chats':retChats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 	
@@ -860,7 +861,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			# If it's a regular event notification
 			if 'chatID' not in kwargs and 'event' in kwargs:
-				self._logger.debug("Send_msg() fond event: " + str(kwargs['event']))
+				self._logger.debug("Send_msg() found event: " + str(kwargs['event']))
 				for key in self.chats: 
 					if key != 'zBOTTOMOFCHATS':
 						if self.chats[key]['notifications'][kwargs['event']] and key not in self.shut_up and self.chats[key]['send_notifications']:
@@ -1066,13 +1067,25 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data = output.getvalue()
 			output.close()
 		return data
+		
 	def track_action(self, action):
 		if not self._settings.get_boolean(["tracking_activated"]):
 			return
 		if self._settings.get(["tracking_token"]) is None:
 			token = "".join(random.choice("abcdef0123456789") for i in xrange(16))
 			self._settings.set(["tracking_token"], token)
-		params = {'idsite': '3', 'rec': '1', 'url': 'http://octoprint-telegram/'+action, 'action_name': ("%20/%20".join(action.split("/"))), '_id': self._settings.get(["tracking_token"])}
+		params = {
+			'idsite': '3',
+			'rec': '1',
+			'url': 'http://octoprint-telegram/'+action,
+			'action_name': ("%20/%20".join(action.split("/"))),
+			'_id': self._settings.get(["tracking_token"]),
+			'uid': self._settings.get(["tracking_token"]),
+			'cid': self._settings.get(["tracking_token"]),
+			'send_image': '0',
+			'_idvc': '1',
+			'dimension1': str(self._plugin_version)
+		}
 		t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params})
 		t.daemon = True
 		t.run()
