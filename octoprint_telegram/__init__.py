@@ -203,7 +203,7 @@ class TelegramListener(threading.Thread):
 			if command.startswith("/"):
 				self.main.track_action("command/" + command[1:])
 			# execute command
-			self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter)
+			self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter,cmd=command)
 			# we dont need the messageResponseID anymore
 			self.main.messageResponseID = None
 		else:
