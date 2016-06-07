@@ -782,7 +782,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if event in self.tmsg.msgCmdDict:
 				self._logger.debug("Got an event: " + event + " Payload: " + str(payload))
 				# Start event handler
-				self.tmsg.msgCmdDict[event](event, payload, **kwargs)
+				self.tmsg.startEvent(event, payload, **kwargs)
 			else:
 				# return as fast as possible
 				return
@@ -1089,7 +1089,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params})
 		t.daemon = True
 		t.run()
-
 
 	def route_hook(self, server_routes, *args, **kwargs):
 		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory

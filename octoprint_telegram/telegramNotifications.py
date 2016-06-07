@@ -84,19 +84,16 @@ class TMSG():
 			'StatusPrinting': self.msgStatusPrinting
 		}
 
-	def _prepMsg(self, event):
+	def startEvent(self, event, payload, **kwargs):
 		status = self.main._printer.get_current_data()
 		self.z = status['currentZ'] or 0.0
-		if 'bind_msg' in telegramMsgDict[event]:
-			event = telegramMsgDict[event]['bind_msg']
-		return event
+		kwargs['event'] = event
+		self.msgCmdDict[event](payload, **kwargs)
 
-	def msgPrinterStart_Shutdown(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgPrinterStart_Shutdown(self, payload, **kwargs):
 		self._sendNotification(payload, **kwargs)
 
-	def msgZChange(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgZChange(self, payload, **kwargs):
 		status = self.main._printer.get_current_data()
 		if not status['state']['flags']['printing'] or not self.is_notification_necessary(payload['new'], payload['old']):
 			return
@@ -109,40 +106,36 @@ class TMSG():
 			self.main._settings.get_int(['notification_time']))
 		self._sendNotification(payload, **kwargs)
 
-	def msgPrintStarted(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgPrintStarted(self, payload, **kwargs):
 		self.last_z = 0.0
 		self.last_notification_time = time.time()
 		self._sendNotification(payload, **kwargs)
 
-	def msgPrintDone(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgPrintDone(self, payload, **kwargs):
 		self.main.shut_up = {}
 		kwargs["delay"] = self.main._settings.get_int(["message_at_print_done_delay"])
 		self._sendNotification(payload, **kwargs)
 
-	def msgPrintFailed(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgPrintFailed(self, payload, **kwargs):
 		self.main.shut_up = {}
 		self._sendNotification(payload, **kwargs)
 		
-	def msgStatusPrinting(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgStatusPrinting(self, payload, **kwargs):
 		self.track = False
 		self._sendNotification(payload, **kwargs)
 
-	def msgStatusNotPrinting(self, event, payload, **kwargs):
-		kwargs['event'] = self._prepMsg(event)
+	def msgStatusNotPrinting(self, payload, **kwargs):
 		self.track = False
 		self._sendNotification(payload, **kwargs)
 
 	def _sendNotification(self, payload, **kwargs):
 		status = self.main._printer.get_current_data()
+		event = kwargs['event']
+		kwargs['event'] = telegramMsgDict[event]['bind_msg'] if 'bind_msg' in telegramMsgDict[event] else event
 		kwargs['with_image'] = self.main._settings.get(['messages',str(kwargs['event']),'image'])
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z
-		event = kwargs['event']
 		temps = self.main._printer.get_current_temperatures()
 		self._logger.debug("TEMPS - " + str(temps))
 		bed_temp = temps['bed']['actual'] if 'bed' in temps else 0.0
@@ -166,7 +159,7 @@ class TMSG():
 			message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())
 		except Exception as ex:
 			self._logger.debug("Exception on formatting message: " + str(ex))
-			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+kwargs['event']+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + kwargs['event'] + "'."
+			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+event+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + event + "'."
 		self._logger.debug("Sending Notification: " + message)
 		# Do we want to send with Markup?
 		kwargs['markup'] = self.main._settings.get(["messages",kwargs['event'],"markup"]) 
@@ -174,7 +167,7 @@ class TMSG():
 		self.main.send_msg(message, **kwargs)
 
 		if self.track:
-			self.main.track_action("notification/" + kwargs['event'])
+			self.main.track_action("notification/" + event)
 		self.track = True
 
 	# Helper to determine if notification will be send on gcode ZChange event
