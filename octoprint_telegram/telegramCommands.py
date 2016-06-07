@@ -61,19 +61,15 @@ class TCMD():
 		return ret
 
 	def cmdYes(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(gettext("Alright."),chatID=chat_id)
 
 	def cmdNo(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 
 	def cmdTest(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('question') + gettext(" Is this a test?\n\n") , responses=[gettext("Yes"), gettext("No")],chatID=chat_id)
 
 	def cmdStatus(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		if not self.main._printer.is_operational():
 			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer."),chatID=chat_id)
 		elif self.main._printer.is_printing():
@@ -82,65 +78,53 @@ class TCMD():
 			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 
 	def cmdSettings(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		msg = self.gEmo('settings') + gettext(" Current notification settings are:\n\n\n"+self.gEmo('height')+" height: %(height)fmm\n\n"+self.gEmo('clock')+" time: %(time)dmin\n\n\n"+self.gEmo('question')+"Which value do you want to change?",
 			height=self.main._settings.get_float(["notification_height"]),
 			time=self.main._settings.get_int(["notification_time"]))
 		self.main.send_msg(msg, responses=[gettext("Change height"), gettext("Change time"), gettext("Cancel")],chatID=chat_id)
 
 	def cmdChgHeight(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('enter') + " " + gettext("Enter height"), force_reply=True,chatID=chat_id)
 
 	def cmdSetHeight(self,chat_id,parameter,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd'],parameter): return 
 		self.main._settings.set_float(['notification_height'], parameter, force=True)
 		self.main.send_msg(self.gEmo('height') + gettext(" Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])),chatID=chat_id)
 
 	def cmdChgTime(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('enter') + " " +gettext("Enter time"), force_reply=True,chatID=chat_id)
 
 	def cmdSetTime(self,chat_id,parameter,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd'],parameter): return
 		self.main._settings.set_int(['notification_time'], parameter, force=True)
 		self.main.send_msg(self.gEmo('clock') + gettext(" Notification time is now %(time)dmins.", time=self.main._settings.get_int(['notification_time'])),chatID=chat_id)
 
 	def cmdAbort(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		if self.main._printer.is_printing():
 			self.main.send_msg(self.gEmo('question') + gettext(" Really abort the currently running print?"), responses=[gettext("Stop print"), gettext("Cancel")],chatID=chat_id)
 		else:
 			self.main.send_msg(self.gEmo('warning') + gettext(" Currently I'm not printing, so there is nothing to stop."),chatID=chat_id)
 
 	def cmdHalt(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('info') + gettext(" Aborting the print."),chatID=chat_id)
 		self.main._printer.cancel_print()
 
 	def cmdDontPrint(self, chat_id, **kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main._printer.unselect_file()
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 							
 	def cmdShutup(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		if chat_id not in self.main.shut_up:
 			self.main.shut_up[chat_id] = True
 		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished." + self.gEmo('shutup')+" Use /imsorrydontshutup to let me talk again before that. "),chatID=chat_id)
 
 	def cmdNShutup(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		if chat_id in self.main.shut_up:
 			del self.main.shut_up[chat_id]
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id)
 
 	def cmdPrint(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('info') + " Use /list to get a list of files and click the command beginning with /print after the correct file.",chatID=chat_id)
 
 	def cmdRunPrint(self,chat_id,parameter,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd'],parameter): return
 		self._logger.debug("Looking for hash: %s", parameter)
 		destination, file = self.find_file_by_hash(parameter)
 		self._logger.debug("Destination: %s", destination)
@@ -161,7 +145,6 @@ class TCMD():
 			self.main.send_msg(self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name']), responses=[gettext("Start print"), gettext("Don't print")],chatID=chat_id)
 
 	def cmdStartPrint(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		data = self.main._printer.get_current_data()
 		if data['job']['file']['name'] is None:
 			self.main.send_msg(self.gEmo('warning') + gettext(" Uh oh... No file is selected for printing. Did you select one using /list?"),chatID=chat_id)
@@ -176,16 +159,13 @@ class TCMD():
 		self.main.send_msg(self.gEmo('rocket') + gettext(" Started the print job."),chatID=chat_id)
 
 	def cmdList(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		files = self.get_flat_file_tree()
 		self.main.send_msg(self.gEmo('save') + " File List:\n\n" + "\n".join(files) + "\n\n"+self.gEmo('info')+" You can click the command beginning with /print after a file to start printing this file.",chatID=chat_id)
 
 	def cmdUpload(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
 
 	def cmdSys(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		message = self.gEmo('info') + " You have to pass a System Command. The following System Commands are known.\n(Click to execute)\n\n"
 		empty = True
 		for action in self.main._settings.global_get(['system','actions']):
@@ -202,7 +182,6 @@ class TCMD():
 			kwargs['cmd'] = "/sys"
 			self.cmdSys(chat_id, **kwargs)
 			return
-		if not self.checkState(chat_id,kwargs['cmd'],parameter): return
 		actions = self.main._settings.global_get(['system','actions'])
 		command = next((d for d in actions if 'action' in d and self.hashMe(d['action'], 6) == parameter) , False)
 		if command :
@@ -212,7 +191,6 @@ class TCMD():
 
 	def cmdSysRun(self,chat_id,**kwargs):
 		parameter = self.stateList[chat_id][1]
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		actions = self.main._settings.global_get(['system','actions'])
 		action = next((i for i in actions if self.hashMe(i['action'], 6) == parameter), False)
 		### The following is taken from OctoPrint/src/octoprint/server/api/__init__.py -> performSystemAction()
@@ -237,7 +215,6 @@ class TCMD():
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id)
 
 	def cmdCtrl(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		message = self.gEmo('info') + " You have to pass a Printer Control Command. The following Printer Controls are known.\n(Click to execute)\n\n"
 		empty = True
 		for action in self.get_controls_recursively():
@@ -250,7 +227,6 @@ class TCMD():
 		if parameter is None or parameter is "":
 			self.cmdCtrl(chat_id, **kwargs)
 			return
-		if not self.checkState(chat_id,kwargs['cmd'],parameter): return
 		actions = self.get_controls_recursively()
 		command = next((d for d in actions if d['hash'] == parameter), False)
 		if command:
@@ -264,7 +240,6 @@ class TCMD():
 			self.main.send_msg(self.gEmo('warning') + " Control Command ctrl_" + parameter + " not found." ,chatID=chat_id)
 
 	def cmdHelp(self,chat_id,**kwargs):
-		if not self.checkState(chat_id,kwargs['cmd']): return
 		self.main.send_msg(self.gEmo('info') + gettext(" You can use following commands:\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"

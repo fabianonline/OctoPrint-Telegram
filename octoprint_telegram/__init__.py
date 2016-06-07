@@ -195,7 +195,7 @@ class TelegramListener(threading.Thread):
 			self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
 			raise ExitThisLoopException()
 		# check if user is allowed to execute the command
-		if self.isCommandAllowed(chat_id,from_id,command):
+		if self.isCommandAllowed(chat_id,from_id,command) and self.main.tcmd.checkState(from_id, command, parameter):
 			# messageRespondID is needed to send command replys only to the sender
 			# if message is from a group
 			self.main.messageResponseID = message['message']['message_id']
