@@ -26,6 +26,16 @@ telegramMsgDict = {
 				'image': True,
 				'markup': "off"
 			},
+			'PrintPaused': {
+				'text': gettext("Paused printing {file} at {percent}%%. {time_left} remaining."),
+				'image': True,
+				'markup': "off"
+			},
+			'PrintResumed': {
+				'text': gettext("Resumed printing {file} at {percent}%%. {time_left} remaining."),
+				'image': True,
+				'markup': "off"
+			},
 			'PrintFailed': {
 				'text': gettext("Printing {file} failed."),
 				'image': True,
@@ -78,6 +88,8 @@ class TMSG():
 			'PrinterShutdown': self.msgPrinterStart_Shutdown,
 			'PrintStarted': self.msgPrintStarted,
 			'PrintFailed': self.msgPrintFailed,
+			'PrintPaused': self.msgPaused,
+			'PrintResumed': self.msgResumed,
 			'ZChange': self.msgZChange,
 			'PrintDone': self.msgPrintDone,
 			'StatusNotPrinting': self.msgStatusNotPrinting,
@@ -118,6 +130,12 @@ class TMSG():
 
 	def msgPrintFailed(self, payload, **kwargs):
 		self.main.shut_up = {}
+		self._sendNotification(payload, **kwargs)
+
+	def msgPaused(self, payload, **kwargs):
+		self._sendNotification(payload, **kwargs)
+		
+	def msgResumed(self, payload, **kwargs):
 		self._sendNotification(payload, **kwargs)
 		
 	def msgStatusPrinting(self, payload, **kwargs):
