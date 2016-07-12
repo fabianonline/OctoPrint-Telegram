@@ -44,6 +44,7 @@ To allow the plugin to send messages via telegram, you have to register a telegr
  shutup - Disables automatic notifications till the next print ends.
  imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.
  status - Sends the current status including a current photo.
+ togglepause - Pause or resule a print
  settings - Displays the current notification settings and allows you to change them.
  list - Lists all the files available for printing and lets you start printing them.
  print - Lets you start a print. A confirmation is required.
