@@ -477,7 +477,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if fcut not in self.chats:
 				self._logger.debug("Removing pic" +fcut+".jpg")
 				try:
-					os.remove(self.get_plugin_data_folder()++"/img/user/"+f)
+					os.remove(self.get_plugin_data_folder()+"/img/user/"+f)
 				except OSError:
 					pass
 		#Update user profile photos
