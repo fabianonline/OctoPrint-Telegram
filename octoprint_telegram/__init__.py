@@ -456,7 +456,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.tcmd = TCMD(self) 
 		self.tmsg = TMSG(self) # Notification Message Handler class. called only by on_event()
 		# initial settings for new chat.
-		# !!! sync with newUsrDict in on_settings_migrate() !!!
+		# !!! sync this dict with newUsrDict in on_settings_migrate() !!!
 		self.newChat = {
 			'private': True,
 			'title': "[UNKNOWN]",
@@ -501,7 +501,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_settings_version(self):
-		return 2
+		return 3
 
 	def get_settings_defaults(self):
 		return dict(
@@ -528,7 +528,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.debug("MIGRATE DO")
 		tcmd = TCMD(self)
 		# initial settings for new chat.
-		# !!! sync with newChat in on_after_startup() !!!
+		# !!! sync this dict with newChat in on_after_startup() !!!
 		newUsrDict = {
 			'private': True,
 			'title': "[UNKNOWN]",

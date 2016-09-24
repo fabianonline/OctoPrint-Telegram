@@ -29,7 +29,6 @@ class TCMD():
 			gettext(" Enter time"):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings', 'lastState': gettext("Change time")},
 			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print', 'lastState': '/print_'},
 			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/abort', 'lastState': '/abort'},
-			gettext("Pause/Resume print"):  {'cmd': self.cmdTogglePause, 'bind_cmd': '/togglepause', 'lastState': '/togglepause'},
 			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print', 'lastState': '/print_'},
 			gettext("Do System Command"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys', 'lastState': '/sys_'},
 			'/print_':  {'cmd': self.cmdRunPrint, 'bind_cmd': '/print'},
@@ -109,8 +108,16 @@ class TCMD():
 			self.main.send_msg(self.gEmo('warning') + gettext(" Currently I'm not printing, so there is nothing to stop."),chatID=chat_id)
 
 	def cmdTogglePause(self,chat_id,**kwargs):
-		self.main.send_msg(self.gEmo('info') + gettext(" Pausing/Resuming the print."),chatID=chat_id)
-		self.main._printer.toggle_pause_print()
+		msg = ""
+		if self.main._printer.is_printing():
+			msg = " Pausing the print."
+			self.main._printer.toggle_pause_print()
+		elif self.main._printer.is_paused():
+			msg = " Resuming the print."
+			self.main._printer.toggle_pause_print()	
+		else:
+			msg = "  Currently I'm not printing, so there is nothing to pause/resume."		
+		self.main.send_msg(self.gEmo('info') + msg, chatID=chat_id)
 
 	def cmdHalt(self,chat_id,**kwargs):
 		self.main.send_msg(self.gEmo('info') + gettext(" Aborting the print."),chatID=chat_id)
@@ -257,6 +264,7 @@ class TCMD():
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/list - Lists all the files available for printing and lets you start printing them.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
+		                           "/togglepause - Pause/Resume current Print"
 		                           "/upload - You can just send me a gcode file to save it to my library.\n"
 		                           "/sys - Execute Octoprint System Comamnds.\n"
 		                           "/ctrl - Use self defined controls from Octoprint."),chatID=chat_id)
