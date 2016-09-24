@@ -15,22 +15,22 @@ class TCMD():
 	def __init__(self, main):
 		self.main = main
 		self.gEmo = self.main.gEmo
-		self.tmpSysCmd = {}
+		self.stateList = {}
 		self._logger = main._logger.getChild("TCMD")
 		self.commandDict = {
 			gettext("Yes"): {'cmd': self.cmdYes, 'bind_none': True},
 			gettext("Cancel"): {'cmd': self.cmdNo, 'bind_none': True},
 			gettext("No"):  {'cmd': self.cmdNo,'bind_none': True},
-			gettext("Change height"):  {'cmd': self.cmdChgHeight, 'bind_cmd': '/settings'},
-			(self.gEmo('enter') + gettext(" Enter height")):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings'},
-			gettext(" Enter height"):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings'},
-			gettext("Change time"):  {'cmd': self.cmdChgTime, 'bind_cmd': '/settings'},
-			(self.gEmo('enter') + gettext(" Enter time")):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings'},
-			gettext(" Enter time"):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings'},
-			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print'},
-			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/print'},
-			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print'},
-			gettext("Do System Command"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys'},
+			gettext("Change height"):  {'cmd': self.cmdChgHeight, 'bind_cmd': '/settings', 'lastState': '/settings'},
+			(self.gEmo('enter') + gettext(" Enter height")):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings',  'lastState': gettext("Change height")},
+			gettext(" Enter height"):  {'cmd': self.cmdSetHeight, 'bind_cmd': '/settings', 'lastState': gettext("Change height")},
+			gettext("Change time"):  {'cmd': self.cmdChgTime, 'bind_cmd': '/settings', 'lastState': '/settings'},
+			(self.gEmo('enter') + gettext(" Enter time")):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings', 'lastState': gettext("Change time")},
+			gettext(" Enter time"):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings', 'lastState': gettext("Change time")},
+			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print', 'lastState': '/print_'},
+			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/abort', 'lastState': '/abort'},
+			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print', 'lastState': '/print_'},
+			gettext("Do System Command"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys', 'lastState': '/sys_'},
 			'/print_':  {'cmd': self.cmdRunPrint, 'bind_cmd': '/print'},
 			'/test':  {'cmd': self.cmdTest},
 			'/status':  {'cmd': self.cmdStatus},
@@ -48,12 +48,22 @@ class TCMD():
 			'/ctrl_': {'cmd': self.cmdCtrlRun, 'bind_cmd': '/ctrl'}
 		}
 
+	def checkState(self, chat_id, cmd, parameter = ""):
+		if not chat_id in self.stateList:
+			self.stateList[chat_id] = ["",""]
+		ret = True
+		if 'lastState' in self.commandDict[cmd]:
+			if self.commandDict[cmd]['lastState'] != self.stateList[chat_id][0]:
+				ret =  False
+		self.stateList[chat_id][0] = cmd
+		if parameter is not None and parameter is not "":
+			self.stateList[chat_id][1] = parameter
+		return ret
+
 	def cmdYes(self,chat_id,**kwargs):
 		self.main.send_msg(gettext("Alright."),chatID=chat_id)
 
 	def cmdNo(self,chat_id,**kwargs):
-		if chat_id in self.tmpSysCmd:
-			del self.tmpSysCmd[chat_id]
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id)
 
 	def cmdTest(self,chat_id,**kwargs):
@@ -76,7 +86,7 @@ class TCMD():
 	def cmdChgHeight(self,chat_id,**kwargs):
 		self.main.send_msg(self.gEmo('enter') + " " + gettext("Enter height"), force_reply=True,chatID=chat_id)
 
-	def cmdSetHeight(self,chat_id,parameter,**kwargs): 
+	def cmdSetHeight(self,chat_id,parameter,**kwargs):
 		self.main._settings.set_float(['notification_height'], parameter, force=True)
 		self.main.send_msg(self.gEmo('height') + gettext(" Notification height is now %(height)fmm.", height=self.main._settings.get_float(['notification_height'])),chatID=chat_id)
 
@@ -169,21 +179,18 @@ class TCMD():
 
 	def cmdSysReq(self,chat_id,parameter,**kwargs):
 		if parameter is None or parameter is "":
+			kwargs['cmd'] = "/sys"
 			self.cmdSys(chat_id, **kwargs)
 			return
 		actions = self.main._settings.global_get(['system','actions'])
 		command = next((d for d in actions if 'action' in d and self.hashMe(d['action'], 6) == parameter) , False)
 		if command :
-			self.tmpSysCmd.update({chat_id: parameter})
 			self.main.send_msg(self.gEmo('question') + " Really execute "+command['name']+"?",responses=[gettext("Do System Command"), gettext("Cancel")],chatID=chat_id)
 			return
 		self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id)
 
 	def cmdSysRun(self,chat_id,**kwargs):
-		if chat_id not in self.tmpSysCmd:
-			return
-		parameter = self.tmpSysCmd[chat_id]
-		del self.tmpSysCmd[chat_id]
+		parameter = self.stateList[chat_id][1]
 		actions = self.main._settings.global_get(['system','actions'])
 		action = next((i for i in actions if self.hashMe(i['action'], 6) == parameter), False)
 		### The following is taken from OctoPrint/src/octoprint/server/api/__init__.py -> performSystemAction()

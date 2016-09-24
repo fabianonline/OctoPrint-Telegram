@@ -195,7 +195,7 @@ class TelegramListener(threading.Thread):
 			self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
 			raise ExitThisLoopException()
 		# check if user is allowed to execute the command
-		if self.isCommandAllowed(chat_id,from_id,command):
+		if self.isCommandAllowed(chat_id,from_id,command) and self.main.tcmd.checkState(from_id, command, parameter):
 			# messageRespondID is needed to send command replys only to the sender
 			# if message is from a group
 			self.main.messageResponseID = message['message']['message_id']
@@ -203,7 +203,7 @@ class TelegramListener(threading.Thread):
 			if command.startswith("/"):
 				self.main.track_action("command/" + command[1:])
 			# execute command
-			self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter)
+			self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter,cmd=command)
 			# we dont need the messageResponseID anymore
 			self.main.messageResponseID = None
 		else:
@@ -250,7 +250,7 @@ class TelegramListener(threading.Thread):
 			self.main.chats[chat_id] = data
 			self.main.send_msg(self.gEmo('info') + "Now i know you. Before you can do anything, go to OctoPrint Settings and edit some rights.",chatID=chat_id)
 			kwargs = {'chat_id':int(chat_id)}
-			t.threading.Thread(target=self.main.get_usrPic, kwargs=kwargs)
+			t = threading.Thread(target=self.main.get_usrPic, kwargs=kwargs)
 			t.daemon = True
 			t.run()
 			self._logger.debug("Got new User")
@@ -477,17 +477,18 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if fcut not in self.chats:
 				self._logger.debug("Removing pic" +fcut+".jpg")
 				try:
-					os.remove(self.get_plugin_data_folder()++"/img/user/"+f)
+					os.remove(self.get_plugin_data_folder()+"/img/user/"+f)
 				except OSError:
 					pass
 		#Update user profile photos
 		for key in self.chats:
 			try:
-				kwargs = {}
-				kwargs['chat_id'] = int(key)
-				t = threading.Thread(target=self.get_usrPic, kwargs=kwargs)
-				t.daemon = True
-				t.run()
+				if key is not 'zBOTTOMOFCHATS':
+					kwargs = {}
+					kwargs['chat_id'] = int(key)
+					t = threading.Thread(target=self.get_usrPic, kwargs=kwargs)
+					t.daemon = True
+					t.run()
 			except Exception:
 				pass
 	
@@ -782,7 +783,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if event in self.tmsg.msgCmdDict:
 				self._logger.debug("Got an event: " + event + " Payload: " + str(payload))
 				# Start event handler
-				self.tmsg.msgCmdDict[event](event, payload, **kwargs)
+				self.tmsg.startEvent(event, payload, **kwargs)
 			else:
 				# return as fast as possible
 				return
@@ -1089,7 +1090,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params})
 		t.daemon = True
 		t.run()
-
 
 	def route_hook(self, server_routes, *args, **kwargs):
 		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory
