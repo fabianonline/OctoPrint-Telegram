@@ -29,12 +29,14 @@ class TCMD():
 			gettext(" Enter time"):  {'cmd': self.cmdSetTime, 'bind_cmd': '/settings', 'lastState': gettext("Change time")},
 			gettext("Start print"):  {'cmd': self.cmdStartPrint, 'bind_cmd': '/print', 'lastState': '/print_'},
 			gettext("Stop print"):  {'cmd': self.cmdHalt, 'bind_cmd': '/abort', 'lastState': '/abort'},
+			gettext("Pause/Resume print"):  {'cmd': self.cmdTogglePause, 'bind_cmd': '/togglepause', 'lastState': '/togglepause'},
 			gettext("Don't print"):  {'cmd': self.cmdDontPrint, 'bind_cmd': '/print', 'lastState': '/print_'},
 			gettext("Do System Command"): {'cmd': self.cmdSysRun, 'bind_cmd': '/sys', 'lastState': '/sys_'},
 			'/print_':  {'cmd': self.cmdRunPrint, 'bind_cmd': '/print'},
 			'/test':  {'cmd': self.cmdTest},
 			'/status':  {'cmd': self.cmdStatus},
 			'/abort':  {'cmd': self.cmdAbort},
+			'/togglepause':  {'cmd': self.cmdTogglePause},
 			'/settings':  {'cmd': self.cmdSettings},
 			'/shutup':  {'cmd': self.cmdShutup},
 			'/imsorrydontshutup':  {'cmd': self.cmdNShutup},
@@ -71,7 +73,10 @@ class TCMD():
 
 	def cmdStatus(self,chat_id,**kwargs):
 		if not self.main._printer.is_operational():
-			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer."),chatID=chat_id)
+                        # TODO: self.main._settings.get(['messages',str(kwargs['event']),'image'])
+                        # TODO: implement "Send webcam captured imaged even if the printer is not connected" #34
+                        kwargs['with_image'] = true
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer."),chatID=chat_id,**kwargs)
 		elif self.main._printer.is_printing():
 			self.main.on_event("StatusPrinting", {},chatID=chat_id)
 		else:
@@ -102,6 +107,10 @@ class TCMD():
 			self.main.send_msg(self.gEmo('question') + gettext(" Really abort the currently running print?"), responses=[gettext("Stop print"), gettext("Cancel")],chatID=chat_id)
 		else:
 			self.main.send_msg(self.gEmo('warning') + gettext(" Currently I'm not printing, so there is nothing to stop."),chatID=chat_id)
+
+	def cmdTogglePause(self,chat_id,**kwargs):
+		self.main.send_msg(self.gEmo('info') + gettext(" Pausing/Resuming the print."),chatID=chat_id)
+		self.main._printer.toggle_pause_print()
 
 	def cmdHalt(self,chat_id,**kwargs):
 		self.main.send_msg(self.gEmo('info') + gettext(" Aborting the print."),chatID=chat_id)
