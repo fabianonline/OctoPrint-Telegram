@@ -250,7 +250,7 @@ class TelegramListener(threading.Thread):
 			self.main.chats[chat_id] = data
 			self.main.send_msg(self.gEmo('info') + "Now i know you. Before you can do anything, go to OctoPrint Settings and edit some rights.",chatID=chat_id)
 			kwargs = {'chat_id':int(chat_id)}
-			t.threading.Thread(target=self.main.get_usrPic, kwargs=kwargs)
+			t = threading.Thread(target=self.main.get_usrPic, kwargs=kwargs)
 			t.daemon = True
 			t.run()
 			self._logger.debug("Got new User")
@@ -483,11 +483,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		#Update user profile photos
 		for key in self.chats:
 			try:
-				kwargs = {}
-				kwargs['chat_id'] = int(key)
-				t = threading.Thread(target=self.get_usrPic, kwargs=kwargs)
-				t.daemon = True
-				t.run()
+				if key is not 'zBOTTOMOFCHATS':
+					kwargs = {}
+					kwargs['chat_id'] = int(key)
+					t = threading.Thread(target=self.get_usrPic, kwargs=kwargs)
+					t.daemon = True
+					t.run()
 			except Exception:
 				pass
 	
