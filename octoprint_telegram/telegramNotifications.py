@@ -14,46 +14,55 @@ telegramMsgDict = {
 			'PrinterStart': {
 				'text': "{emo:rocket} " + gettext("Hello. I'm online and ready to receive your commands."),
 				'image': False,
+				'combined' : True,
 				'markup': "off"
 			},
 			'PrinterShutdown': {
 				'text': "{emo:octo} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
+				'combined' : True,
 				'markup': "off"
 			},
 			'PrintStarted': {
 				'text': gettext("Started printing {file}."),
 				'image': True,
+				'combined' : True,
 				'markup': "off"
 			},
 			'PrintPaused': {
 				'text': gettext("Paused printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
+				'combined' : True,
 				'markup': "off"
 			},
 			'PrintResumed': {
 				'text': gettext("Resumed printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
+				'combined' : True,
 				'markup': "off"
 			},
 			'PrintFailed': {
 				'text': gettext("Printing {file} failed."),
 				'image': True,
+				'combined' : True,
 				'markup': "off"
 			},
 			'ZChange': {
 				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining."),
 				'image': True,
+				'combined' : True,
 				'markup': "off"
 			},
 			'PrintDone': {
 				'text': gettext("Finished printing {file}."),
 				'image': True,
+				'combined' : True,
 				'markup': "off"
 			},
 			'StatusNotPrinting': {
 				'text': gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
+				'combined' : True,
 				'markup': "off",
 				'no_setting': True
 			},

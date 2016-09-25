@@ -684,6 +684,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				for msg in telegramMsgDict:
 					if msg not in messages:
 						messages.update({msg: telegramMsgDict[msg]})
+					elif 'combined' not in messages[msg]:
+						messages[msg].update({'combined' : True})
+
 				self._settings.set(['messages'],messages)
 				self._logger.debug("MESSAGES: " + str(self._settings.get(['messages'])))
 
@@ -911,6 +914,25 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			if with_image is None:
 				with_image = False
+			if with_image:
+				if 'event' in kwargs and not self._settings.get(["messages",kwargs['event'],"combined"]):
+					args = locals()
+					#self._logger.debug("Sending seperated image message...")
+					#for key in args:
+						#self._logger.debug("Local: " + str(key) + " | " + str(args[key]))
+						#if key is not "kwargs" and key is not "self":
+							#kwargs.update({key:args[key]})
+					del args['kwargs']['event']
+					del args['self']
+					args['message'] = ""
+					self._logger.debug("Sending image...")
+					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					args['message'] = message
+					args['with_image'] = False
+					self._logger.debug("Sending text...")
+					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					return
+
 			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
@@ -950,10 +972,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if image_data:
 				self._logger.debug("Sending with image.. " + str(chatID))
 				files = {'photo':("image.jpg", image_data)}
-				data['caption'] = message
+				if message is not "":
+					data['caption'] = message
 				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
 				self._logger.debug("Sending finished. " + str(r.status_code))
-
 			else:
 				self._logger.debug("Sending without image.. " + str(chatID))
 				data['text'] = message
