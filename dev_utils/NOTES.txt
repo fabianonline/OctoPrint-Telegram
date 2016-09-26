@@ -1,3 +1,8 @@
+### NOW
+		Change "not allowd" message id wrung message in chain
+		on snapshot fail tell user in Message.
+
+
 ### Migration
 	  ! on message migrate look for binding/ no setting changes
 	  	migrate message markdown
@@ -11,14 +16,12 @@
 ### Commands
 		delete/download files
 		File List multipage
-		command for getting user settings/rights
 		message/icon/delay settings
-		send video
+		[send video, makes no sense since telegram can't play .mpg]
 		user settings --> admin
 
 ### Features
 		check webcam integration to hide/prevent "with image"
-		save command states successive command messages per user to prevent false messages
 		markup option for send_msg()
 		markup settings (html, markup) individual for notification messages
 		tab page with individual settings per print
