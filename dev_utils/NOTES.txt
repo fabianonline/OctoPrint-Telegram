@@ -20,6 +20,7 @@
 		user settings --> admin
 
 ### Features
+		user settings in files
 		check webcam integration to hide/prevent "with image"
 		tab page with individual settings per print
 		add stettings per user?

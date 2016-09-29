@@ -80,39 +80,46 @@ class TelegramListener(threading.Thread):
 		if message['update_id'] >= self.update_offset:
 			self.update_offset = message['update_id']+1
 		# no message no cookies
-		if 'message' not in message or not message['message']['chat']:
-			print "Response is missing .message or .message.chat. Skipping it."
-			raise ExitThisLoopException()
-		
-		chat_id, from_id = self.parseUserData(message)	
-		
-		# if we come here without a continue (discard message)
-		# we have a message from a known and not new user
-		# so let's check what he send us
-		# if message is a text message, we probably got a command
-		# if the command is not known, the following handler will discard it
-		if "text" in message['message']:
-			self.handleTextMessage(message, chat_id, from_id)
-		# we got no message with text (command) so lets check if we got a file
-		# the following handler will check file and saves it to disk
-		elif "document" in message['message']:
-			self.handleDocumentMessage(message, chat_id, from_id)
-		# we got message with notification for a new chat title photo
-		# so lets download it
-		elif "new_chat_photo" in message['message']:
-			self.handleNewChatPhotoMessage(message, chat_id, from_id)
-		# we got message with notification for a deleted chat title photo
-		# so we do the same
-		elif "delete_chat_photo" in message['message']:
-			self.handleDeleteChatPhotoMessage(message, chat_id, from_id)
-		# a member was removed from a group, so lets check if it's our bot and 
-		# delete the group from our chats if it is our bot
-		elif "left_chat_member" in message['message']:
-			self.handleLeftChatMemberMessage(message, chat_id, from_id)
-		# we are at the end. At this point we don't know what message type it is, so we do nothing
+		if 'message' in message and message['message']['chat']:		
+			chat_id, from_id = self.parseUserData(message)	
+			# if we come here without a continue (discard message)
+			# we have a message from a known and not new user
+			# so let's check what he send us
+			# if message is a text message, we probably got a command
+			# if the command is not known, the following handler will discard it
+			if "text" in message['message']:
+				self.handleTextMessage(message, chat_id, from_id)
+			# we got no message with text (command) so lets check if we got a file
+			# the following handler will check file and saves it to disk
+			elif "document" in message['message']:
+				self.handleDocumentMessage(message, chat_id, from_id)
+			# we got message with notification for a new chat title photo
+			# so lets download it
+			elif "new_chat_photo" in message['message']:
+				self.handleNewChatPhotoMessage(message, chat_id, from_id)
+			# we got message with notification for a deleted chat title photo
+			# so we do the same
+			elif "delete_chat_photo" in message['message']:
+				self.handleDeleteChatPhotoMessage(message, chat_id, from_id)
+			# a member was removed from a group, so lets check if it's our bot and 
+			# delete the group from our chats if it is our bot
+			elif "left_chat_member" in message['message']:
+				self.handleLeftChatMemberMessage(message, chat_id, from_id)
+			# we are at the end. At this point we don't know what message type it is, so we do nothing
+			else:
+				print "Got an unknown message. Doing nothing. Data: " + str(message)
+		elif 'callback_query' in message:
+			self.handleCallbackQuery(message)
 		else:
-			print "Got an unknown message. Doing nothing. Data: " + str(message)
-	
+			print "Response is missing .message or .message.chat or .callback_query.Skipping it."
+			raise ExitThisLoopException()
+
+	def handleCallbackQuery(self, message):
+		print "IN CALLBACK"
+		message['callback_query']['message']['reply_to_message']['text'] = message['callback_query']['data']
+		chat_id, from_id = self.parseUserData(message['callback_query'])
+		self.handleTextMessage(message['callback_query'],chat_id, from_id)
+
 	def handleLeftChatMemberMessage(self, message, chat_id, from_id):
 		print "Message Del_Chat"
 		if message['message']['left_chat_member']['username'] == self.username[1:] and str(message['message']['chat']['id']) in self.main.chats:
@@ -170,21 +177,24 @@ class TelegramListener(threading.Thread):
 	def handleTextMessage(self, message, chat_id, from_id):
 		# We got a chat message.
 		# handle special messages from groups (/commad@BotName)
-		command = str(message['message']['text'].split('@')[0])
+		command = message['message']['text'].split('@')[0]
 		# reply_to_messages will be send on value inputs (eg notification height)
 		# but also on android when pushing a button. Then we have to switch command and parameter.
 		parameter = ""
 		if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
 			command = message['message']['reply_to_message']['text']
 			parameter = message['message']['text']
-			if command not in self.main.tcmd.commandDict:
+			print command.encode('utf-8')
+			if command.encode('utf-8') not in [str(k.encode('utf-8')) for k in self.main.tcmd.commandDict.keys()]:
+				print "IN IF"
 				command = message['message']['text']
 				parameter = message['message']['reply_to_message']['text']
 		# if command is '/print_', '/sys_' or '/ctrl_', get the parameter
 		elif "/print_" in command or "/sys_" in command or "/ctrl_" in command:
 			parameter = '_'.join(command.split('_')[1:])
 			command = command.split('_')[0] + "_"
-		print "Got a command: '" + command + "' with parameter: '" + parameter + "' in chat " + str(message['message']['chat']['id'])
+		print "DONE"
+		print "Got a command: '" + str(command.encode('utf-8')) + "' with parameter: '"+str(parameter.encode('utf-8'))+"' in chat " + str(message['message']['chat']['id'])
 		# is command  known? 
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message
@@ -494,7 +504,7 @@ class TelegramPlugin():
 	# the sent message had to have no_markup = true when calling send_msg() (otherwise it would not work)
 	# by setting no_markup = true we got a messageg_id on sending the message which is saved in selfupdateMessageID 
 	# if this message_id is passed in msg_id to send_msg() then this method will be called
-	def _send_edit_msg(self,message="",msg_id="",chatID="", **kwargs):
+	def _send_edit_msg(self,message="",msg_id="",chatID="", force_reply = False, **kwargs):
 		try:
 			print "Sending a message UPDATE: " #+ message.replace("\n", "\\n") + " chatID= " + str(chatID)
 			data = {}
@@ -555,11 +565,11 @@ class TelegramPlugin():
 					data['reply_markup'] = json.dumps({'force_reply': True})
 			if responses:
 				if self.messageResponseID != None:
-					keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True, 'selective': True, 'force_reply': True}
+					keyboard = {'inline_keyboard':[map(lambda x: {"text":x[0],"callback_data":x[1]}, responses)]}
 					data['reply_markup'] = json.dumps(keyboard)
 					data['reply_to_message_id'] = self.messageResponseID
 				else:
-					keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True, 'force_reply': True}
+					keyboard = {'inline_keyboard':[map(lambda x: {"text":x[0],"callback_data":x[1]}, responses)]}
 					data['reply_markup'] = json.dumps(keyboard)
 
 			image_data = None

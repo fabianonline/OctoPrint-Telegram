@@ -85,14 +85,14 @@ class TCMD():
 	def cmdSettings(self,chat_id,**kwargs):
 		msg = self.main.gEmo('settings') + " Current notification settings are:\n\n\n"+self.main.gEmo('height')+" height: mm\n\n"+self.main.gEmo('clock')+" time: min\n\n\n"+self.main.gEmo('question')+"Which value do you want to change?"
 
-		self.main.send_msg(msg, responses=["Change height", "Change time", "Cancel"],chatID=chat_id)
+		self.main.send_msg(msg, responses=[["Change height","Change height"], ["Change time","Change time"], ["NoNoNo","Cancel"]],chatID=chat_id, noMarkup = True)
 #######################
 	def cmdChgHeight(self,chat_id,**kwargs):
-		self.main.send_msg(self.main.gEmo('enter') + " " + "Enter height", force_reply=True,chatID=chat_id)
+		self.main.send_msg(self.main.gEmo('enter') + " " + "Enter height", force_reply=True,chatID=chat_id, noMarkup = True)
 #######################
 	def cmdSetHeight(self,chat_id,parameter,**kwargs):
 		self.main._settings['notification_height'] = float(parameter)
-		self.main.send_msg(self.main.gEmo('height') + " Notification height is now %(height)fmm.", height=self.main._settings['notification_height'],chatID=chat_id)
+		self.main.send_msg(self.main.gEmo('height') + " Notification height is now "+str(self.main._settings['notification_height'])+"mm.",chatID=chat_id,msg_id =self.main.thread.getUpdateMsgId(chat_id))
 #######################
 	def cmdChgTime(self,chat_id,**kwargs):
 		self.main.send_msg(self.main.gEmo('enter') + " " +"Enter time", force_reply=True,chatID=chat_id)
