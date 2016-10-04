@@ -1,7 +1,5 @@
 ### NOW
-		Change "not allowd" message when wrong message in chain
-		on snapshot fail tell user in Message.
-
+		text from sys/ctrl command warning message
 
 ### Migration
 	  ! on message migrate look for binding/ no setting changes
@@ -20,7 +18,7 @@
 		user settings --> admin
 
 ### Features
-		user settings in files
+		save user settings in files
 		check webcam integration to hide/prevent "with image"
 		tab page with individual settings per print
 		add stettings per user?
