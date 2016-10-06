@@ -222,7 +222,10 @@ class TCMD():
 			actions = self.main._settings.global_get(['system','actions'])
 			command = next((d for d in actions if 'action' in d and self.hashMe(d['action']) == parameter) , False)
 			if command :
-				if params[0] == "do":
+				if 'confirm' in command and params[0] != "do":
+					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute system command?",responses=[[[gettext("Execute"),"/sys_do_"+parameter], [gettext("Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return	
+				else:
 					async = command["async"] if "async" in command else False
 					self._logger.info("Performing command: %s" % command["command"])
 					try:
@@ -237,13 +240,10 @@ class TCMD():
 								self._logger.warn("Command failed with return code %i: %s" % (returncode, stderr_text))
 								self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 								return
-						self.main.send_msg(self.gEmo('check') + " Command " + command["name"] + " executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+						self.main.send_msg(self.gEmo('check') + " System Command " + command["name"] + " executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					except Exception, e:
 						self._logger.warn("Command failed: %s" % e)
 						self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				else:	
-					self.main.send_msg(self.gEmo('question') + " Really execute "+command['name']+"?",responses=[[[gettext("Execute"),"/sys_do_"+parameter], [gettext("Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-					return				
 			else:
 				self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
@@ -269,18 +269,30 @@ class TCMD():
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
 ############################################################################################
 	def cmdCtrl(self,chat_id,from_id,cmd,parameter):
-		if parameter:
+		if not self.main._printer.is_operational():
+			self.main.send_msg(self.gEmo('warning')+" Printer not connected. You can't send any command.",chatID=chat_id)
+			return
+		if parameter and parameter != "back":
+			params = parameter.split('_')
+			if params[0] == "do":
+				parameter = params[1]
+			else:
+				parameter = params[0]
 			actions = self.get_controls_recursively()
 			command = next((d for d in actions if d['hash'] == parameter), False)
 			if command:
-				if type(command['command']) is type([]):
-					for key in command['command']:
-						self.main._printer.commands(key)
+				if 'confirm' in command and params[0] != "do":
+					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute control command?",responses=[[[gettext("Execute"),"/ctrl_do_"+parameter], [gettext("Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
 				else:
-					self.main._printer.commands(command['command'])
-				self.main.send_msg(self.gEmo('check') + " Control Command " + command['name'] + " executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					if type(command['command']) is type([]):
+						for key in command['command']:
+							self.main._printer.commands(key)
+					else:
+						self.main._printer.commands(command['command'])
+					self.main.send_msg(self.gEmo('check') + " Control Command " + command['name'] + " executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 			else:
-				self.main.send_msg(self.gEmo('warning') + " Control Command ctrl_" + parameter + " not found." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.main.send_msg(self.gEmo('warning') + " Control Command not found." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		else:
 			message = self.gEmo('info') + " The following Printer Controls are known."
 			empty = True
@@ -298,7 +310,8 @@ class TCMD():
 				keys.append(tmpKeys)
 			keys.append([[gettext("Cancel"),"No"]])
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
-			self.main.send_msg(message,chatID=chat_id,responses=keys)
+			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
 ############################################################################################
 	def cmdUser(self,chat_id,from_id,cmd,parameter):
 		msg = self.gEmo('info') + " *Your user settings:*\n\n"
@@ -585,13 +598,15 @@ class TCMD():
 					first = " "+key['name']+" "
 				if 'children' in key:
 					array.extend(self.get_controls_recursively(key['children'], base + " " + key['name'],first))
-				elif ('commands' in key or 'command' in key) and not 'confirm' in key and not 'regex' in key and not 'input' in key and not 'script' in key:
+				elif ('commands' in key or 'command' in key) and not 'regex' in key and not 'input' in key and not 'script' in key:
 					# rename 'commands' to 'command' so its easier to handle later on
 					newKey = {}
 					command = key['command'] if 'command' in key else key['commands']
 					newKey['name'] = base.replace(first,"") + " " + key['name']
 					newKey['hash'] = self.hashMe(base + " " + key['name'] + str(command), 6)
 					newKey['command'] = command
+					if 'confirm' in key:
+						newKey['confirm'] = key['confirm']
 					array.append(newKey)
 		return array
 ############################################################################################
