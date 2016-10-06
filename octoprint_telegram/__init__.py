@@ -58,17 +58,15 @@ class TelegramListener(threading.Thread):
 	def loop(self):
 		chat_id = ""
 		json = self.getUpdates()
-		
 		try:
 			# seems like we got a message, so lets process it. 
 			for message in json['result']:
 				self.processMessage(message)
 		except ExitThisLoopException as exit:
-				raise exit
+			raise exit
 		#wooooops. can't handle the message
 		except Exception as ex:
 			self._logger.error("Exception caught! " + str(ex))
-		
 		self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 		# we had first contact after octoprint startup
 		# so lets send startup message
@@ -159,7 +157,9 @@ class TelegramListener(threading.Thread):
 			self.main.track_action("command/upload_exec")
 			try:
 				file_name = message['message']['document']['file_name']
-				if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
+				#if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
+				self._logger.debug(str(file_name.lower().split('.')[-1]))
+				if not octoprint.filemanager.valid_file_type(file_name,"machinecode"):
 					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
 					raise ExitThisLoopException()
 				# download the file
@@ -172,6 +172,8 @@ class TelegramListener(threading.Thread):
 				self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 				# for parameter msg_id see _send_edit_msg()
 				self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+			except ExitThisLoopException:
+				pass
 			except Exception as ex:
 				self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 				self._logger.debug("Exception occured during processing of a file: "+ traceback.format_exc() )
@@ -263,10 +265,6 @@ class TelegramListener(threading.Thread):
 			t.run()
 			self._logger.debug("Got new User")
 			raise ExitThisLoopException()
-		# if octoprint just started we only check connection. so discard messages
-		if self.first_contact:
-			self._logger.debug("Ignoring message because first_contact is True.")
-			raise ExitThisLoopException()
 		return (chat_id, from_id)
 	
 	def getUpdates(self):
@@ -275,11 +273,25 @@ class TelegramListener(threading.Thread):
 		
 		# try to check for incoming messages. wait 120sek and repeat on failure
 		try:
-			timeout = 30
 			if self.update_offset == 0 and self.first_contact:
-				timeout = 0
-				self.update_offset = 1
-			req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False, timeout=timeout+10)
+				res = ["0","0"]
+				while len(res) > 0:
+					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10)
+					json = req.json()
+					if not json['ok']:
+						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
+						time.sleep(120)
+						raise ExitThisLoopException()
+					if len(json['result']) > 0 and 'update_id' in json['result'][0]: 
+						if json['result'][0]['update_id'] >= self.update_offset:
+							self.update_offset = json['result'][0]['update_id']+1
+					res = json['result']
+					if len(res) < 1:
+						self._logger.debug("Ignoring message because first_contact is True.")
+				if self.update_offset == 0:
+					self.update_offset = 1
+			else:
+				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40)
 		except requests.exceptions.Timeout:
 			# Just start the next loop.
 			raise ExitThisLoopException()

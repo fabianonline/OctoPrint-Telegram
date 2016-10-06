@@ -459,7 +459,7 @@ class TCMD():
 		keys.append(keysRow)
 		keysRow = []
 		if self.main.isCommandAllowed(chat_id, from_id, "/files"):
-			if loc == "local":
+			if loc == octoprint.filemanager.FileDestinations.LOCAL:
 				keysRow.append(keyDownload)
 			keysRow.append(keyDelete)
 		keysRow.append(keyBack)
