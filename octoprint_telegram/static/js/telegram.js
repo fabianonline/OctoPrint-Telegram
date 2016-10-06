@@ -32,8 +32,8 @@ $(function() {
             [],
             999);
 
-        self.cmdCnt = 0;
-        self.msgCnt = 0;
+        self.cmdCnt = 1;
+        self.msgCnt = 1;
         self.reloadPending = 0;
         self.reloadUsr = ko.observable(false);
         self.connection_state_str = ko.observable("Unknown");
@@ -181,6 +181,21 @@ $(function() {
                 ko.applyBindings(self, $("#telegramMsgText"+self.msgCnt++)[0]);
             }
             self.isloading(false);
+            $('#chkImg0').removeClass("icon-camera");
+            $('#chkImg0').removeClass("icon-ban-circle");
+            $('#chkBtn0').removeClass("btn-success");
+            $('#chkBtn0').removeClass("btn-warning");
+            $('#chkTxt0').text("");
+            if(self.settings.settings.plugins.telegram.image_not_connected()){
+                $('#chkImg0').addClass("icon-camera");
+                $('#chkBtn0').addClass("btn-success");
+                $('#chkTxt0').text("Send Image");
+            }
+            else{
+                $('#chkImg0').addClass("icon-ban-circle");
+                $('#chkBtn0').addClass("btn-warning");
+                $('#chkTxt0').text("No Image");
+            }
             self.onBindLoad = false;
         }
 
@@ -203,17 +218,21 @@ $(function() {
                 $('#chkBtn'+data).toggleClass("btn-success btn-warning");
                 if($('#chkTxt'+data).text()==="Send Image"){
                     $('#chkTxt'+data).text("No Image");
-                    $('#mupBut'+data).show();
-                    $('#combBut'+data).hide();
+                    if(data !== "0"){
+                        $('#mupBut'+data).show();
+                        $('#combBut'+data).hide();
+                    }
                 }
                 else{
                     $('#chkTxt'+data).text("Send Image");
-                    if($('#chk2Txt'+data).text()==="Combined")
-                        $('#mupBut'+data).hide();    
-                    else
-                        $('#mupBut'+data).show();   
-                
-                    $('#combBut'+data).show();
+                    if(data !== "0"){
+                        if($('#chk2Txt'+data).text()==="Combined")
+                            $('#mupBut'+data).hide();    
+                        else
+                            $('#mupBut'+data).show();   
+                    
+                        $('#combBut'+data).show();
+                    }
                 }
             }
         }
@@ -381,6 +400,7 @@ $(function() {
             $('.teleEmojiImg').each( function(){
                 $(this).attr('src','/plugin/telegram/static/img/'+$(this).attr('id')+".png")
             });
+            
         }
 
         self.onServerDisconnect = function(){

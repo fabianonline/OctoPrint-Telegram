@@ -517,7 +517,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			tracking_token = None,
 			chats = {'zBOTTOMOFCHATS':{'send_notifications': False,'accept_commands':False,'private':False}},
 			debug = False,
-			send_icon = True
+			send_icon = True,
+			image_not_connected = True
 		)
 
 	def get_settings_preprocessors(self):
@@ -558,7 +559,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					if setting not in chats[chat]:
 						if setting == "commands":
 							chats[chat]['commands'] = {k: False for k,v in tcmd.commandDict.iteritems() if 'bind_none' not in v}
-							chats[chat]['commands'].update({k: True for k,v in tcmd.commandDict.iteritems() if 'bind_none' in v})
 						elif setting == "notifications":
 							chats[chat]['notifications'] = {k: False for k,v in telegramMsgDict.iteritems()}
 						else:
@@ -640,19 +640,27 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				# this for loop updates commands and notifications settings items of chats 
 				# if there are changes in commandDict or telegramMsgDict
 				for chat in chats:
-					# Delete commands from settings if they don't belong to commandDict anymore
+					# handle renamed commands
+					if '/list' in chats[chat]['commands']:
+						chats[chat]['commands'].update({'/files':chats[chat]['commands']['/list']})
+					if '/imsorrydontshutup' in chats[chat]['commands']:
+						chats[chat]['commands'].update({'/dontshutup':chats[chat]['commands']['/imsorrydontshutup']})
 					delCmd = []
+					# collect remove 'bind_none' commands
+					for cmd in tcmd.commandDict:
+						if cmd in chats[chat]['commands'] and 'bind_none' in tcmd.commandDict[cmd]:
+							delCmd.append(cmd)
+					# collect Delete commands from settings if they don't belong to commandDict anymore
 					for cmd in chats[chat]['commands']:
 						if cmd not in tcmd.commandDict:
 							delCmd.append(cmd)
+					# finally delete commands
 					for cmd in delCmd:
 						del chats[chat]['commands'][cmd]
 					# If there are new commands in comamndDict, add them to settings
 					for cmd in tcmd.commandDict:
 						if cmd not in chats[chat]['commands']:
-							if 'bind_none' in tcmd.commandDict[cmd]:
-								chats[chat]['commands'].update({cmd: True})
-							else:
+							if 'bind_none' not in tcmd.commandDict[cmd]:
 								chats[chat]['commands'].update({cmd: False})
 					# Delete notifications from settings if they don't belong to msgDict anymore
 					delMsg = []
@@ -714,11 +722,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			for key in data['chats']:
 				if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
 					data['chats'][key]['new'] = False
-				# Apply command bindings
-				if not key == "zBOTTOMOFCHATS":
-					for cmd in self.tcmd.commandDict:
-						if 'bind_none' in self.tcmd.commandDict[cmd]:
-							data['chats'][key]['commands'][cmd] = True
 				# Look for deleted chats
 				if not key in self.chats and not key == "zBOTTOMOFCHATS":
 					delList.append(key)
@@ -1062,6 +1065,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 # checks if the received command is allowed to execute by the user
 	def isCommandAllowed(self, chat_id, from_id, command):
+		if 'bind_none' in self.tcmd.commandDict[command]:
+			return True
 		if command is not None or command is not "":
 			if self.chats[chat_id]['accept_commands']:
 				if self.chats[chat_id]['commands'][command]:

@@ -21,7 +21,7 @@ class TCMD():
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
-			'/test':  		{'cmd': self.cmdTest},
+			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
 			'/status':  	{'cmd': self.cmdStatus},
 			'/settings':  	{'cmd': self.cmdSettings, 'param': True},
 			'/abort':  		{'cmd': self.cmdAbort, 'param': True},
@@ -51,10 +51,8 @@ class TCMD():
 ############################################################################################
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
 		if not self.main._printer.is_operational():
-			# TODO: self.main._settings.get(['messages',str(kwargs['event']),'image'])
-			# TODO: implement "Send webcam captured imaged even if the printer is not connected" #34
-			kwargs['with_image'] = True
-			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False)
+			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 		elif self.main._printer.is_printing():
 			self.main.on_event("StatusPrinting", {},chatID=chat_id)
 		else:
