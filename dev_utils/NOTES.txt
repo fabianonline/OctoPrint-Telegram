@@ -1,18 +1,5 @@
 ### NOW
-		text from sys/ctrl command warning message
-		combine _send_msg and _edit_send_msg
-		message optics
-		upload check file extension by octoprint.fileManager
-		is upload pointing to right folder?
-		problem with messages at firstContact
-		typo in variable help dialog
-		help allowed at any time?
-		@uninstall:
-			- backup tracking token?
-			- del user images
-		print->not connected->connect button
-		0 as minimum at notification height/time
-		download check size
+
 
 ### Migration
 	  ! on message migrate look for binding/ no setting changes
@@ -31,6 +18,11 @@
 		user settings --> admin
 
 ### Features
+		SD-Card in Files
+		@uninstall:
+			- backup tracking token?
+			- del user images
+		combine _send_msg and _edit_send_msg
 		/files with folder representation?
 			- move files
 
