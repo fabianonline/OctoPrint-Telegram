@@ -74,6 +74,8 @@ class TCMD():
 						self.main._settings.save()
 						self.cmdSettings(chat_id,"back")
 						return
+					if self.SettingsTemp[0] < 0:
+						self.SettingsTemp[0] = 0
 				msg = self.gEmo('height') + gettext(" Set new height.\nCurrent:  *%(height).2fmm*",height=self.SettingsTemp[0])
 				keys = [
 						[["+10","/settings_h_+"],["+1","/settings_h_++"],["+.1","/settings_h_+++"],["+.01","/settings_h_++++"]],
@@ -92,6 +94,8 @@ class TCMD():
 						self.main._settings.save()
 						self.cmdSettings(chat_id,"back")
 						return
+					if self.SettingsTemp[1] < 0:
+						self.SettingsTemp[1] = 0
 				msg = self.gEmo('clock') + gettext(" Set new time.\nCurrent: *%(time)dmin*",time=self.SettingsTemp[1])
 				keys = [
 						[["+10","/settings_t_+"],["+1","/settings_t_++"]],
