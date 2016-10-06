@@ -43,3 +43,21 @@
 		}
 	]
 }
+
+FILE: {
+	'hash': 'c3885e6b2419141ac04d7c05de4c07b77b988a5b', 
+	'name': 'telegram_dimensions_3er.gcode', 
+	'links': [], 
+	'analysis': {
+		'estimatedPrintTime': 3410.6721871225755, 
+		'filament': {
+			'tool0': {
+				'volume': 0.0, 
+				'length': 6755.264199997866
+			}
+		}
+	}, 
+	'date': 1475265406, 
+	'type': 'machinecode', 
+	'size': 1977128
+}
