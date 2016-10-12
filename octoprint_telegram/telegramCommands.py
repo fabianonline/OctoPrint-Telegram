@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import logging, sarge, hashlib, datetime
+import logging, sarge, hashlib, datetime,time
 import octoprint.filemanager
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
@@ -16,6 +16,8 @@ class TCMD():
 		self.gEmo = self.main.gEmo
 		self._logger = main._logger.getChild("TCMD")
 		self.SettingsTemp = []
+		self.tuneTemp = [100,100]
+		self.tempTemp = []
 		self.conSettingsTemp = []
 		#self.dirHashDict = {}
 		self.commandDict = {
@@ -35,6 +37,7 @@ class TCMD():
 			'/ctrl': 		{'cmd': self.cmdCtrl, 'param': True},
 			'/con': 		{'cmd': self.cmdConnection, 'param': True},
 			'/user': 		{'cmd': self.cmdUser},
+			'/tune':		{'cmd': self.cmdTune, 'param': True},
 			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True}
 		}
 ############################################################################################
@@ -47,7 +50,7 @@ class TCMD():
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
 ############################################################################################
 	def cmdTest(self,chat_id,from_id,cmd,parameter):
-		self.main.send_msg(self.gEmo('question') + gettext(" Is this a test?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"Yes"], [self.main.emojis['error']+gettext(" No"),"No"]]],chatID=chat_id)
+		self.main.send_msg(self.gEmo('question') + gettext(" Is this a test?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"Yes"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
 ############################################################################################
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
 		if not self.main._printer.is_operational():
@@ -107,7 +110,7 @@ class TCMD():
 				height=self.main._settings.get_float(["notification_height"]),
 				time=self.main._settings.get_int(["notification_time"]))
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"], [self.main.emojis['cross mark']+gettext(" Cancel"),"No"]]],chatID=chat_id,msg_id=msg_id)
+			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"], [self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id)
 ############################################################################################
 	def cmdAbort(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter == "stop":
@@ -115,21 +118,21 @@ class TCMD():
 			self.main.send_msg(self.gEmo('info') + gettext(" Aborting the print."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		else:
 			if self.main._printer.is_printing():
-				self.main.send_msg(self.gEmo('question') + gettext(" Really abort the currently running print?"), responses=[[[self.main.emojis['error']+gettext(" Stop print"),"/abort_stop"], [self.main.emojis['cross mark']+gettext(" Cancel"),"No"]]],chatID=chat_id)
+				self.main.send_msg(self.gEmo('question') + gettext(" Really abort the currently running print?"), responses=[[[self.main.emojis['check']+gettext(" Stop print"),"/abort_stop"], [self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id)
 			else:
 				self.main.send_msg(self.gEmo('info') + gettext(" Currently I'm not printing, so there is nothing to stop."),chatID=chat_id,inline=False)		
 ############################################################################################
 	def cmdTogglePause(self,chat_id,from_id,cmd,parameter):
 		msg = ""
 		if self.main._printer.is_printing():
-			msg = " Pausing the print."
+			msg =self.gEmo('hourglass') + " Pausing the print."
 			self.main._printer.toggle_pause_print()
 		elif self.main._printer.is_paused():
-			msg = " Resuming the print."
+			msg =self.gEmo('black right-pointing triangle') + " Resuming the print."
 			self.main._printer.toggle_pause_print()	
 		else:
 			msg = "  Currently I'm not printing, so there is nothing to pause/resume."		
-		self.main.send_msg(self.gEmo('info') + msg, chatID=chat_id,inline=False)
+		self.main.send_msg(msg, chatID=chat_id,inline=False)
 ############################################################################################							
 	def cmdShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id not in self.main.shut_up:
@@ -173,7 +176,7 @@ class TCMD():
 				data = self.main._printer.get_current_data()
 				if data['job']['file']['name'] is not None:
 					msg = self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name'])
-					self.main.send_msg(msg,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id), responses=[[[self.main.emojis['rocket']+gettext("Print"),"/print_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"/print_x"]]],chatID=chat_id)
+					self.main.send_msg(msg,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id), responses=[[[self.main.emojis['check']+gettext("Print"),"/print_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"/print_x"]]],chatID=chat_id)
 				elif not self.main._printer.is_operational():
 					self.main.send_msg(self.gEmo('warning') + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				else:
@@ -201,11 +204,11 @@ class TCMD():
 				self.main.send_msg("Loading files...",chatID=chat_id)
 				self.cmdFiles(chat_id,from_id,cmd,str(storages.keys()[0])+"|0")
 			else:
-			keys=[]
-			keys.extend([([k,(cmd+"_"+k+"|0")] for k in storages)])
-			keys.append([[self.main.emojis['cross mark']+" Cancel","No"]])
-			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-			self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
+				keys=[]
+				keys.extend([([k,(cmd+"_"+k+"|0")] for k in storages)])
+				keys.append([[self.main.emojis['cross mark']+" Close","No"]])
+				msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+				self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
 ############################################################################################
 	def cmdUpload(self,chat_id,from_id,cmd,parameter):
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
@@ -261,7 +264,7 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-			keys.append([[self.main.emojis['cross mark']+gettext(" Cancel"),"No"]])
+			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			if empty: message += "\n\n"+self.gEmo('warning')+" No System Commands found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
@@ -306,7 +309,7 @@ class TCMD():
 				i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-			keys.append([[self.main.emojis['cross mark']+gettext(" Cancel"),"No"]])
+			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
@@ -372,17 +375,133 @@ class TCMD():
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			if self.main._printer.is_operational():
 				if self.main._printer.is_printing() or self.main._printer.is_paused():
-					self.main.send_msg(msg + self.gEmo('warning') + " You can't disconnect while printing.",responses=[[[self.main.emojis['settings']+gettext(" Defaults"),"/con_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
+					self.main.send_msg(msg + self.gEmo('warning') + " You can't disconnect while printing.",responses=[[[self.main.emojis['settings']+gettext(" Defaults"),"/con_s"], [self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
 				else:
-					self.main.send_msg(msg,responses=[[[self.main.emojis['error']+gettext(" Disconnect"),"/con_d"],[self.main.emojis['settings']+gettext(" Defaults"),"/con_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
+					self.main.send_msg(msg,responses=[[[self.main.emojis['error']+gettext(" Disconnect"),"/con_d"],[self.main.emojis['settings']+gettext(" Defaults"),"/con_s"], [self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
 			else:
-				self.main.send_msg(msg,responses=[[[self.main.emojis['electric plug']+gettext(" Connect"),"/con_c"],[self.main.emojis['settings']+gettext(" Defaults"),"/con_s"],[self.main.emojis['cross mark']+gettext(" Cancel"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
+				self.main.send_msg(msg,responses=[[[self.main.emojis['electric plug']+gettext(" Connect"),"/con_c"],[self.main.emojis['settings']+gettext(" Defaults"),"/con_s"],[self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
+############################################################################################
+	def cmdTune(self,chat_id,from_id,cmd,parameter):
+		if parameter and parameter != "back":
+			params = parameter.split('_')
+			if params[0] == "feed":
+				if len(params) > 1:
+					if params[1].startswith('+'):
+						self.tuneTemp[0] += 100/(10**len(params[1]))
+					elif params[1].startswith('-'):
+						self.tuneTemp[0] -= 100/(10**len(params[1]))
+					else:
+						self.main._printer.feed_rate(int(self.tuneTemp[0]))
+						self.cmdTune(chat_id,from_id,cmd,"back")
+						return
+					if self.tuneTemp[0] < 50:
+						self.tuneTemp[0] = 50
+					elif self.tuneTemp[0] > 200:
+						self.tuneTemp[0] = 200
+				msg = self.gEmo('black right-pointing double triangle') + gettext(" Set feedrate.\nCurrent:  *%(height)d%%*",height=self.tuneTemp[0])
+				keys = [
+						[["+10","/tune_feed_+"],["+1","/tune_feed_++"],["-1","/tune_feed_--"],["-10","/tune_feed_-"]],
+						[[self.main.emojis['check']+" Set","/tune_feed_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
+					]
+				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
+			elif params[0] == "flow":
+				if len(params) > 1:
+					if params[1].startswith('+'):
+						self.tuneTemp[1] += 100/(10**len(params[1]))
+					elif params[1].startswith('-'):
+						self.tuneTemp[1] -= 100/(10**len(params[1]))
+					else:
+						self.main._printer.flow_rate(int(self.tuneTemp[1]))
+						self.cmdTune(chat_id,from_id,cmd,"back")
+						return
+					if self.tuneTemp[1] < 50:
+						self.tuneTemp[1] = 200
+					elif self.tuneTemp[1] > 200:
+						self.tuneTemp[1] = 200
+				msg = self.gEmo('black down-pointing double triangle') + gettext(" Set flowrate.\nCurrent: *%(time)d%%*",time=self.tuneTemp[1])
+				keys = [
+						[["+10","/tune_flow_+"],["+1","/tune_flow_++"],["-1","/tune_flow_--"],["-10","/tune_flow_-"]],
+						[[self.main.emojis['check']+" Set","/tune_flow_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
+					]
+				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
+			elif params[0] == "e":
+				temps = self.main._printer.get_current_temperatures()
+				toolNo = int(params[1])
+				if len(params) > 2:
+					if params[2].startswith('+'):
+						self.tempTemp[toolNo] += 1000/(10**len(params[2]))
+					elif params[2].startswith('-'):
+						self.tempTemp[toolNo] -= 1000/(10**len(params[2]))
+					elif params[2].startswith('s'):
+						self.main._printer.set_temperature("tool"+str(toolNo),self.tempTemp[toolNo])
+						self.cmdTune(chat_id,from_id,cmd,"back")
+						return
+					else:
+						self.main._printer.set_temperature("tool"+str(toolNo),0)
+						self.tempTemp[toolNo] = 0
+						self.cmdTune(chat_id,from_id,cmd,"back")
+						return
+					if self.tempTemp[toolNo] < 0:
+						self.tempTemp[toolNo] = 0
+				msg = self.gEmo('fire') + gettext(" Set temperature for tool "+params[1]+".\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["tool"+params[1]]['actual'],time=self.tempTemp[toolNo])
+				keys = [
+						[["+100","/tune_e_"+params[1]+"_+"],["+10","/tune_e_"+params[1]+"_++"],["+1","/tune_e_"+params[1]+"_+++"]],
+						[["-100","/tune_e_"+params[1]+"_-"],["-10","/tune_e_"+params[1]+"_--"],["-1","/tune_e_"+params[1]+"_---"]],
+						[[self.main.emojis['check']+" Set","/tune_e_"+params[1]+"_s"],[self.main.emojis['snowflake']+" Off","/tune_e_"+params[1]+"_off"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
+					]
+				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
+			elif params[0] == "b":
+				temps = self.main._printer.get_current_temperatures()
+				toolNo = len(self.tempTemp)-1
+				if len(params) > 1:
+					if params[1].startswith('+'):
+						self.tempTemp[toolNo] += 1000/(10**len(params[1]))
+					elif params[1].startswith('-'):
+						self.tempTemp[toolNo] -= 1000/(10**len(params[1]))
+					elif params[1].startswith('s'):
+						self.main._printer.set_temperature("bed",self.tempTemp[toolNo])
+						self.cmdTune(chat_id,from_id,cmd,"back")
+						return
+					else:
+						self.main._printer.set_temperature("bed",0)
+						self.tempTemp[toolNo] = 0
+						self.cmdTune(chat_id,from_id,cmd,"back")
+						return
+					if self.tempTemp[toolNo] < 0:
+						self.tempTemp[toolNo] = 0
+				self._logger.debug("BED TEMPS: "+str(temps))
+				self._logger.debug("BED self.TEMPS: "+str(self.tempTemp))
+				msg = self.gEmo('hot springs') + gettext(" Set temperature for bed.\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["bed"]['actual'],time=self.tempTemp[toolNo])
+				keys = [
+						[["+100","/tune_b_+"],["+10","/tune_b_++"],["+1","/tune_b_+++"]],
+						[["-100","/tune_b_-"],["-10","/tune_b_--"],["-1","/tune_b_---"]],
+						[[self.main.emojis['check']+" Set","/tune_b_s"],[self.main.emojis['snowflake']+" Off","/tune_b_off"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
+					]
+				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
+		else:
+			msg = self.gEmo('settings') + gettext(" *Tune print stettings*")
+			profile = self.main._printer_profile_manager.get_current()
+			temps = self.main._printer.get_current_temperatures()
+			self.tempTemp = []
+			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+			keys = [[[self.main.emojis['black right-pointing double triangle']+gettext(" Feedrate"),"/tune_feed"], [self.main.emojis['black down-pointing double triangle']+gettext(" Flowrate"),"/tune_flow"]]]
+			if self.main._printer.is_operational():
+				tmpKeys=[]
+				for i in xrange(0,profile["extruder"]["count"]):
+					tmpKeys.append([self.main.emojis['wrench']+" Tool "+str(i),"/tune_e_"+str(i)])
+					self.tempTemp.append(int(temps["tool"+str(i)]['target']))
+				if profile["heatedBed"]:
+					tmpKeys.append([self.main.emojis['hot springs']+" Bed","/tune_b"])
+					self.tempTemp.append(int(temps["bed"]['target']))
+				keys.append(tmpKeys)
+			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+			self.main.send_msg(msg, responses=keys,chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
 	def cmdHelp(self,chat_id,from_id,cmd,parameter):
-		self.main.send_msg(self.gEmo('info') + gettext(" The following commands are known:\n\n"
+		self.main.send_msg(self.gEmo('info') + gettext(" *The following commands are known:*\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
-		                           "/imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.\n"
+		                           "/dontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/list - Lists all the files available for printing and lets you start printing them.\n"
@@ -392,7 +511,9 @@ class TCMD():
 		                           "/upload - You can just send me a gcode file to save it to my library.\n"
 		                           "/sys - Execute Octoprint System Comamnds.\n"
 		                           "/ctrl - Use self defined controls from Octoprint.\n"
-		                           "/user - get user info."),chatID=chat_id)
+		                           "/tune - Set feed- and flowrate. Control temperatures.\n"
+		                           "/user - get user info.\n"
+		                           "/help - show this help message."),chatID=chat_id,markup="Markdown")
 ############################################################################################
 # FILE HELPERS
 ############################################################################################
@@ -494,11 +615,8 @@ class TCMD():
 					for avg in meta['statistics']['lastPrintTime']:
 						prof = self.main._printer_profile_manager.get(avg)
 						msg += "\n      "+ prof['name']+": "+ self.formatDuration(meta['statistics']['lastPrintTime'][avg])
-			self._logger.debug("CHK 1")
 			if 'history' in meta:
-				self._logger.debug("CHK 2")
 				if len(meta['history'])>0:
-					self._logger.debug("CHK 2")
 					msg += "\n\n<b>Print History:</b> "
 					for hist in meta['history']:
 						if 'timestamp' in hist:
@@ -519,7 +637,7 @@ class TCMD():
 			mb = float(file['size']) /1024/1024
 			if mb > 50:
 				self.main.send_msg(self.gEmo('warning')+path+" ist to big to download (>50MB)!",chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
-				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=2)
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
 			else:
 				self.main.send_file(chat_id,self.main._file_manager.path_on_disk(dest,path))
 		elif opt.startswith("del"):
@@ -528,12 +646,12 @@ class TCMD():
 				try:
 					self.main._file_manager.remove_file(dest, path)
 					self.main.send_msg(self.gEmo('info')+" File "+path+" deleted",chatID=chat_id,msg_id=msg_id)
-					self.fileList(loc,page,cmd,chat_id,wait = 2)
+					self.fileList(loc,page,cmd,chat_id,wait = 3)
 				except Exception as ex:
 					self.main.send_msg(self.gEmo('warning')+"FAILED: Delete file "+path,chatID=chat_id,msg_id=msg_id)
-					self.fileList(loc,page,cmd,chat_id,wait = 2)
+					self.fileList(loc,page,cmd,chat_id,wait = 3)
 			else:
-				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|del_do"],[self.main.emojis['error']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
+				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|del_do"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)
 			
 ############################################################################################
@@ -547,6 +665,7 @@ class TCMD():
 				array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + source + "|"+str(page)+"|"+ tree[key]['hash']])
 		#arrayD.extend(array)
 		return sorted(array)
+### Some preparation for Dir suppurt (comming in octoprint 1.3.0)
 ############################################################################################
 	#def generate_dir_hash_dict(self):
 		#self.dirHashDict = {}
@@ -747,7 +866,7 @@ class TCMD():
 			keys=[[[self.main.emojis['electric light bulb']+" AUTO","/con_c|a"],[self.main.emojis['high voltage sign']+" Default","/con_c|d"]],[[self.main.emojis['settings']+" Manual","/con_c|p"],[self.main.emojis['leftwards arrow with hook']+" Back","/con_back"]]]
 			self.main.send_msg(self.gEmo('question') + " Select connection option.",chatID=chat_id,responses=keys, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################
-	def ConDisconnect(self,chat_id,parameter):
+	def ConDisconnect(self,chat_id):
 		self.main._printer.disconnect()
 		self.main.send_msg(self.gEmo('info') + " Printer disconnected.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################

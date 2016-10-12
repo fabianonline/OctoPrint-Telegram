@@ -191,6 +191,7 @@ class TMSG():
 		# Do we want to send with Markup?
 		kwargs['markup'] = self.main._settings.get(["messages",kwargs['event'],"markup"]) 
 		# finally send MSG
+		kwargs['inline']=False
 		self.main.send_msg(message, **kwargs)
 
 		if self.track:
