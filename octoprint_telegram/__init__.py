@@ -762,7 +762,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
 
 		# only return our restricted settings to admin users - this is only needed for OctoPrint <= 1.2.16
-		restricted = ("token", "tracking_token")
+		restricted = ("token", "tracking_token", "chats")
 		for r in restricted:
 			if r in data and (current_user is None or current_user.is_anonymous() or not current_user.is_admin()):
 				data[r] = None
@@ -771,7 +771,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def get_settings_restricted_paths(self):
 		# only used in OctoPrint versions > 1.2.16
-		return dict(admin=[["token"], ["tracking_token"]])
+		return dict(admin=[["token"], ["tracking_token"], ["chats"]])
 
 ##########
 ### Softwareupdate API
