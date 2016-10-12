@@ -13,9 +13,9 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 * [Configuration](#configuration)
   * [General](#general)
   * [Users](#users)
-  * [Notifications](#note)
-* [Available Commands](#cmd)
-* [Info / Contact / Help](#rtfm)
+  * [Notifications](#notifications)
+* [Available Commands](#available-commands)
+* [Info / Contact / Help](#info-contact-help)
 
 ## Screenshots
 ![Screenshot](https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/telegram_screen.png)
@@ -120,26 +120,35 @@ Configuration is done via the Octoprint settings dialog. Note that only admin us
 
 ### Users
 There are users (private chat with single user) or groups you will see in the list of known chats. These settings are only accessible by admin users.
+
 1. When clicking the *command* icon, a dialog with a list of checkboxes for every accepted command will open. Check a box to enable the user/group to use the command. When done, close the dialog. Don't forget to enable general command execution in `3.`
+
 2. By clicking on the *notification* icon, a dialog with a list of checkboxes for every known notification event will open. Checked notifications will be send to the user/group. When done, close the dialog. Don't forget to activate general notification in `3.`
 
-	#### IMPORTANT:
-3. <br>a) By clicking the pencil icon, you are able to enable/disable commands and notifications for the user/group in general. This will not affect the settings you made in `1.` and `2.`. It's an easy way to quickly activate/deactivate a user/group withot changing the settings. You will find the following options:
+3. **IMPORTANT**<br>**a)** By clicking the *pencil* icon, you are able to enable/disable commands and notifications for the user/group in general. This will not affect the settings you made in `1.` and `2.`. It's an easy way to quickly activate/deactivate a user/group withot changing the settings. You will find the following options:
 	* For users:
 	  * *Allow to send commands*: This option will give the user the ability to send commands you defined in `1.`
 	* For groups: 
 	  * *Allow user commands*: This will allow *known* users to send commands. Settings of the specific users will be used. No other users in the group are allowed to send commands.
-	    ``` 
-        Example: User A, B and C are in one group. Only user A and B are known by the bot. User A has /print enabled and user B has not. Both have /status enabled. So user A is allowed to send /print and /status while user B is only allowed to send /status. User C is not allowed to send any command.
-        ```
+		``` 
+		Example: User A, B and C are in one group. Only user A and B are known by the bot.
+		User A has /print enabled and user B has not. Both have /status enabled.
+		So user A is allowed to send /print and /status while user B is only allowed to
+		send /status. User C is not allowed to send any command.
+		```
         
 	  * *Allow to send commands*: When this option is enabled, all users in the group are allowed to send commands. Choose the allowed commands by setting up `1.` for the group. If *Allow user commands* is enabled, known users will have the ability to send commands activated for them but not for the group.
-	    ``` 
-        Example: 'Allow user commands' is enabled for the group. User A and B are in the group. Only user A is known by the bot. User A has /print enabled and the group has not. The group has /status enabled but user A not. So user A is allowed to send /print (user rights) and /status (group rights) while user B is only allowed to send /status. If 'Allow user commands' is disabled, also A will only be able to send /status.
-        ```
+		``` 
+		Example: 'Allow user commands' is enabled for the group. User A and B are in the group.
+		Only user A is known by the bot. User A has /print enabled and the group has not. 
+		The group has /status enabled but user A not. So user A is allowed to send 
+		/print (user rights) and /status (group rights) while user B is only allowed to send 
+		/status. If 'Allow user commands' is disabled, also A will only be able to send /status.
+		```
 	* For both:
 	  * *Send notifications*: This will allow the bot to send the notifications you enabled in `2.` to the user/group.
 
+	**b)** Click the *trash bin*, to delete the user. The user is only deleted if you hit 'Save' on settings dialog.
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_user.png" alt="User settings" width="70%" align="center"/><br><br><br>
 
 ### Notifications
@@ -166,7 +175,7 @@ In this section you can configure the content of the notification messages.
    * `{time_done}`, `{time_left}` (only useful for height change events) - Time done / left in the print.
    * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
    * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
-   * You are also able to access the current printer state data. See [here]() for datastructure of this data. The base variable is `{status}`.
+   * You are also able to access the current printer state data. See [here](./dev_utils/datastructures/octoprint/_printer.get_current_data.py) for datastructure of this data. The base variable is `{status}`.
 	```
 	Example: {status[progress][filepos]} - will insert the actual position in the printed file.
 	```
@@ -204,17 +213,16 @@ In this section you can configure the content of the notification messages.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
-	#### Notes:
+#### Notes:
 * the `/help` command is always allowed
 
 
 * `/files` and `/print` will basically show the same file dialog. If `/print` is disabled, no print button will be shown. If `/files` is disabled, no download and delete buttons will be shown. If both commands are enabled, all buttons will be shown regardles wether the user entered the dialog by `/files` or `/print`.
 <br><br><br>
+
 ## Info / Contact / Help
 
 If you want to talk to other users of this plugin and maybe have some influence in the development of this plugin,
 you can join the [Octoprint-Telegram-Users-Group](https://telegram.me/joinchat/CXFirQjl9XTp5dr4OZqH9Q).
 
-Feel free to take the code and copy it and modify it and use it however you like. (If you really want a licence, see [WTFPL](http://www.wtfpl.net/txt/copying/))
-
-Releases/Changelog
+This software is licensed under [AGPLv3](http://www.gnu.org/licenses/agpl-3.0.txt)
