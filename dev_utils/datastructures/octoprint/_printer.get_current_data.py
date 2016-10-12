@@ -17,7 +17,10 @@
  			'closedOrError': False
  		}
  	}, 
- 	'offsets': {}, 
+ 	'offsets': {
+ 		'bed': 0.0,
+ 		'tool0': 0.0
+ 	}, 
  	'job': {
  		'estimatedPrintTime': None, 
  		'filament': {
