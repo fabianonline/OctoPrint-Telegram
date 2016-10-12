@@ -49,15 +49,19 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	```markdown
 	abort - Aborts the currently running print. A confirmation is required.
 	shutup - Disables automatic notifications till the next print ends.
-	imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.
+	dontshutup - The opposite of /shutup - Makes the bot talk again.
 	status - Sends the current status including a current photo.
-	togglepause - Pause or resule a print
 	settings - Displays the current notification settings and allows you to change them.
-	list - Lists all the files available for printing and lets you start printing them.
+	files - Lists all the files available for printing.
 	print - Lets you start a print. A confirmation is required.
+	togglepause - Pause/Resume current Print.
+	con - Connect/disconnect printer.
 	upload - You can just send me a gcode file to save it to my library.
-	sys - Execute Octoprint System Commands.
+	sys - Execute Octoprint System Comamnds.
 	ctrl - Use self defined controls from Octoprint.
+	tune - Set feed- and flowrate. Control temperatures.
+	user - get user info.
+	help - show list of commands.
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -149,6 +153,7 @@ There are users (private chat with single user) or groups you will see in the li
 	  * *Send notifications*: This will allow the bot to send the notifications you enabled in `2.` to the user/group.
 
 	**b)** Click the *trash bin*, to delete the user. The user is only deleted if you hit 'Save' on settings dialog.
+	
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_user.png" alt="User settings" width="70%" align="center"/><br><br><br>
 
 ### Notifications
