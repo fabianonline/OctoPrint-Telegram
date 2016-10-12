@@ -504,7 +504,7 @@ class TCMD():
 		                           "/dontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
-		                           "/list - Lists all the files available for printing and lets you start printing them.\n"
+		                           "/files - Lists all the files available for printing.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
 		                           "/togglepause - Pause/Resume current Print.\n"
 		                           "/con - Connect/disconnect printer.\n"
