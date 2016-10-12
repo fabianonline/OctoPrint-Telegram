@@ -15,7 +15,7 @@ Also, you can control Octoprint via messages (settings, start a print and much m
   * [Users](#users)
   * [Notifications](#notifications)
 * [Available Commands](#available-commands)
-* [Info / Contact / Help](#info-contact-help)
+* [Info / Contact / Help](#info--contact--help)
 
 ## Screenshots
 ![Screenshot](https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/telegram_screen.png)
@@ -26,7 +26,7 @@ To set Octoprint Telegram up, you have to do the following three parts.
 
 To allow the plugin to send messages via telegram, you have to register a telegram bot. 
 
-If you already have a bot, you only need your bot token to proceed. GOTO `4.` (optional) or go dirctly over to [Plugin Setup](#plugin).
+If you already have a bot, you only need your bot token to proceed. GOTO `4.` (optional) or go dirctly over to [Plugin Setup](#plugin-setup).
 
 1. Contact [@botfather](http://telegram.me/botfather) in Telegram Messenger. Either click the link or use the "new chat" / "search" feature of your telegram client to search for "@botfather".
 
@@ -92,14 +92,14 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 4. Save settings to accept new user(s)/group(s) in list
 
 
-5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#usr))
+5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#users))
 
 <br>
 ## Configuration
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
-1. Token: Enter your bot token here. You got this from @botfather, when you [created](#bot) your bot there. *(admin users only)*
+1. Token: Enter your bot token here. You got this from @botfather, when you [created](#create-telegram-bot) your bot there. *(admin users only)*
 
 
 2. After hitting 'Test this token', the current connection status will be shown and the bot is connected on success. *(admin users only)*
@@ -153,20 +153,16 @@ There are users (private chat with single user) or groups you will see in the li
 
 ### Notifications
 In this section you can configure the content of the notification messages.
-1. These three buttons will open dialogs which provide you informations about using markup, variables and emojis in the messages.
 
+1. These three buttons will open dialogs which provide you informations about using markup, variables and emojis in the messages.
 
 2. Enter the text you want to send when the specific event happens.
 
-
 3. Choose if you want to send an image along with the notification message. (green = send image, yellow=no image)
-
 
 4. With this option you select if the image and the text are send in one message or in two separated messages. Only available if you choose to send an image.
 
-
 5. This buttons sets the markup options for the message text. Only available when no image will be send or if image will be send in a separate message.
-
 
 6. You can use variables in the messages :
    * `{file}` (only usable while printing) - The currently printing file.
