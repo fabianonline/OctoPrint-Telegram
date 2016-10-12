@@ -32,8 +32,8 @@ $(function() {
             [],
             999);
 
-        self.cmdCnt = 0;
-        self.msgCnt = 0;
+        self.cmdCnt = 1;
+        self.msgCnt = 1;
         self.reloadPending = 0;
         self.reloadUsr = ko.observable(false);
         self.connection_state_str = ko.observable("Unknown");
@@ -48,6 +48,7 @@ $(function() {
         self.currChatTitle = ko.observable("Unknown");
         self.bind_cmd = {}; 
         self.markupFrom = [];
+        self.onBindLoad = false;
     
         self.requestData = function(ignore,update) {
 
@@ -89,6 +90,7 @@ $(function() {
             self.bind["notifications"] = response.bind_msg;
             self.bind['no_setting'] = response.no_setting;
             self.bind['bind_text'] = response.bind_text;
+            self.onBindLoad = true;
             $("#telegram_msg_list").empty();
             keys = self.bind["notifications"].sort();
             for(var id in keys) {
@@ -101,83 +103,152 @@ $(function() {
                     bind_text += "</small></span>";
                 }
                 img = "camera";
+                hideMup = "";
+                hideComb = "";
                 if(self.settings.settings.plugins.telegram.messages[keys[id]].image()){
-                    img = "ban-circle";
-                    btn = "warning";
-                    txt = "No Image";
-                }
-                else{
                     img = "camera";
                     btn = "success";
                     txt = "Send Image";
+                    hideMup = "display:none";
+                    hideComb = "";
                 }
-             if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="HTML"){
-                bOff = "info";
-                bHtml = "danger active";
-                bMd = "info";
-                self.markupFrom[self.msgCnt] = 'HTML';
-             }
-             else if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="Markdown"){
-                bOff = "info";
-                bHtml = "info";
-                bMd = "danger active";
-                self.markupFrom[self.msgCnt] = 'Markdown';
-             }
-             else{
-                bOff = "danger active"
-                bHtml = "info"
-                bMd = "info"
-                self.markupFrom[self.msgCnt] = 'off';
-             }
+                else{
+                    img = "ban-circle";
+                    btn = "warning";
+                    txt = "No Image";
+                    hideMup = "";
+                    hideComb = "display:none"
+                }
+                // TODO set to second message setting
+                if(self.settings.settings.plugins.telegram.messages[keys[id]].combined()){
+                    img2 = "comment";
+                    btn2 = "danger";
+                    txt2 = "Combined";
+                    if(hideComb === "")
+                        hideMup = "display:none";
+                }
+                else{
+                    img2 = "comments";
+                    btn2 = "info";
+                    txt2 = "Separated";
+                    hideMup = "";
+                }
+                if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="HTML"){
+                    bOff = "info";
+                    bHtml = "danger active";
+                    bMd = "info";
+                    self.markupFrom[self.msgCnt] = 'HTML';
+                }
+                else if(self.settings.settings.plugins.telegram.messages[keys[id]].markup()==="Markdown"){
+                    bOff = "info";
+                    bHtml = "info";
+                    bMd = "danger active";
+                    self.markupFrom[self.msgCnt] = 'Markdown';
+                }
+                else{
+                    bOff = "danger active"
+                    bHtml = "info"
+                    bMd = "info"
+                    self.markupFrom[self.msgCnt] = 'off';
+                }
+                var btnGrp = '<span id="mupBut'+self.msgCnt+'" style="' + hideMup + '"><span class="muted"><small>Markup Selection<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
+                btnGrp += '<button id="off'+self.msgCnt+'" type="button" class="btn btn-'+bOff+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'off\',\''+keys[id]+'\')">Off</button>';
+                btnGrp += '<button id="HTML'+self.msgCnt+'" type="button" class="btn btn-'+bHtml+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'HTML\',\''+keys[id]+'\')">HTML</button>';
+                btnGrp += '<button id="Markdown'+self.msgCnt+'" type="button" class="btn btn-'+bMd+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'Markdown\',\''+keys[id]+'\')">MD</button>';
+                btnGrp += '</span><br></span>';
 
-              var btnGrp = '<span id="mupBut'+self.msgCnt+'" '+((txt === "Send Image")?'style="display:none"':'')+'><span class="muted"><small>Markup Selection<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
-              btnGrp += '<button id="off'+self.msgCnt+'" type="button" class="btn btn-'+bOff+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'off\',\''+keys[id]+'\')">Off</button>';
-              btnGrp += '<button id="HTML'+self.msgCnt+'" type="button" class="btn btn-'+bHtml+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'HTML\',\''+keys[id]+'\')">HTML</button>';
-              btnGrp += '<button id="Markdown'+self.msgCnt+'" type="button" class="btn btn-'+bMd+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'Markdown\',\''+keys[id]+'\')">MD</button>';
-              btnGrp += '</span></span><br>';
+                var btnImg = '<span class="muted"><small>Send with image?<br></small></span>';
+                btnImg += '<label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'">';
+                btnImg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image, click: toggleImg(\''+self.msgCnt+'\')"/>';
+                btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
+                btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label><br>';
 
-              var btnImg = '<span class="muted"><small>Send with image?<br></small></span>';
-              btnImg += '<label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'">';
-              btnImg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image, click: toggleImg(\''+self.msgCnt+'\')"/>';
-              btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
-              btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label>';
+                var btnSecMsg = '<span id="combBut'+self.msgCnt+'" style="' + hideComb + '"> <span class="muted"><small>Combined message?<br></small></span>';
+                btnSecMsg += '<label id="chk2Btn'+self.msgCnt+'" class="btn btn-'+btn2+' btn-mini" title="Toggle \'Send image in a second message\'">';
+                btnSecMsg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.combined, click: toggleImg2(\''+self.msgCnt+'\')"/>';
+                btnSecMsg += '<i id="chk2Img'+self.msgCnt+'" class="icon-'+img2+'"></i> ';
+                btnSecMsg += '<span id="chk2Txt'+self.msgCnt+'">'+txt2+'</span></label><br></span>';
 
-              var msgEdt = '<div class="control-group"><div class="controls " ><hr style="margin:0px 0px 0px -90px;"></div></div><div class="control-group" id="telegramMsgText'+self.msgCnt+'">';
+                var msgEdt = '<div class="control-group"><div class="controls " ><hr style="margin:0px 0px 0px -90px;"></div></div><div class="control-group" id="telegramMsgText'+self.msgCnt+'">';
                     msgEdt += '<label class="control-label"><strong>'+keys[id]+ '</strong>'+bind_text + '</label>';
                     msgEdt += '<div class="controls " >';
                         msgEdt += '<div class="row">';
                             msgEdt += '<div class="span9"><textarea rows="4" style="margin-left:7px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea></div>';
-                            msgEdt += '<div class="span3" style="text-align:center;">' +  btnGrp + btnImg + '</div>';
+                            msgEdt += '<div class="span3" style="text-align:center;">' + btnImg + btnSecMsg +  btnGrp + '</div>';
                         msgEdt += '</div></div></div>';
 
                 $('#telegram_msg_list').append(msgEdt);
                 ko.applyBindings(self, $("#telegramMsgText"+self.msgCnt++)[0]);
             }
             self.isloading(false);
+            $('#chkImg0').removeClass("icon-camera");
+            $('#chkImg0').removeClass("icon-ban-circle");
+            $('#chkBtn0').removeClass("btn-success");
+            $('#chkBtn0').removeClass("btn-warning");
+            $('#chkTxt0').text("");
+            if(self.settings.settings.plugins.telegram.image_not_connected()){
+                $('#chkImg0').addClass("icon-camera");
+                $('#chkBtn0').addClass("btn-success");
+                $('#chkTxt0').text("Send Image");
+            }
+            else{
+                $('#chkImg0').addClass("icon-ban-circle");
+                $('#chkBtn0').addClass("btn-warning");
+                $('#chkTxt0').text("No Image");
+            }
+            self.onBindLoad = false;
         }
 
 
         self.toggleMarkup = function(data,sender,msg){
-            
-            if(self.markupFrom[data] !== sender){
-                $('#'+sender+data).toggleClass("btn-info btn-danger");
-                $('#'+self.markupFrom[data]+data).toggleClass("btn-info btn-danger");
-                self.settings.settings.plugins.telegram.messages[msg].markup(sender);
+            if(!self.onBindLoad){
+                if(self.markupFrom[data] !== sender){
+                    $('#'+sender+data).toggleClass("btn-info btn-danger");
+                    $('#'+self.markupFrom[data]+data).toggleClass("btn-info btn-danger");
+                    self.settings.settings.plugins.telegram.messages[msg].markup(sender);
+                }
+                self.markupFrom[data] = sender;
             }
-            self.markupFrom[data] = sender;
         }
 
 
         self.toggleImg = function(data){
-            $('#chkImg'+data).toggleClass("icon-ban-circle icon-camera");
-            $('#chkBtn'+data).toggleClass("btn-success btn-warning");
-            if($('#chkTxt'+data).text()==="Send Image"){
-                $('#chkTxt'+data).text("No Image");
-                $('#mupBut'+data).show();
+            if(!self.onBindLoad){
+                $('#chkImg'+data).toggleClass("icon-ban-circle icon-camera");
+                $('#chkBtn'+data).toggleClass("btn-success btn-warning");
+                if($('#chkTxt'+data).text()==="Send Image"){
+                    $('#chkTxt'+data).text("No Image");
+                    if(data !== "0"){
+                        $('#mupBut'+data).show();
+                        $('#combBut'+data).hide();
+                    }
+                }
+                else{
+                    $('#chkTxt'+data).text("Send Image");
+                    if(data !== "0"){
+                        if($('#chk2Txt'+data).text()==="Combined")
+                            $('#mupBut'+data).hide();    
+                        else
+                            $('#mupBut'+data).show();   
+                    
+                        $('#combBut'+data).show();
+                    }
+                }
             }
-            else{
-                $('#chkTxt'+data).text("Send Image");
-                $('#mupBut'+data).hide();
+        }
+
+        self.toggleImg2 = function(data){
+            if(!self.onBindLoad){
+                $('#chk2Img'+data).toggleClass("icon-comment icon-comments");
+                $('#chk2Btn'+data).toggleClass("btn-info btn-danger");
+                if($('#chk2Txt'+data).text()==="Separated"){
+                    $('#chk2Txt'+data).text("Combined"); 
+                    $('#mupBut'+data).hide();   
+                }
+                else{
+                    $('#chk2Txt'+data).text("Separated");  
+                    $('#mupBut'+data).show();
+                }
             }
         }
 
@@ -329,6 +400,7 @@ $(function() {
             $('.teleEmojiImg').each( function(){
                 $(this).attr('src','/plugin/telegram/static/img/'+$(this).attr('id')+".png")
             });
+            
         }
 
         self.onServerDisconnect = function(){

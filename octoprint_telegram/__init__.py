@@ -3,6 +3,7 @@ from PIL import Image
 import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
+from flask.ext.login import current_user
 from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
@@ -58,17 +59,15 @@ class TelegramListener(threading.Thread):
 	def loop(self):
 		chat_id = ""
 		json = self.getUpdates()
-		
 		try:
 			# seems like we got a message, so lets process it. 
 			for message in json['result']:
 				self.processMessage(message)
 		except ExitThisLoopException as exit:
-				raise exit
+			raise exit
 		#wooooops. can't handle the message
 		except Exception as ex:
 			self._logger.error("Exception caught! " + str(ex))
-		
 		self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 		# we had first contact after octoprint startup
 		# so lets send startup message
@@ -82,39 +81,48 @@ class TelegramListener(threading.Thread):
 		if message['update_id'] >= self.update_offset:
 			self.update_offset = message['update_id']+1
 		# no message no cookies
-		if 'message' not in message or not message['message']['chat']:
-			self._logger.warn("Response is missing .message or .message.chat. Skipping it.")
-			raise ExitThisLoopException()
+		if 'message' in message and message['message']['chat']:
 		
-		chat_id, from_id = self.parseUserData(message)	
-		
-		# if we come here without a continue (discard message)
-		# we have a message from a known and not new user
-		# so let's check what he send us
-		# if message is a text message, we probably got a command
-		# when the command is not known, the following handler will discard it
-		if "text" in message['message']:
-			self.handleTextMessage(message, chat_id, from_id)
-		# we got no message with text (command) so lets check if we got a file
-		# the following handler will check file and saves it to disk
-		elif "document" in message['message']:
-			self.handleDocumentMessage(message, chat_id, from_id)
-		# we got message with notification for a new chat title photo
-		# so lets download it
-		elif "new_chat_photo" in message['message']:
-			self.handleNewChatPhotoMessage(message, chat_id, from_id)
-		# we got message with notification for a deleted chat title photo
-		# so we do the same
-		elif "delete_chat_photo" in message['message']:
-			self.handleDeleteChatPhotoMessage(message, chat_id, from_id)
-		# a member was removed from a group, so lets check if it's our bot and 
-		# delete the group from our chats if it is our bot
-		elif "left_chat_member" in message['message']:
-			self.handleLeftChatMemberMessage(message, chat_id, from_id)
-		# we are at the end. At this point we don't know what message type it is, so we do nothing
+			chat_id, from_id = self.parseUserData(message)	
+			
+			# if we come here without a continue (discard message)
+			# we have a message from a known and not new user
+			# so let's check what he send us
+			# if message is a text message, we probably got a command
+			# when the command is not known, the following handler will discard it
+			if "text" in message['message']:
+				self.handleTextMessage(message, chat_id, from_id)
+			# we got no message with text (command) so lets check if we got a file
+			# the following handler will check file and saves it to disk
+			elif "document" in message['message']:
+				self.handleDocumentMessage(message, chat_id, from_id)
+			# we got message with notification for a new chat title photo
+			# so lets download it
+			elif "new_chat_photo" in message['message']:
+				self.handleNewChatPhotoMessage(message, chat_id, from_id)
+			# we got message with notification for a deleted chat title photo
+			# so we do the same
+			elif "delete_chat_photo" in message['message']:
+				self.handleDeleteChatPhotoMessage(message, chat_id, from_id)
+			# a member was removed from a group, so lets check if it's our bot and 
+			# delete the group from our chats if it is our bot
+			elif "left_chat_member" in message['message']:
+				self.handleLeftChatMemberMessage(message, chat_id, from_id)
+			# we are at the end. At this point we don't know what message type it is, so we do nothing
+			else:
+				self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(message))
+		elif 'callback_query' in message:
+			self.handleCallbackQuery(message)
 		else:
-			self._logger.warn("Got an unknown message. Doing nothing. Data: " + str(message))
+			self._logger.warn("Response is missing .message or .message.chat or callback_query. Skipping it.")
+			raise ExitThisLoopException()
+
 	
+	def handleCallbackQuery(self, message):
+		message['callback_query']['message']['text'] = message['callback_query']['data']
+		chat_id, from_id = self.parseUserData(message['callback_query'])
+		self.handleTextMessage(message['callback_query'],chat_id, from_id)
+
 	def handleLeftChatMemberMessage(self, message, chat_id, from_id):
 		self._logger.debug("Message Del_Chat")
 		if message['message']['left_chat_member']['username'] == self.username[1:] and str(message['message']['chat']['id']) in self.main.chats:
@@ -146,25 +154,29 @@ class TelegramListener(threading.Thread):
 		if not self.main.chats[chat_id]['private']: #is this needed? can one send files from groups to bots?
 			from_id = str(message['message']['from']['id'])
 		# is /upload allowed?
-		if self.isCommandAllowed(chat_id,from_id,'/upload'):
+		if self.main.isCommandAllowed(chat_id,from_id,'/upload'):
 			self.main.track_action("command/upload_exec")
 			try:
 				file_name = message['message']['document']['file_name']
-				if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
+				#if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
+				self._logger.debug(str(file_name.lower().split('.')[-1]))
+				if not octoprint.filemanager.valid_file_type(file_name,"machinecode"):
 					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
 					raise ExitThisLoopException()
 				# download the file
 				target_filename = "telegram_" + file_name
 				# for parameter no_markup see _send_edit_msg()
-				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id, noMarkup=True)
+				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id)
 				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 				data = self.main.get_file(message['message']['document']['file_id'])
 				stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
 				self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 				# for parameter msg_id see _send_edit_msg()
-				self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.getUpdateMsgId(chat_id),chatID=chat_id)
+				self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+			except ExitThisLoopException:
+				pass
 			except Exception as ex:
-				self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.getUpdateMsgId(chat_id),chatID=chat_id)
+				self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 				self._logger.debug("Exception occured during processing of a file: "+ traceback.format_exc() )
 		else:
 			self._logger.warn("Previous file was from an unauthorized user.")
@@ -173,21 +185,22 @@ class TelegramListener(threading.Thread):
 	def handleTextMessage(self, message, chat_id, from_id):
 		# We got a chat message.
 		# handle special messages from groups (/commad@BotName)
-		command = str(message['message']['text'].split('@')[0])
+		command = str(message['message']['text'].split('@')[0].encode('utf-8'))
+		parameter = ""
+		# TODO: Do we need this anymore?
 		# reply_to_messages will be send on value inputs (eg notification height)
 		# but also on android when pushing a button. Then we have to switch command and parameter.
-		parameter = ""
-		if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
-			command = message['message']['reply_to_message']['text']
-			parameter = message['message']['text']
-			if command not in self.main.tcmd.commandDict:
-				command = message['message']['text']
-				parameter = message['message']['reply_to_message']['text']
-		# if command is '/print_', '/sys_' or '/ctrl_', get the parameter
-		elif "/print_" in command or "/sys_" in command or "/ctrl_" in command:
+		#if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
+			#command = message['message']['reply_to_message']['text']
+			#parameter = message['message']['text']
+			#if command.encode('utf-8') not in [str(k.encode('utf-8')) for k in self.main.tcmd.commandDict.keys()]:
+				#command = message['message']['text']
+				#parameter = message['message']['reply_to_message']['text']
+		# if command is with parameter, get the parameter
+		if any((k+"_") in command for k,v in self.main.tcmd.commandDict.iteritems() if 'param' in v):
 			parameter = '_'.join(command.split('_')[1:])
-			command = command.split('_')[0] + "_"
-		self._logger.info("Got a command: '" + command + "' with parameter: '" + parameter + "' in chat " + str(message['message']['chat']['id']))
+			command = command.split('_')[0]
+		self._logger.info("Got a command: '" + str(command.encode('utf-8')) + "' with parameter: '" + str(parameter.encode('utf-8')) + "' in chat " + str(message['message']['chat']['id']))
 		# is command  known? 
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message
@@ -195,17 +208,12 @@ class TelegramListener(threading.Thread):
 			self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
 			raise ExitThisLoopException()
 		# check if user is allowed to execute the command
-		if self.isCommandAllowed(chat_id,from_id,command) and self.main.tcmd.checkState(from_id, command, parameter):
-			# messageRespondID is needed to send command replys only to the sender
-			# if message is from a group
-			self.main.messageResponseID = message['message']['message_id']
+		if self.main.isCommandAllowed(chat_id,from_id,command):
 			# Track command
 			if command.startswith("/"):
 				self.main.track_action("command/" + command[1:])
 			# execute command
-			self.main.tcmd.commandDict[command]['cmd'](chat_id=chat_id,parameter=parameter,cmd=command)
-			# we dont need the messageResponseID anymore
-			self.main.messageResponseID = None
+			self.main.tcmd.commandDict[command]['cmd'](chat_id,from_id,command,parameter)
 		else:
 			# user was not alloed to execute this command
 			self._logger.warn("Previous command was from an unauthorized user.")
@@ -236,7 +244,10 @@ class TelegramListener(threading.Thread):
 		# if message is from a group, chat_id will be left as id of group 
 		# and from_id is set to id of user who send the message 
 		if not data['private']:
-			from_id = str(message['message']['from']['id'])
+			if 'from' in message:
+				from_id = str(message['from']['id'])
+			else:
+				from_id = str(message['message']['from']['id'])
 			# if group accepts only commands from known users (allow_users = true, accept_commands=false)
 			# and user is not in known chats, then he is unknown and we dont wnat to listen to him.
 			if chat_id in self.main.chats:
@@ -255,10 +266,6 @@ class TelegramListener(threading.Thread):
 			t.run()
 			self._logger.debug("Got new User")
 			raise ExitThisLoopException()
-		# if octoprint just started we only check connection. so discard messages
-		if self.first_contact:
-			self._logger.debug("Ignoring message because first_contact is True.")
-			raise ExitThisLoopException()
 		return (chat_id, from_id)
 	
 	def getUpdates(self):
@@ -267,11 +274,25 @@ class TelegramListener(threading.Thread):
 		
 		# try to check for incoming messages. wait 120sek and repeat on failure
 		try:
-			timeout = 30
 			if self.update_offset == 0 and self.first_contact:
-				timeout = 0
-				self.update_offset = 1
-			req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':timeout}, allow_redirects=False, timeout=timeout+10)
+				res = ["0","0"]
+				while len(res) > 0:
+					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10)
+					json = req.json()
+					if not json['ok']:
+						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
+						time.sleep(120)
+						raise ExitThisLoopException()
+					if len(json['result']) > 0 and 'update_id' in json['result'][0]: 
+						if json['result'][0]['update_id'] >= self.update_offset:
+							self.update_offset = json['result'][0]['update_id']+1
+					res = json['result']
+					if len(res) < 1:
+						self._logger.debug("Ignoring message because first_contact is True.")
+				if self.update_offset == 0:
+					self.update_offset = 1
+			else:
+				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40)
 		except requests.exceptions.Timeout:
 			# Just start the next loop.
 			raise ExitThisLoopException()
@@ -293,29 +314,6 @@ class TelegramListener(threading.Thread):
 			time.sleep(120)
 			raise ExitThisLoopException()
 		return json
-
-	# checks if the received command is allowed to execute by the user
-	def isCommandAllowed(self, chat_id, from_id, command):
-		if command is not None or command is not "":
-			if self.main.chats[chat_id]['accept_commands']:
-				if self.main.chats[chat_id]['commands'][command]:
-						return True
-				elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
-					if self.main.chats[from_id]['commands'][command] and self.main.chats[from_id]['accept_commands']:
-						return True
-			elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
-				if self.main.chats[from_id]['commands'][command] and self.main.chats[from_id]['accept_commands']:
-						return True
-		return False
-
-	# Helper function to handle /editMessageText Telegram API commands
-	# see main._send_edit_msg()
-	def getUpdateMsgId(self,id):
-		uMsgID = None
-		if id in self.main.updateMessageID:
-			uMsgID = self.main.updateMessageID[id]
-			del self.main.updateMessageID[id]
-		return uMsgID
 
 	# stop the listener
 	def stop(self):
@@ -366,7 +364,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.chats = {}
 		self.connection_state_str = gettext("Disconnected.")
 		self.connection_ok = False
-		self.messageResponseID = None
 		requests.packages.urllib3.disable_warnings()
 		self.updateMessageID = {}
 		self.shut_up = {}
@@ -456,7 +453,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.tcmd = TCMD(self) 
 		self.tmsg = TMSG(self) # Notification Message Handler class. called only by on_event()
 		# initial settings for new chat.
-		# !!! sync with newUsrDict in on_settings_migrate() !!!
+		# !!! sync this dict with newUsrDict in on_settings_migrate() !!!
 		self.newChat = {
 			'private': True,
 			'title': "[UNKNOWN]",
@@ -501,7 +498,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_settings_version(self):
-		return 2
+		return 3
+		# Settings version numbers used in releases
+		# < 1.3.0: no settings versioning
+		# 1.3.0 : 1
+		# 1.3.1 : 2
+		# 1.3.2 : 2
+		# 1.3.3 : 2
+		# 1.4.0 : 3
 
 	def get_settings_defaults(self):
 		return dict(
@@ -514,7 +518,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			tracking_token = None,
 			chats = {'zBOTTOMOFCHATS':{'send_notifications': False,'accept_commands':False,'private':False}},
 			debug = False,
-			send_icon = True
+			send_icon = True,
+			image_not_connected = True
 		)
 
 	def get_settings_preprocessors(self):
@@ -528,7 +533,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.debug("MIGRATE DO")
 		tcmd = TCMD(self)
 		# initial settings for new chat.
-		# !!! sync with newChat in on_after_startup() !!!
+		# !!! sync this dict with newChat in on_after_startup() !!!
 		newUsrDict = {
 			'private': True,
 			'title': "[UNKNOWN]",
@@ -555,7 +560,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					if setting not in chats[chat]:
 						if setting == "commands":
 							chats[chat]['commands'] = {k: False for k,v in tcmd.commandDict.iteritems() if 'bind_none' not in v}
-							chats[chat]['commands'].update({k: True for k,v in tcmd.commandDict.iteritems() if 'bind_none' in v})
 						elif setting == "notifications":
 							chats[chat]['notifications'] = {k: False for k,v in telegramMsgDict.iteritems()}
 						else:
@@ -637,25 +641,27 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				# this for loop updates commands and notifications settings items of chats 
 				# if there are changes in commandDict or telegramMsgDict
 				for chat in chats:
-					# Delete commands from settings if they don't belong to commandDict anymore
+					# handle renamed commands
+					if '/list' in chats[chat]['commands']:
+						chats[chat]['commands'].update({'/files':chats[chat]['commands']['/list']})
+					if '/imsorrydontshutup' in chats[chat]['commands']:
+						chats[chat]['commands'].update({'/dontshutup':chats[chat]['commands']['/imsorrydontshutup']})
 					delCmd = []
+					# collect remove 'bind_none' commands
+					for cmd in tcmd.commandDict:
+						if cmd in chats[chat]['commands'] and 'bind_none' in tcmd.commandDict[cmd]:
+							delCmd.append(cmd)
+					# collect Delete commands from settings if they don't belong to commandDict anymore
 					for cmd in chats[chat]['commands']:
 						if cmd not in tcmd.commandDict:
 							delCmd.append(cmd)
+					# finally delete commands
 					for cmd in delCmd:
 						del chats[chat]['commands'][cmd]
 					# If there are new commands in comamndDict, add them to settings
 					for cmd in tcmd.commandDict:
 						if cmd not in chats[chat]['commands']:
-							if 'bind_cmd' in tcmd.commandDict[cmd]:
-								bind = tcmd.commandDict[cmd]['bind_cmd']
-								if bind in chats[chat]['commands']:
-									chats[chat]['commands'].update({cmd: chats[chat]['commands'][bind]})
-								else:
-									chats[chat]['commands'].update({cmd: False})
-							elif 'bind_none' in tcmd.commandDict[cmd]:
-								chats[chat]['commands'].update({cmd: True})
-							else:
+							if 'bind_none' not in tcmd.commandDict[cmd]:
 								chats[chat]['commands'].update({cmd: False})
 					# Delete notifications from settings if they don't belong to msgDict anymore
 					delMsg = []
@@ -684,6 +690,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				for msg in telegramMsgDict:
 					if msg not in messages:
 						messages.update({msg: telegramMsgDict[msg]})
+					elif 'combined' not in messages[msg]:
+						messages[msg].update({'combined' : True})
+
 				self._settings.set(['messages'],messages)
 				self._logger.debug("MESSAGES: " + str(self._settings.get(['messages'])))
 
@@ -714,13 +723,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			for key in data['chats']:
 				if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
 					data['chats'][key]['new'] = False
-				# Apply command bindings
-				if not key == "zBOTTOMOFCHATS":
-					for cmd in self.tcmd.commandDict:
-						if 'bind_cmd' in self.tcmd.commandDict[cmd]:
-							data['chats'][key]['commands'][cmd] = data['chats'][key]['commands'][self.tcmd.commandDict[cmd]['bind_cmd']]
-						if 'bind_none' in self.tcmd.commandDict[cmd]:
-							data['chats'][key]['commands'][cmd] = True
 				# Look for deleted chats
 				if not key in self.chats and not key == "zBOTTOMOFCHATS":
 					delList.append(key)
@@ -755,6 +757,21 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.start_listening()
 		else:
 			self.connection_state_str = gettext("No token given.")
+
+	def on_settings_load(self):
+		data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
+
+		# only return our restricted settings to admin users - this is only needed for OctoPrint <= 1.2.16
+		restricted = ("token", "tracking_token", "chats")
+		for r in restricted:
+			if r in data and (current_user is None or current_user.is_anonymous() or not current_user.is_admin()):
+				data[r] = None
+
+		return data
+
+	def get_settings_restricted_paths(self):
+		# only used in OctoPrint versions > 1.2.16
+		return dict(admin=[["token"], ["tracking_token"], ["chats"]])
 
 ##########
 ### Softwareupdate API
@@ -815,7 +832,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				else:
 					bind_text[telegramMsgDict[key]['bind_msg']] = [key]
 			return json.dumps({
-				'bind_cmd':[k for k, v in self.tcmd.commandDict.iteritems() if 'bind_cmd' not in v and 'bind_none' not in v ],
+				'bind_cmd':[k for k, v in self.tcmd.commandDict.iteritems() if 'bind_none' not in v ],
 				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
 				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
@@ -874,9 +891,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					kwargs['chatID'] = key
 					t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 			# This is a 'editMessageText' message
-			elif 'msg_id' in kwargs:
-				if kwargs['msg_id'] is not None:
-					t = threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
+			elif 'msg_id' in kwargs and kwargs['msg_id'] is not "" and  kwargs['msg_id'] is not None:
+				t = threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
 			# direct message or event notification to a chat_id
 			else:
 				t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
@@ -888,13 +904,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	# the sent message had to have no_markup = true when calling send_msg() (otherwise it would not work)
 	# by setting no_markup = true we got a messageg_id on sending the message which is saved in selfupdateMessageID 
 	# if this message_id is passed in msg_id to send_msg() then this method will be called
-	def _send_edit_msg(self,message="",msg_id="",chatID="", **kwargs):
+	def _send_edit_msg(self,message="",msg_id="",chatID="", responses= None, inline=True, markup=None,delay=0, **kwargs):
+		if delay > 0:
+			time.sleep(delay)
 		try:
 			self._logger.debug("Sending a message UPDATE: " + message.replace("\n", "\\n") + " chatID= " + str(chatID))
 			data = {}
 			data['text'] = message
 			data['message_id'] = msg_id
 			data['chat_id'] = int(chatID)
+			if markup is not None:
+				if "HTML" in markup  or "Markdown" in markup:
+					data["parse_mode"] = markup
+			if responses and inline:
+				myArr = []
+				for k in responses:
+					myArr.append(map(lambda x: {"text":x[0],"callback_data":x[1]}, k))
+				keyboard = {'inline_keyboard':myArr}
+				data['reply_markup'] = json.dumps(keyboard)
 			self._logger.debug("SENDING UPDATE: " + str(data))
 			req = requests.post(self.bot_url + "/editMessageText", data=data)
 			if req.headers['content-type'] != 'application/json':
@@ -902,64 +929,68 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return
 			myJson = req.json()
 			self._logger.debug("REQUEST RES: "+str(myJson))
+			if inline:
+				self.updateMessageID[chatID] = msg_id
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
-	def _send_msg(self, message="", with_image=False, responses=None, force_reply=False, delay=0, noMarkup = False, chatID = "", markup="",showWeb=False, **kwargs):
+	def _send_msg(self, message="", with_image=False, responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
 		if delay > 0:
 			time.sleep(delay)
 		try:
-			if with_image is None:
-				with_image = False
+			if with_image:
+				if 'event' in kwargs and not self._settings.get(["messages",kwargs['event'],"combined"]):
+					args = locals()
+					del args['kwargs']['event']
+					del args['self']
+					args['message'] = ""
+					self._logger.debug("Sending image...")
+					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					args['message'] = message
+					args['with_image'] = False
+					self._logger.debug("Sending text...")
+					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					return
+
 			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
-			data['disable_web_page_preview'] = not showWeb 
-			# We always send hide_keyboard unless we send an actual keyboard or an Message Update (noMarkup = true)
-			if not noMarkup:
-				data['reply_markup'] = json.dumps({'hide_keyboard': True})  
+			data['disable_web_page_preview'] = not showWeb  
 			# Do we want the message to be parsed in any markup?
 			if markup is not None:
 				if "HTML" in markup  or "Markdown" in markup:
 					data["parse_mode"] = markup
-			if force_reply:			
-				if self.messageResponseID != None:
-					data['reply_markup'] = json.dumps({'force_reply': True, 'selective': True})
-					data['reply_to_message_id'] = self.messageResponseID
-				else:
-					data['reply_markup'] = json.dumps({'force_reply': True})
 			if responses:
-				if self.messageResponseID != None:
-					keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True, 'selective': True, 'force_reply': True}
-					data['reply_markup'] = json.dumps(keyboard)
-					data['reply_to_message_id'] = self.messageResponseID
-				else:
-					keyboard = {'keyboard':map(lambda x: [x], responses), 'one_time_keyboard': True, 'force_reply': True}
-					data['reply_markup'] = json.dumps(keyboard)
-
+				myArr = []
+				for k in responses:
+					myArr.append(map(lambda x: {"text":x[0],"callback_data":x[1]}, k))
+				keyboard = {'inline_keyboard':myArr}
+				data['reply_markup'] = json.dumps(keyboard)
+				
 			image_data = None
 			if with_image:
 				image_data = self.take_image()
 			self._logger.debug("data so far: " + str(data))
 
-			if chatID in self.updateMessageID:
-				del self.updateMessageID[chatID]
+			if not image_data and with_image:
+				message = "[ERR GET IMAGE]\n\n" + message
 
 			r = None
 			data['chat_id'] = chatID
 			if image_data:
 				self._logger.debug("Sending with image.. " + str(chatID))
 				files = {'photo':("image.jpg", image_data)}
-				data['caption'] = message
+				if message is not "":
+					data['caption'] = message
 				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
 				self._logger.debug("Sending finished. " + str(r.status_code))
-
 			else:
 				self._logger.debug("Sending without image.. " + str(chatID))
 				data['text'] = message
 				r =requests.post(self.bot_url + "/sendMessage", data=data)
 				self._logger.debug("Sending finished. " + str(r.status_code))
-			if r is not None and noMarkup:
+
+			if r is not None and inline:
 				r.raise_for_status()
 				myJson = r.json()
 				if not myJson['ok']:
@@ -968,8 +999,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self.updateMessageID[chatID] = myJson['result']['message_id']
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
-		self.messageResponseID = None
 	
+	def send_file(self,chat_id,path):
+		try:
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+			files = {'document': open(path, 'rb')} 
+			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id})
+		except Exception as ex:
+			pass
+
 	def send_video(self, message, video_file):
 		files = {'video': open(video_file, 'rb')}
 		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
@@ -1040,6 +1078,31 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def set_log_level(self):
 		self._logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug"]) else logging.NOTSET)
+
+# checks if the received command is allowed to execute by the user
+	def isCommandAllowed(self, chat_id, from_id, command):
+		if 'bind_none' in self.tcmd.commandDict[command]:
+			return True
+		if command is not None or command is not "":
+			if self.chats[chat_id]['accept_commands']:
+				if self.chats[chat_id]['commands'][command]:
+						return True
+				elif int(chat_id) < 0 and self.chats[chat_id]['allow_users']:
+					if self.chats[from_id]['commands'][command] and self.chats[from_id]['accept_commands']:
+						return True
+			elif int(chat_id) < 0 and self.chats[chat_id]['allow_users']:
+				if self.chats[from_id]['commands'][command] and self.chats[from_id]['accept_commands']:
+						return True
+		return False
+
+	# Helper function to handle /editMessageText Telegram API commands
+	# see main._send_edit_msg()
+	def getUpdateMsgId(self,id):
+		uMsgID = ""
+		if id in self.updateMessageID:
+			uMsgID = self.updateMessageID[id]
+			del self.updateMessageID[id]
+		return uMsgID
 
 	def take_image(self):
 		snapshot_url = self._settings.global_get(["webcam", "snapshot"])

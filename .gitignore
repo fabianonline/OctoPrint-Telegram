@@ -9,9 +9,4 @@ dist
 *.zip
 *.*~
 *.yaml
-config old/config.yaml.bak
-config.yaml.bak
-emojiDict.py
-generate_emojiDict.py
-emojis.json
-dev_utils/testBot/settings.py
+

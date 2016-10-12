@@ -1,6 +1,7 @@
 <form class="form-horizontal" id="settings_plugin_telegram">
 	<h3>Telegram settings</h3>
-	<p>If you don't know what to enter in this section, please have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md" target="_blank">the documentation at github</a>.</p>
+	<p><strong>If you need help on setting up this plugin, please have a look at <a href="https://github.com/fabianonline/OctoPrint-Telegram/blob/stable/README.md" target="_blank">the documentation on github</a>.</strong></p>
+	<hr>
 	<p>The current connection status is: <strong data-bind="text: connection_state_str"></strong></p>
 	<div class="control-group">
 		<label class="control-label">{{ _('Telegram Bot Token') }}</label>
@@ -146,6 +147,18 @@
 				for the head and bed to reach their final positions. Set to 0 to disable.</small></span>
 		</div>
 	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('"Not connected"-status') }}</label>
+		<div class="controls">
+                <label id="chkBtn0" class="btn btn-mini" title="Toggle 'Send with image'">
+               	<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.image_not_connected, click: toggleImg('0')"/>
+                <i id="chkImg0" class=""></i> 
+               <span id="chkTxt0"></span></label>
+               <span class="help-block"><small>Send image with "Not connected" status message?</small></span>
+		</div>
+	</div>
+	 
 	<div class="control-group">
 		<label class="control-label">{{ _('Send Emojis') }}</label>
 		<div class="controls">
@@ -281,7 +294,7 @@
 			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{event}</td><td style="vertical-align: middle;">The name of the event which caused the notification.</td></tr>
 		    </tbody>
 		</table>
-		<b>Note:</b> On startup and a few moments after startup of OctoPrint the temeratures can't be retrieved from the printer and will be shown as '0.0'
+		<b>Note:</b> On startup and a few moments after startup of OctoPrint the temperatures can't be retrieved from the printer and will be shown as '0.0'
     </div>
 </div>
 
