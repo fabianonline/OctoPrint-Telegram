@@ -750,7 +750,7 @@ class TCMD():
 			msg += "\n*Baud:* "+ (str(con['baudratePreference']) if con['baudratePreference'] else "AUTO")
 			msg += "\n*Profil:* "+ str(profile['name'])
 			msg += "\n*AutoConnect:* "+ str(con['autoconnect'])
-			self.main.send_msg(msg,responses=[[[self.main.emojis['electric plug']+gettext(" Port"),"/con_s|p"],[self.main.emojis['high voltage sign']+gettext(" Baud"),"/con_s|b"],[self.main.emojis['bust in silhouette']+gettext(" Profile"),"/con_s|pr"], [self.main.emojis['electric light bulb']+gettext(" Auto"),"/con_s|a"]], [[self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/con_back"]]],chatID=chat_id,markup="Markdown",msg_id=self.main.getUpdateMsgId(chat_id))
+			self.main.send_msg(msg,responses=[[[self.main.emojis['electric plug']+gettext(" Port"),"/con_s|p"],[self.main.emojis['high voltage sign']+gettext(" Baud"),"/con_s|b"],[self.main.emojis['bust in silhouette']+gettext(" Profile"),"/con_s|pr"], [self.main.emojis['lamp']+gettext(" Auto"),"/con_s|a"]], [[self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/con_back"]]],chatID=chat_id,markup="Markdown",msg_id=self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def ConPort(self,chat_id,parameter,parent):
 		if parameter:
@@ -761,7 +761,7 @@ class TCMD():
 		else:
 			con = octoprint.printer.get_connection_options()
 			keys = []
-			tmpKeys = [[self.main.emojis['electric light bulb']+' AUTO','/con_'+parent+'|p|AUTO']]
+			tmpKeys = [[self.main.emojis['lamp']+' AUTO','/con_'+parent+'|p|AUTO']]
 			i = 2
 			for k in con['ports']:
 				tmpKeys.append([self.main.emojis['electric plug']+" "+str(k),"/con_"+parent+"|p|"+str(k)])
@@ -783,7 +783,7 @@ class TCMD():
 		else:
 			con = octoprint.printer.get_connection_options()
 			keys = []
-			tmpKeys = [[self.main.emojis['electric light bulb']+' AUTO','/con_'+parent+'|b|0']]
+			tmpKeys = [[self.main.emojis['lamp']+' AUTO','/con_'+parent+'|b|0']]
 			i = 2
 			for k in con['baudrates']:
 				tmpKeys.append([self.main.emojis['high voltage sign']+" "+str(k),"/con_"+parent+"|b|"+str(k)])
@@ -863,7 +863,7 @@ class TCMD():
 			else:
 				self.main.send_msg(self.gEmo('warning') + " Failed to start connection.\n\n"+con[0],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		else:
-			keys=[[[self.main.emojis['electric light bulb']+" AUTO","/con_c|a"],[self.main.emojis['high voltage sign']+" Default","/con_c|d"]],[[self.main.emojis['settings']+" Manual","/con_c|p"],[self.main.emojis['leftwards arrow with hook']+" Back","/con_back"]]]
+			keys=[[[self.main.emojis['lamp']+" AUTO","/con_c|a"],[self.main.emojis['high voltage sign']+" Default","/con_c|d"]],[[self.main.emojis['settings']+" Manual","/con_c|p"],[self.main.emojis['leftwards arrow with hook']+" Back","/con_back"]]]
 			self.main.send_msg(self.gEmo('question') + " Select connection option.",chatID=chat_id,responses=keys, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def ConDisconnect(self,chat_id):

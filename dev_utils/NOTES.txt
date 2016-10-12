@@ -1,5 +1,5 @@
 ### NOW
-
+		admin only settings
 
 ### Migration
 	  ! on message migrate look for binding/ no setting changes
