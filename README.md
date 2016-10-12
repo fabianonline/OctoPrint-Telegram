@@ -6,13 +6,13 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 **Lates release: [1.4.0](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
 ## Contents
-* [Installation](#inst)
-  * [Create Telegram Bot](#bot) 
-  * [Plugin Setup](#plugin)
-  * [User Setup](#user)
-* [Configuration](#config)
-  * [General](#gen)
-  * [Users](#usr)
+* [Installation](#installation)
+  * [Create Telegram Bot](#create-telegram-bot) 
+  * [Plugin Setup](#plugin-setup)
+  * [User Setup](#user-setup)
+* [Configuration](#configuration)
+  * [General](#general)
+  * [Users](#users)
   * [Notifications](#note)
 * [Available Commands](#cmd)
 * [Info / Contact / Help](#rtfm)
@@ -20,9 +20,9 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 ## Screenshots
 ![Screenshot](https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/telegram_screen.png)
 <br><br><br>
-## <a name="inst"></a> Installation
+## Installation
 To set Octoprint Telegram up, you have to do the following three parts.
-### <a name="bot"></a>Create Telegram Bot
+### Create Telegram Bot
 
 To allow the plugin to send messages via telegram, you have to register a telegram bot. 
 
@@ -37,7 +37,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 3. The botfather hands you a token. You need this to use your bot. Keep this token secret!
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_new.png" alt="Register new bot" width="35%" align="center"/>
-    #### OPTIONAL
+#### OPTIONAL
 
 	While you're there, you could also do the following steps:
     
@@ -46,21 +46,22 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 
 5. Tell the botfather which commands are available. This enables Telegram to auto-complete commands to your bot. Send `/setcommands` to @botfather, select the bot and then send the lines in the box below (one message with multiple lines).
-    ```markdown
-    abort - Aborts the currently running print. A confirmation is required.
-    shutup - Disables automatic notifications till the next print ends.
-    imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.
-    status - Sends the current status including a current photo.
-    togglepause - Pause or resule a print
-    settings - Displays the current notification settings and allows you to change them.
-    list - Lists all the files available for printing and lets you start printing them.
-    print - Lets you start a print. A confirmation is required.
-    upload - You can just send me a gcode file to save it to my library.
-    sys - Execute Octoprint System Commands.
-    ctrl - Use self defined controls from Octoprint.
-    ```
+	```markdown
+	abort - Aborts the currently running print. A confirmation is required.
+	shutup - Disables automatic notifications till the next print ends.
+	imsorrydontshutup - The opposite of /shutup - Makes the bot talk again.
+	status - Sends the current status including a current photo.
+	togglepause - Pause or resule a print
+	settings - Displays the current notification settings and allows you to change them.
+	list - Lists all the files available for printing and lets you start printing them.
+	print - Lets you start a print. A confirmation is required.
+	upload - You can just send me a gcode file to save it to my library.
+	sys - Execute Octoprint System Commands.
+	ctrl - Use self defined controls from Octoprint.
+	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
-### <a name="plugin"></a>Plugin setup
+	
+### Plugin setup
 
 1. Install the plugin via the bundled [Plugin Manager](https://github.com/foosel/OctoPrint/wiki/Plugin:-Plugin-Manager) or manually using this URL: `https://github.com/fabianonline/OctoPrint-Telegram/archive/stable.zip`
 
@@ -77,7 +78,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 5. Hit "Save" at the bottom of the settings dialog.
 
 Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
-### <a name="user"></a>				User setup
+### User setup
 
 1. Open your Octoprint settings and select *Telegram* on the left.
 
@@ -94,7 +95,7 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#usr))
 
 <br>
-## <a name="config"></a>Configuration
+## Configuration
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
@@ -116,7 +117,8 @@ Configuration is done via the Octoprint settings dialog. Note that only admin us
 6. If send emojis is enabled, emojis will be send within messages. If disabled, all emojis in messages will be changed to empty strings.
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_general.png" alt="General settings" width="70%" align="center"/><br><br><br>
-### <a name="usr"></a> Users
+
+### Users
 There are users (private chat with single user) or groups you will see in the list of known chats. These settings are only accessible by admin users.
 1. When clicking the *command* icon, a dialog with a list of checkboxes for every accepted command will open. Check a box to enable the user/group to use the command. When done, close the dialog. Don't forget to enable general command execution in `3.`
 2. By clicking on the *notification* icon, a dialog with a list of checkboxes for every known notification event will open. Checked notifications will be send to the user/group. When done, close the dialog. Don't forget to activate general notification in `3.`
@@ -139,7 +141,8 @@ There are users (private chat with single user) or groups you will see in the li
 	  * *Send notifications*: This will allow the bot to send the notifications you enabled in `2.` to the user/group.
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_user.png" alt="User settings" width="70%" align="center"/><br><br><br>
-### <a name="note"></a>Notifications
+
+### Notifications
 In this section you can configure the content of the notification messages.
 1. These three buttons will open dialogs which provide you informations about using markup, variables and emojis in the messages.
 
@@ -164,12 +167,13 @@ In this section you can configure the content of the notification messages.
    * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
    * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
    * You are also able to access the current printer state data. See [here]() for datastructure of this data. The base variable is `{status}`.
-   		```
-        Example: {status[progress][filepos]} - will insert the actual position in the printed file.
-        ```
+	```
+	Example: {status[progress][filepos]} - will insert the actual position in the printed file.
+	```
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_messages.png" alt="Optional bot settings" width="70%" align="center"/><br><br><br>
-## <a name="cmd"></a>Available Commands
+
+## Available Commands
 **`/abort`** - Aborts the currently running print. A confirmation is required.
 
 **`/shutup`** - Disables automatic notifications till the print ends.
@@ -200,13 +204,13 @@ In this section you can configure the content of the notification messages.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
-#### Notes:
+	#### Notes:
 * the `/help` command is always allowed
 
 
 * `/files` and `/print` will basically show the same file dialog. If `/print` is disabled, no print button will be shown. If `/files` is disabled, no download and delete buttons will be shown. If both commands are enabled, all buttons will be shown regardles wether the user entered the dialog by `/files` or `/print`.
 <br><br><br>
-## <a name="rtfm"></a>Info / Contact / Help
+## Info / Contact / Help
 
 If you want to talk to other users of this plugin and maybe have some influence in the development of this plugin,
 you can join the [Octoprint-Telegram-Users-Group](https://telegram.me/joinchat/CXFirQjl9XTp5dr4OZqH9Q).
