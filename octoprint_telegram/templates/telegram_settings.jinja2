@@ -168,25 +168,26 @@
 			<span class="help-block"><small>Check to enable emojis in notifications and command dialogs.</small></span>
 		</div>
 	</div>
-	<br>
-	<br>
 	<hr>
-
-	
+	<h4>Messages at...</h4>
 	<div class="control-group">
-		<label class="control-label"><h4>Messages at...</h4></label>
-		<div class="controls form-inline" style="text-align:center;">
+		<div class="controls" style="text-align:center;">
 		{{ _('Message formatting information:') }}<br>
-			<label class="btn-group">
-				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.mupInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Markup') }}</button>
-				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.varInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Variables') }}</button>
-				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.emoInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Emojis') }}</button>
+			<label class="btn-group" >
+				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.mupInfoDialog.modal('show');}">
+				<i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Markup') }}</button>
+				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.varInfoDialog.modal('show');}">
+				<i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Variables') }}</button>
+				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.emoInfoDialog.modal('show');}">
+				<i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('Emojis') }}</button>
 			</label>
 		</div>
 	</div> 
-	<div id="telegram_msg_list"><!-- message settings get listed here --></div>
-	<br>
-	<br>
+
+	<div id="telegramMessageCarousel" class="carousel slide" data-interval="false" style="margin-bottom:0px;">
+		<div class="carousel-inner" id="telegramCarouselInner"></div>
+		<div style="text-align:center;margin:5px 10px 8px 0px;" ><strong><span id="telegramCarouselNav" class="text-info"></span></strong></div>
+	</div>	
 	<hr>
 
 	<h4>Stuff</h4>

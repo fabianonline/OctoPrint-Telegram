@@ -8,14 +8,7 @@ $(function() {
     function TelegramViewModel(parameters) {
         var self = this;
 
-        // assign the injected parameters, e.g.:
-        // self.loginStateViewModel = parameters[0];
         self.settings = parameters[0];
-        //else
-         //   self.settings=self.settings;
-        console.log(String(self.settings));
-
-        // TODO: Implement your plugin's view model here.
         
         self.chatListHelper = new ItemListHelper(
             "known_chats",
@@ -91,16 +84,23 @@ $(function() {
             self.bind['no_setting'] = response.no_setting;
             self.bind['bind_text'] = response.bind_text;
             self.onBindLoad = true;
+            self.msgCnt = 1;
+            var element = $('#telegram_msg_list')[0]; 
+            if(typeof element !== 'undefined') ko.cleanNode(element);
             $("#telegram_msg_list").empty();
+            element = $('#telegramCarouselInner')[0]; 
+            if(typeof element !== 'undefined') ko.cleanNode(element);
+            $('#telegramCarouselInner').empty();
             keys = self.bind["notifications"].sort();
             for(var id in keys) {
                 bind_text = '';
                 if(keys[id] in self.bind['bind_text']){
-                    bind_text = '<span class="muted"><br /><small>Also for:';
+                    bind_text = '<small><span class="muted"><small>Also for: ';
                     ks = self.bind['bind_text'][keys[id]].sort();
                     for (var k in ks)
-                        bind_text += "<br>" + ks[k];
-                    bind_text += "</small></span>";
+                        bind_text += ks[k]+" | ";
+                    bind_text = bind_text.substring(0,bind_text.length-3)
+                    bind_text += "</small></span></small>";
                 }
                 img = "camera";
                 hideMup = "";
@@ -119,7 +119,6 @@ $(function() {
                     hideMup = "";
                     hideComb = "display:none"
                 }
-                // TODO set to second message setting
                 if(self.settings.settings.plugins.telegram.messages[keys[id]].combined()){
                     img2 = "comment";
                     btn2 = "danger";
@@ -151,36 +150,46 @@ $(function() {
                     bMd = "info"
                     self.markupFrom[self.msgCnt] = 'off';
                 }
-                var btnGrp = '<span id="mupBut'+self.msgCnt+'" style="' + hideMup + '"><span class="muted"><small>Markup Selection<br></small></span><span class="btn-group" data-toggle="buttons-radio">';
+
+                var btnGrp = '<div align="center" class="well well-small" style="margin:5px 0px 0px 0px;background-color: #eaeaea;' + hideMup + '" id="mupBut'+self.msgCnt+'" ><small><span class="muted">Markup Selection</span></small><span class="btn-group" data-toggle="buttons-radio" style="margin-top:5px;">';
                 btnGrp += '<button id="off'+self.msgCnt+'" type="button" class="btn btn-'+bOff+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'off\',\''+keys[id]+'\')">Off</button>';
                 btnGrp += '<button id="HTML'+self.msgCnt+'" type="button" class="btn btn-'+bHtml+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'HTML\',\''+keys[id]+'\')">HTML</button>';
                 btnGrp += '<button id="Markdown'+self.msgCnt+'" type="button" class="btn btn-'+bMd+' btn-mini" data-bind="click: toggleMarkup.bind($data,\''+self.msgCnt+'\',\'Markdown\',\''+keys[id]+'\')">MD</button>';
-                btnGrp += '</span><br></span>';
+                btnGrp += '</span></div>';
 
-                var btnImg = '<span class="muted"><small>Send with image?<br></small></span>';
-                btnImg += '<label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'">';
+                var btnImg = '<div align="center" class="well well-small" style="margin:5px 0px 0px 0px;background-color: #eaeaea;">';
+                btnImg += '<small><span class="muted">Send with image?</span></small>';
+                btnImg += '<label id="chkBtn'+self.msgCnt+'" class="btn btn-'+btn+' btn-mini" title="Toggle \'Send with image\'" style="margin-top:5px;">';
                 btnImg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.image, click: toggleImg(\''+self.msgCnt+'\')"/>';
                 btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
-                btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label><br>';
+                btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label></div>';
 
-                var btnSecMsg = '<span id="combBut'+self.msgCnt+'" style="' + hideComb + '"> <span class="muted"><small>Combined message?<br></small></span>';
-                btnSecMsg += '<label id="chk2Btn'+self.msgCnt+'" class="btn btn-'+btn2+' btn-mini" title="Toggle \'Send image in a second message\'">';
+                var btnSecMsg = '<div align="center" class="well well-small" style="margin:5px 0px 0px 0px;background-color: #eaeaea;' + hideComb + '" id="combBut'+self.msgCnt+'">';
+                btnSecMsg += '<small><span class="muted">Combined message?</span></small>';
+                btnSecMsg += '<label id="chk2Btn'+self.msgCnt+'" class="btn btn-'+btn2+' btn-mini" title="Toggle \'Send image in a second message\'" style="margin-top:5px;">';
                 btnSecMsg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.combined, click: toggleImg2(\''+self.msgCnt+'\')"/>';
                 btnSecMsg += '<i id="chk2Img'+self.msgCnt+'" class="icon-'+img2+'"></i> ';
-                btnSecMsg += '<span id="chk2Txt'+self.msgCnt+'">'+txt2+'</span></label><br></span>';
+                btnSecMsg += '<span id="chk2Txt'+self.msgCnt+'">'+txt2+'</span></label></div>';
 
-                var msgEdt = '<div class="control-group"><div class="controls " ><hr style="margin:0px 0px 0px -90px;"></div></div><div class="control-group" id="telegramMsgText'+self.msgCnt+'">';
-                    msgEdt += '<label class="control-label"><strong>'+keys[id]+ '</strong>'+bind_text + '</label>';
-                    msgEdt += '<div class="controls " >';
-                        msgEdt += '<div class="row">';
-                            msgEdt += '<div class="span9"><textarea rows="4" style="margin-left:7px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea></div>';
-                            msgEdt += '<div class="span3" style="text-align:center;">' + btnImg + btnSecMsg +  btnGrp + '</div>';
-                        msgEdt += '</div></div></div>';
-
-                $('#telegram_msg_list').append(msgEdt);
+                var msgEdt = '<div class="item '+((self.msgCnt==1)?"active":"")+' teleClass" id="teleCarouItem" data-name="'+keys[id]+ '">';
+                        msgEdt += '<div class="control-group" id="telegramMsgText'+self.msgCnt+'" style="margin-bottom:0px">';
+                            msgEdt +='<div class="well well-small" style="padding:10px 20px 10px 40px;margin:0px 10px 0px 0px;"><div class="row">';
+                                msgEdt += '<div class="span9 " ><span class="text-info" style="font-weight: bold;line-height: 20px;font-size: 17.5px;">'+keys[id] +' </span> '+bind_text + '';
+                                        msgEdt += '<textarea rows="6"  style="margin-top:10px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea>';
+                                msgEdt += '</div>';
+                                msgEdt += '<div class="span3">';
+                                    msgEdt += btnImg ;
+                                    msgEdt += btnSecMsg;
+                                    msgEdt +=  btnGrp;
+                                msgEdt += '</div>';
+                            msgEdt += '</div></div>';
+                            //msgEdt += '<label class="control-label"><strong>'+keys[id]+ '</strong>'+bind_text + '</label>';
+                        msgEdt += '</div>';
+                    msgEdt += '</div>';
+                $('#telegramCarouselInner').append(msgEdt);
                 ko.applyBindings(self, $("#telegramMsgText"+self.msgCnt++)[0]);
             }
-            self.isloading(false);
+            
             $('#chkImg0').removeClass("icon-camera");
             $('#chkImg0').removeClass("icon-ban-circle");
             $('#chkBtn0').removeClass("btn-success");
@@ -196,7 +205,48 @@ $(function() {
                 $('#chkBtn0').addClass("btn-warning");
                 $('#chkTxt0').text("No Image");
             }
+            self.isloading(false);
             self.onBindLoad = false;
+            self.updateNav();
+        }
+
+
+        self.slideTo = function(a){
+            $('#telegramMessageCarousel').carousel(parseInt(a));
+        }
+
+        $('#telegramMessageCarousel').each(function(){
+            $(this).carousel({
+                interval: false
+            });
+        });
+        $('#telegramMessageCarousel').on('slid', function() {
+            self.updateNav();
+        });
+
+        self.updateNav = function(){
+            var element = $('#telegramCarouselNav')[0]; 
+            ko.cleanNode(element);
+            element = $('.teleClass').map(function(){return $(this).data("name");}).get();
+            var a = $('#telegramCarouselInner').find("div.item.active").index();
+            var b = $("#telegramCarouselInner div.item").length;
+            var msg = "";
+            var le = ((a-1)<0)?b-1:a-1;
+            var ri = ((a+1)>(b-1))?0:a+1;
+            
+            $('#teleNavleft').attr("title", element[le]);
+            $('#teleNavRight').attr("title", element[ri]);
+            msg = '<a href="#" style="text-decoration:none;"  data-bind="click: slideTo.bind($data,\''+le+'\')"><i class="icon-arrow-left"></i> ' + element[le] + '</a><span style="font-size: 17.5px;">';
+            for(i=0;i<b;i++){
+                if(a == i)
+                    msg += '&nbsp;&nbsp;<span class="teleNavClass" title='+element[i]+'>&#x25CF;</span>';
+                else
+                    msg += '&nbsp;&nbsp;<a class="teleNavClass" href="#" style="text-decoration:none;" data-bind="click: slideTo.bind($data,\''+i+'\')" title="'+element[i]+'">&#x25CB;</a>';
+            }
+            msg += '&nbsp;&nbsp;</span><a href="#" style="text-decoration:none;" data-bind="click: slideTo.bind($data,\''+ri+'\')">' + element[ri] + ' <i class="icon-arrow-right"></i></a>';
+            $('#telegramCarouselNav').html(msg);
+            //$('#telegramCarouselTit').html(element[a]);
+            ko.applyBindings(self, $("#telegramCarouselNav")[0]);
         }
 
 
