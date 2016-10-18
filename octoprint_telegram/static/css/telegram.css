@@ -1,1 +1,123 @@
-/* TODO: Have your plugin's CSS files generated to here. */
+.carousel-nav{
+	text-align: center;
+	margin: 5px 10px 8px 0px;
+	font-weight: bold;
+}
+
+.tDashed{
+	border-right:1px dashed #ddd;
+}
+
+.tCen{
+	text-align: center;
+}
+
+.vMid{
+	vertical-align: middle;
+}
+
+.tWidth{
+	width: 70px;
+}
+
+.tSolid{
+	border-right: 1px solid #ddd;
+}
+
+.tLoad{
+	position: absolute;
+	left: 0px;
+	top: 0px;
+	z-index: 1010;
+	padding: 0px;
+	width: 100%;
+	height: 100%;
+	background-color: white;
+}
+
+.tSpin{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	z-index: 1011;
+}
+
+.tStar{
+	float: left;
+	position: absolute;
+	padding: 0px;
+}
+
+.tStarT{
+	left: -4px;
+	top: -4px;
+	z-index: 1001;
+	color: orangered;
+}
+
+.tStarS{
+	left: -3px;
+	top: -3px;
+	z-index: 1000;
+	color: gainsboro;
+}
+
+.tFl{
+	float:left;
+}
+
+.tAuto{
+	table-layout: auto
+}
+
+.tCon{
+	margin: 0px;
+	position: relative;
+}
+
+.tChatL{
+	padding: 0px 0px 0px 0px;
+}
+
+.tChatI{
+	padding: 0px 5px 0px 0px;
+}
+
+.tDeco{
+	text-decoration: none;
+}
+
+.tColB{
+	color: blue;
+}
+
+.tColG{
+	color: dimgray;
+}
+.tFontL{
+	font-size:1.2em;
+}
+
+.tWell{
+	margin: 5px 0px 0px 0px;
+	background-color: #eaeaea;
+}
+
+.tSlide{
+	padding: 10px 20px 10px 40px;
+	margin: 0px 10px 0px 0px;
+}
+
+.tSlideH{
+	font-weight: bold;
+	line-height: 20px;
+	font-size: 17.5px;
+}
+
+.tWellM{
+	margin-top: 5px;
+}
+
+.tDispN{
+	display: none;
+}

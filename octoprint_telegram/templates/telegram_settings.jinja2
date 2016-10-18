@@ -25,29 +25,29 @@
 	<hr>
 
 	<h4>Known Chats</h4>
-	<div style="float:left;padding:0px 0px 0px 0px;margin:0px;position:relative;" >
-		<div style ="position:absolute;left:0px;top:0px;z-index:1010;padding:0px;width:100%;height:100%;background-color:white;" data-bind="visible: isloading()">
-			<span style ="position:absolute;left:50%;top:50%;z-index:1011;" class="icon-spinner icon-spin icon-large" title="{{ _('Request in progress...') }}"></span>
+	<div class="tFl tCon tChatL" >
+		<div class="tLoad" data-bind="visible: isloading()">
+			<span class="tSpin" class="icon-spinner icon-spin icon-large" title="{{ _('Request in progress...') }}"></span>
 		</div>
 		<table class="table table-condensed table-hover table-striped">
 		    <thead>
 			    <tr>
-			        <th class="settings_users_name" style="border-right:1px dashed #ddd">Chat</th>
-			        <th class="settings_users_active" style="width:70px;border-right:1px dashed #ddd">Command</th>
-			        <th class="settings_users_active" style="width:70px;border-right:1px dashed #ddd">Notify</th>
-			        <th class="settings_users_actions" style="width:70px;">{{ _('Action') }}</th>
+			        <th class="settings_users_name" class="tDashed">Chat</th>
+			        <th class="settings_users_active" class="tWidth tDashed">Command</th>
+			        <th class="settings_users_active" class="tWidth tDashed">Notify</th>
+			        <th class="settings_users_actions" class="tWidth">{{ _('Action') }}</th>
 			    </tr>
 		    </thead>
 		    <tbody data-bind="foreach: chatListHelper.paginatedItems">
 			    <tr>
-			        <td class="settings_users_name" style="border-right:1px dashed #ddd">
-			        	<div style="float:left;padding:0px 5px 0px 0px;margin:0px;position:relative;" >
-			        		<span style="font-size:1.2em;" data-bind="visible: newUsr">
-				        		<div style ="float:left;position:absolute;left:-4px;top:-4px;z-index:1001;padding:0px;">
-				        			<i style="color:orangered;" class="icon-star" title="New User"></i>
+			        <td class="settings_users_name" class="tDashed">
+			        	<div class="tCon tFl tChatI">
+			        		<span class="tFontL" data-bind="visible: newUsr">
+				        		<div class="tStar tStarT">
+				        			<i class="icon-star" title="New User"></i>
 				        		</div>
-				        		<div style ="float:left;position:absolute;left:-3px;top:-3px;z-index:1000;padding:0px;">
-				        			<i style="color:gainsboro;" class="icon-star" ></i>
+				        		<div class="tStar tStarS">
+				        			<i class="icon-star" ></i>
 				        		</div>
 				        	</span>
 			        		<img data-bind="attr: {src: image}" width="40px" height="40px" class="img-circle teleUsrPic" title="User Profile Photo">
@@ -61,25 +61,25 @@
 			        	</div>
 			   		</td>
 			        <!-- ko if: !newUsr -->
-			        <td class="settings_users_active" style="width:70px;vertical-align: middle;border-right:1px dashed #ddd">
+			        <td class="settings_users_active" class="tWidth vMid tDashed">
 			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" style="text-decoration:none"  title="Edit command rights">
+				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" class="tDeco"  title="Edit command rights">
 				        		<i class="icon-off icon-large"></i>
 				        	</a>
 				        	<span data-bind="visible: !accept_commands && !allow_users"><i class="icon-remove icon-large"></i></span>
 				        	<span data-bind="visible: !accept_commands && allow_users"><i class="icon-off icon-large"></i></span>
 			        	</span>
 			        </td>
-			        <td class="settings_users_admin" style="width:70px;vertical-align: middle;border-right:1px dashed #ddd">
+			        <td class="settings_users_admin" class="tWidth vMid tDashed">
 			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" style="text-decoration:none"  title="Edit notification settings">
+				        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" class="tDeco"  title="Edit notification settings">
 				        		<i class="icon-comment icon-large"></i>
 				        	</a>
 				        	<span data-bind="visible: !send_notifications"><i class="icon-remove icon-large"></i></span>
 				        </span>
 			        </td>
 			        <!-- /ko -->
-			        <td class="settings_users_actions" style="width:70px;vertical-align: middle;" data-bind="attr: {colspan: newUsr == true ? 3 : null }">
+			        <td class="settings_users_actions" class="vMid tWidth" data-bind="attr: {colspan: newUsr == true ? 3 : null }">
 			        	<span data-bind="visible: !newUsr">
 				            <a href="#" class="icon-pencil icon-large" title="{{ _('Update User') }}" data-bind="click: function() { $root.showEditChatDialog($data);}"></a>&nbsp;&nbsp;|&nbsp;
 				        </span>
@@ -98,7 +98,7 @@
 		<div class="control-group">
 			<label class="control-label">{{ _('Refresh Chat List') }}</label>
 			<div class="controls">
-				<div style="float:left;">
+				<div class="tFl">
 					<button class="btn" data-bind="click: function (){ $root.requestData(true); }" title="Reload list"><i class="icon-refresh"></i>&nbsp;&nbsp;{{ _('Reload') }}</button> &nbsp;&nbsp;&nbsp; 
 
 				</div>
@@ -107,7 +107,7 @@
 						<input type="checkbox" data-bind="checked: reloadUsr" title="Check to enable auto Refresh" /> <span>Enable auto refresh (20 sec.)</span>	
 					</label>
 				</div>
-				<div style="float:left;">	
+				<div class="tFl">	
 					<span class="help-block"><small>Press this button or enable auto refresh after you send an initial random message to the bot.<br>
 					Your chat will then appear in the list. Before you're able to edit notifications and available commands for new users, you have to save the settings first!</small></span>
 				</div>
@@ -152,7 +152,7 @@
 		<label class="control-label">{{ _('"Not connected"-status') }}</label>
 		<div class="controls">
                 <label id="chkBtn0" class="btn btn-mini" title="Toggle 'Send with image'">
-               	<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.image_not_connected, click: toggleImg('0')"/>
+               	<input type="checkbox" class="tDispN" data-bind="checked: settings.settings.plugins.telegram.image_not_connected, click: toggleImg('0')"/>
                 <i id="chkImg0" class=""></i> 
                <span id="chkTxt0"></span></label>
                <span class="help-block"><small>Send image with "Not connected" status message?</small></span>
@@ -168,10 +168,10 @@
 			<span class="help-block"><small>Check to enable emojis in notifications and command dialogs.</small></span>
 		</div>
 	</div>
-	<hr>
+	<hr
 	<h4>Messages at...</h4>
 	<div class="control-group">
-		<div class="controls" style="text-align:center;">
+		<div class="controls" class="tCen">
 		{{ _('Message formatting information:') }}<br>
 			<label class="btn-group" >
 				<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.mupInfoDialog.modal('show');}">
@@ -186,7 +186,7 @@
 
 	<div id="telegramMessageCarousel" class="carousel slide" data-interval="false" style="margin-bottom:0px;">
 		<div class="carousel-inner" id="telegramCarouselInner"></div>
-		<div style="text-align:center;margin:5px 10px 8px 0px;" ><strong><span id="telegramCarouselNav" class="text-info"></span></strong></div>
+		<div class="carousel-nav"><span id="telegramCarouselNav" class="text-info"></span></div>
 	</div>	
 	<hr>
 
@@ -218,7 +218,7 @@
 
 <div id="settings-telegramDialogEditChat" class="modal hide fade">
     <div class="modal-header">
-        <h4><i class="icon-wrench icon-large" style="color:dimgray"></i>&nbsp;&nbsp;Edit User: <span data-bind="text: currChatTitle"></span></h4>
+        <h4><i class="icon-wrench icon-large tColG"></i>&nbsp;&nbsp;Edit User: <span data-bind="text: currChatTitle"></span></h4>
     </div>
     <div class="modal-body">
         <form class="form-horizontal">
@@ -250,7 +250,7 @@
 <div id="settings-telegramDialogEditCommands" class="modal hide fade">
     <div class="modal-header">
     	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4><i class="icon-wrench icon-large" style="color:dimgray"></i>&nbsp;&nbsp;<span data-bind="text: currChatTitle"></span></h4>
+        <h4><i class="icon-wrench icon-large tColG"></i>&nbsp;&nbsp;<span data-bind="text: currChatTitle"></span></h4>
     </div>
     <div class="modal-body">
         <form class="form-horizontal" >
@@ -269,30 +269,30 @@
 <div id="settings-telegramDialogVarInfo" class="modal hide fade">
     <div class="modal-header">
     	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-       <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Variables') }}</h4></nobr>
+       <nobr><h4><i class="icon-info-sign icon-large tColB"></i>&nbsp;&nbsp;{{_('Variables') }}</h4></nobr>
     </div>
     <div class="modal-body">
     	Use Variables by adding <code>&#123; &lt;varName&gt; &#125;</code> to your message text (eg <code>&#123;bed_temp&#125;</code>). Usable Variables are:
-    	<table class="table table-condensed table-striped" style="table-layout: auto">
+    	<table class="table table-condensed table-striped" class="tAuto">
 		    <thead>
 			    <tr>
-			        <th style="border-right:1px dashed #ddd">{{_('Variable') }}</th>
+			        <th class="tDashed">{{_('Variable') }}</th>
 			        <th>{{ _('Description') }}</th>
 			    </tr>
 		    </thead>
 		    <tbody >
 			    <tr>
-			    	<td style="vertical-align: middle;border-right:1px dashed #ddd">{file}</td>
+			    	<td class="tCen tDashed vMid">{file}</td>
 			    	<td>The currently printing file.
 			    		<span class="muted"><small>Only useful while printing</small></span>
 			    	</td>
 			    </tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{z}</td><td style="vertical-align: middle;">The current z value.</td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{percent}</td><td style="vertical-align: middle;">The current percentage of the print progress.<span class="muted"><small>Only useful for height change notifications</small></span></td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{time_done}<br>{time_left}</td><td style="vertical-align: middle;">Time done / left in the print.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td style="vertical-align: middle;">Temperatures of bed, extruder 1 and extruder 2.</td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_target},<br>{e1_target},<br>{e2_target}</td><td style="vertical-align: middle;">Target temperatures of bed, extruder 1 and extruder 2.</td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{event}</td><td style="vertical-align: middle;">The name of the event which caused the notification.</td></tr>
+			    <tr><td class="tCen tDashed vMid">{z}</td><td class="vMid">The current z value.</td></tr>
+			    <tr><td class="tCen tDashed vMid">{percent}</td><td class="vMid">The current percentage of the print progress.<span class="muted"><small>Only useful for height change notifications</small></span></td></tr>
+			    <tr><td class="tCen tDashed vMid">{time_done}<br>{time_left}</td><td class="vMid">Time done / left in the print.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
+			    <tr><td class="tCen tDashed vMid">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td class="vMid">Temperatures of bed, extruder 1 and extruder 2.</td></tr>
+			    <tr><td class="tCen tDashed vMid">{bed_target},<br>{e1_target},<br>{e2_target}</td><td class="vMid">Target temperatures of bed, extruder 1 and extruder 2.</td></tr>
+			    <tr><td class="tCen tDashed vMid">{event}</td><td class="vMid">The name of the event which caused the notification.</td></tr>
 		    </tbody>
 		</table>
 		<b>Note:</b> On startup and a few moments after startup of OctoPrint the temperatures can't be retrieved from the printer and will be shown as '0.0'
@@ -303,38 +303,38 @@
 <div id="settings-telegramDialogEmoInfo" class="modal hide fade">
     <div class="modal-header">
     	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-       <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Emojis') }}</h4></nobr>
+       <nobr><h4><i class="icon-info-sign icon-large tColB"></i>&nbsp;&nbsp;{{_('Emojis') }}</h4></nobr>
     </div>
     <div class="modal-body">
     	<p>Add <code>&#123;emo:&lt;emoName&gt;&#125;</code> to your message text to use emojis. The <code>emoName</code> has to be set according to the 'Description' column on <a href="http://apps.timwhitlock.info/emoji/tables/unicode" target ="_blank">this Website</a>. No emoji will be send, if 'Send emojis' is deactivated.</p>
 
     	<p><b>Example:</b><br>If you want to use <img id="1f62d" class="teleEmojiImg"> in yor message you have to type <code>&#123;emo:loudly crying face&#125;</code>.
 
-    	<p><br><span style="font-size:1.25em;">There are a few shortcuts available:</span>
-			<table class="table table-condensed table-striped" style="table-layout: auto">
+    	<p><br><span class="tFontL">There are a few shortcuts available:</span>
+			<table class="table table-condensed table-striped" class="tAuto">
 			    <thead>
 				    <tr>
-				        <th style="border-right:1px dashed #ddd;text-align:center;">{{_('Emoji') }}</th>
-				        <th style="border-right:1px solid #ddd">{{ _('emoName') }}</th>
-				        <th style="border-right:1px dashed #ddd;text-align:center;">{{_('Emoji') }}</th>
+				        <th class="tCen tDashed">{{_('Emoji') }}</th>
+				        <th class="tSolid">{{ _('emoName') }}</th>
+				        <th class="tCen tDashed">{{_('Emoji') }}</th>
 				        <th>{{ _('emoName') }}</th>
 				    </tr>
 			    </thead>
 			    <tbody >
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f419" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">octo</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f616" class="teleEmojiImg"></td><td>mistake</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f514" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">notify</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f515" class="teleEmojiImg"></td><td>noNotify</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4a4" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">shutdown</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f64a" class="teleEmojiImg"></td><td>shutup</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f62c" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">notallowed</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f680" class="teleEmojiImg"></td><td>rocket</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4be" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">save</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2764" class="teleEmojiImg"></td><td>heart</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2139" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">info</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4dd" class="teleEmojiImg"></td><td>settings</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="23f0" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">clock</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2b06" class="teleEmojiImg"></td><td>height</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2753" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">question</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="26a0" class="teleEmojiImg"></td><td>warning</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="270f" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">enter</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4e5" class="teleEmojiImg"></td><td>upload</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f3a6" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">cam</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f3ac" class="teleEmojiImg"></td><td>movie</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="25b6" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">play</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="25fc" class="teleEmojiImg"></td><td>stop</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f3c1" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">finish</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f389" class="teleEmojiImg"></td><td>hooray</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="26d4" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">error</td><td style="border-right:1px dashed #ddd;text-align:center;"><img id="1f4a1" class="teleEmojiImg"></td><td>lamp</td></tr>
-				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2705" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">check</td><td>&nbsp;</td><td>&nbsp;</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f419" class="teleEmojiImg"></td><td class="tSolid">octo</td><td class="tCen tDashed"><img id="1f616" class="teleEmojiImg"></td><td>mistake</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f514" class="teleEmojiImg"></td><td class="tSolid">notify</td><td class="tCen tDashed"><img id="1f515" class="teleEmojiImg"></td><td>noNotify</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f4a4" class="teleEmojiImg"></td><td class="tSolid">shutdown</td><td class="tCen tDashed"><img id="1f64a" class="teleEmojiImg"></td><td>shutup</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f62c" class="teleEmojiImg"></td><td class="tSolid">notallowed</td><td class="tCen tDashed"><img id="1f680" class="teleEmojiImg"></td><td>rocket</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f4be" class="teleEmojiImg"></td><td class="tSolid">save</td><td class="tCen tDashed"><img id="2764" class="teleEmojiImg"></td><td>heart</td></tr>
+				    <tr><td class="tCen tDashed"><img id="2139" class="teleEmojiImg"></td><td class="tSolid">info</td><td class="tCen tDashed"><img id="1f4dd" class="teleEmojiImg"></td><td>settings</td></tr>
+				    <tr><td class="tCen tDashed"><img id="23f0" class="teleEmojiImg"></td><td class="tSolid">clock</td><td class="tCen tDashed"><img id="2b06" class="teleEmojiImg"></td><td>height</td></tr>
+				    <tr><td class="tCen tDashed"><img id="2753" class="teleEmojiImg"></td><td class="tSolid">question</td><td class="tCen tDashed"><img id="26a0" class="teleEmojiImg"></td><td>warning</td></tr>
+				    <tr><td class="tCen tDashed"><img id="270f" class="teleEmojiImg"></td><td class="tSolid">enter</td><td class="tCen tDashed"><img id="1f4e5" class="teleEmojiImg"></td><td>upload</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f3a6" class="teleEmojiImg"></td><td class="tSolid">cam</td><td class="tCen tDashed"><img id="1f3ac" class="teleEmojiImg"></td><td>movie</td></tr>
+				    <tr><td class="tCen tDashed"><img id="25b6" class="teleEmojiImg"></td><td class="tSolid">play</td><td class="tCen tDashed"><img id="25fc" class="teleEmojiImg"></td><td>stop</td></tr>
+				    <tr><td class="tCen tDashed"><img id="1f3c1" class="teleEmojiImg"></td><td class="tSolid">finish</td><td class="tCen tDashed"><img id="1f389" class="teleEmojiImg"></td><td>hooray</td></tr>
+				    <tr><td class="tCen tDashed"><img id="26d4" class="teleEmojiImg"></td><td class="tSolid">error</td><td class="tCen tDashed"><img id="1f4a1" class="teleEmojiImg"></td><td>lamp</td></tr>
+				    <tr><td class="tCen tDashed"><img id="2705" class="teleEmojiImg"></td><td class="tSolid">check</td><td>&nbsp;</td><td>&nbsp;</td></tr>
 			    </tbody>
 			</table>
     	</p>
@@ -354,42 +354,42 @@
 <div id="settings-telegramDialogMupInfo" class="modal hide fade">
     <div class="modal-header">
     	<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-       <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('Markup') }}</h4></nobr>
+       <nobr><h4><i class="icon-info-sign icon-large tColB"></i>&nbsp;&nbsp;{{_('Markup') }}</h4></nobr>
     </div>
     <div class="modal-body">
     	<p>You can use simple markup in messages. Markup for messages is activated by the markup options besides the message text fields. You can choose using HTML markup or the markdown variant. The list below shows the different markups you are able to use.</p> 
-			<table class="table table-condensed table-striped" style="table-layout: auto">
+			<table class="table table-condensed table-striped" class="tAuto">
 			    <thead>
 				    <tr>
-				        <th style="border-right:1px dashed #ddd;text-align:center;">{{_('Markdown') }}</th>
-				        <th style="border-right:1px dashed #ddd;text-align:center;">{{ _('HTML') }}</th>
-				        <th style="text-align:center">{{ _('Effect') }}</th>
+				        <th class="tCen tDashed">{{_('Markdown') }}</th>
+				        <th class="tCen tDashed">{{ _('HTML') }}</th>
+				        <th class="tCen">{{ _('Effect') }}</th>
 			    </thead>
 			    <tbody >
 			    	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">*bold*</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;b&gt;bold&lt;/b&gt;<br>&lt;strong&gt;bold&lt;/strong&gt;</td>
-				    	<td style="vertical-align: middle;"><strong>bold</strong></td>
+				    	<td class="tCen tDashed vMid">*bold*</td>
+				    	<td class="tCen tDashed vMid">&lt;b&gt;bold&lt;/b&gt;<br>&lt;strong&gt;bold&lt;/strong&gt;</td>
+				    	<td class="vMid"><strong>bold</strong></td>
 				  	</tr>
 				    <tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">_italic_</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;i&gt;italic&lt;/i&gt;<br>&lt;em&gt;italic&lt;/em&gt;</td>
-				    	<td style="vertical-align: middle;"><em>italic</em></td>
+				    	<td class="tCen tDashed vMid">_italic_</td>
+				    	<td class="tCen tDashed vMid">&lt;i&gt;italic&lt;/i&gt;<br>&lt;em&gt;italic&lt;/em&gt;</td>
+				    	<td class="vMid"><em>italic</em></td>
 				  	</tr>
 				  	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">[linkText](url)</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;a href="url"&gt;linkText&lt;/a&gt;</td>
-				    	<td style="vertical-align: middle;"><a href="#">LinkText</a></td>
+				    	<td class="tCen tDashed vMid">[linkText](url)</td>
+				    	<td class="tCen tDashed vMid">&lt;a href="url"&gt;linkText&lt;/a&gt;</td>
+				    	<td class="vMid"><a href="#">LinkText</a></td>
 				  	</tr>
 				  	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">`inline code`</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;code&gt;inline code&lt;/code&gt;</td>
-				    	<td style="vertical-align: middle;">txt <code>inline code</code> txt</td>
+				    	<td class="tCen tDashed vMid">`inline code`</td>
+				    	<td class="tCen tDashed vMid">&lt;code&gt;inline code&lt;/code&gt;</td>
+				    	<td class="vMid">txt <code>inline code</code> txt</td>
 				  	</tr>
 				  	<tr>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">```code block```</td>
-				    	<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">&lt;pre&gt;code block&lt;/pre&gt;</td>
-				    	<td style="vertical-align: middle;">txt <pre>code block</pre> txt</td>
+				    	<td class="tCen tDashed vMid">```code block```</td>
+				    	<td class="tCen tDashed vMid">&lt;pre&gt;code block&lt;/pre&gt;</td>
+				    	<td class="vMid">txt <pre>code block</pre> txt</td>
 				  	</tr>
 				    </tbody>
 			</table>

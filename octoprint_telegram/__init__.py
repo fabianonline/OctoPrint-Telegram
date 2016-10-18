@@ -432,7 +432,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_assets(self):
-		return dict(js=["js/telegram.js"])
+		return dict(js=["js/telegram.js"],
+					css=["css/telegram.css"])
 
 ##########
 ### Template API
