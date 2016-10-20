@@ -32,15 +32,15 @@
 		<table class="table table-condensed table-hover table-striped">
 		    <thead>
 			    <tr>
-			        <th class="settings_users_name" class="tDashed">Chat</th>
-			        <th class="settings_users_active" class="tWidth tDashed">Command</th>
-			        <th class="settings_users_active" class="tWidth tDashed">Notify</th>
-			        <th class="settings_users_actions" class="tWidth">{{ _('Action') }}</th>
+			        <th class="settings_users_name tDashed">Chat</th>
+			        <th class="settings_users_active tWidth tDashed">Command</th>
+			        <th class="settings_users_active tWidth tDashed">Notify</th>
+			        <th class="settings_users_actions tWidth">{{ _('Action') }}</th>
 			    </tr>
 		    </thead>
 		    <tbody data-bind="foreach: chatListHelper.paginatedItems">
 			    <tr>
-			        <td class="settings_users_name" class="tDashed">
+			        <td class="settings_users_name tDashed">
 			        	<div class="tCon tFl tChatI">
 			        		<span class="tFontL" data-bind="visible: newUsr">
 				        		<div class="tStar tStarT">
@@ -61,25 +61,21 @@
 			        	</div>
 			   		</td>
 			        <!-- ko if: !newUsr -->
-			        <td class="settings_users_active" class="tWidth vMid tDashed">
-			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: accept_commands , click: function() {$root.showEditCmdDialog($data,'commands');}" class="tDeco"  title="Edit command rights">
-				        		<i class="icon-off icon-large"></i>
-				        	</a>
-				        	<span data-bind="visible: !accept_commands && !allow_users"><i class="icon-remove icon-large"></i></span>
-				        	<span data-bind="visible: !accept_commands && allow_users"><i class="icon-off icon-large"></i></span>
-			        	</span>
+			        <td class="settings_users_active tWidth vMid tDashed">
+			        	<a href="#" data-bind="visible: accept_commands, attr:{id: id+'cmda'} , click: function() {$root.showEditCmdDialog($data,'commands');}" class="tDeco"  title="Edit command rights">
+			        		<i class="icon-off icon-large"></i>
+			        	</a>
+			        	<i class="icon-large" data-bind="visible: !accept_commands, css: {'icon-remove': !allow_users, 'icon-off': allow_users}, attr:{id: id+'cmd'}"></i>
+			        	<!-- <i class="icon-off icon-large" data-bind="visible: !accept_commands && allow_users, attr:{id: id+'cmd'}"></i> -->
 			        </td>
-			        <td class="settings_users_admin" class="tWidth vMid tDashed">
-			        	<span data-bind="visible: !newUsr">
-				        	<a href="#" data-bind="visible: send_notifications , click: function() {$root.showEditCmdDialog($data,'notifications');}" class="tDeco"  title="Edit notification settings">
-				        		<i class="icon-comment icon-large"></i>
-				        	</a>
-				        	<span data-bind="visible: !send_notifications"><i class="icon-remove icon-large"></i></span>
-				        </span>
+			        <td class="settings_users_admin tWidth vMid tDashed">
+			        	<a href="#" data-bind="visible: send_notifications, attr:{id: id+'msga'} , click: function() {$root.showEditCmdDialog($data,'notifications');}" class="tDeco"  title="Edit notification settings">
+			        		<i class="icon-comment icon-large"></i>
+			        	</a>
+			        	<i class="icon-remove icon-large" data-bind="visible: !send_notifications, attr:{id: id+'msg'}"></i>
 			        </td>
 			        <!-- /ko -->
-			        <td class="settings_users_actions" class="vMid tWidth" data-bind="attr: {colspan: newUsr == true ? 3 : null }">
+			        <td class="settings_users_actions vMid tWidth" data-bind="attr: {colspan: newUsr == true ? 3 : null }">
 			        	<span data-bind="visible: !newUsr">
 				            <a href="#" class="icon-pencil icon-large" title="{{ _('Update User') }}" data-bind="click: function() { $root.showEditChatDialog($data);}"></a>&nbsp;&nbsp;|&nbsp;
 				        </span>
@@ -184,7 +180,7 @@
 		</div>
 	</div> 
 
-	<div id="telegramMessageCarousel" class="carousel slide" data-interval="false" style="margin-bottom:0px;">
+	<div id="telegramMessageCarousel" class="carousel slide tNoMarg" data-interval="false">
 		<div class="carousel-inner" id="telegramCarouselInner"></div>
 		<div class="carousel-nav"><span id="telegramCarouselNav" class="text-info"></span></div>
 	</div>	

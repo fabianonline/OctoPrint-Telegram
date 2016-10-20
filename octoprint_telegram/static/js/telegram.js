@@ -43,15 +43,11 @@ $(function() {
         self.markupFrom = [];
         self.onBindLoad = false;
     
-        self.requestData = function(ignore,update) {
+        self.requestData = function(ignore) {
 
             ignore = typeof ignore !== 'undefined' ? ignore : false;
-            update = typeof update !== 'undefined' ? update : false;
 
-            if (update)
-                urlPath = "plugin/telegram?id="+self.currChatID+"&cmd="+$('#telegram-acccmd-chkbox-box').prop( "checked" )+"&note="+$('#telegram-notify-chkbox-box').prop( "checked" )+"&allow="+$('#telegram-user-allowed-chkbox-box').prop( "checked" );
-            else
-                urlPath = "plugin/telegram";
+            urlPath = "plugin/telegram";
             if(self.reloadUsr() || ignore){
                 self.isloading(true);
                 $.ajax({
@@ -172,7 +168,7 @@ $(function() {
                 btnSecMsg += '<span id="chk2Txt'+self.msgCnt+'">'+txt2+'</span></label></div>';
 
                 var msgEdt = '<div class="item '+((self.msgCnt==1)?"active":"")+' teleClass" id="teleCarouItem" data-name="'+keys[id]+ '">';
-                        msgEdt += '<div class="control-group" id="telegramMsgText'+self.msgCnt+'" style="margin-bottom:0px">';
+                        msgEdt += '<div class="control-group tNoMarg" id="telegramMsgText'+self.msgCnt+'">';
                             msgEdt +='<div class="well well-small tSlide"><div class="row">';
                                 msgEdt += '<div class="span9 " ><span class="text-info tSlideH">'+keys[id] +' </span> '+bind_text + '';
                                         msgEdt += '<textarea rows="6"  style="margin-top:10px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea>';
@@ -302,7 +298,30 @@ $(function() {
         }
 
         self.updateChat = function(data) {
-            self.requestData(true,true);
+            if(self.settings.settings.plugins.telegram.chats[self.currChatID].accept_commands()){
+                $( "#"+self.currChatID+"cmda" ).show();
+                $( "#"+self.currChatID+"cmd" ).hide();
+            }
+            else{
+                if(self.settings.settings.plugins.telegram.chats[self.currChatID].allow_users()){
+                    $("#"+self.currChatID+"cmd").addClass("icon-off");
+                    $("#"+self.currChatID+"cmd").removeClass("icon-remove");
+                }
+                else{
+                    $("#"+self.currChatID+"cmd").addClass("icon-remove");
+                    $("#"+self.currChatID+"cmd").removeClass("icon-off");
+                }
+                $( "#"+self.currChatID+"cmda" ).hide();
+                $( "#"+self.currChatID+"cmd" ).show();
+            }
+            if(self.settings.settings.plugins.telegram.chats[self.currChatID].send_notifications()){
+                $( "#"+self.currChatID+"msga" ).show();
+                $( "#"+self.currChatID+"msg" ).hide();
+            }
+            else{
+                $( "#"+self.currChatID+"msga" ).hide();
+                $( "#"+self.currChatID+"msg" ).show();
+            }
             self.editChatDialog.modal("hide");
         }
     
@@ -379,13 +398,12 @@ $(function() {
             if(!data.private){
                 $('#telegram-groupNotify-hint').append("After enabling this option, EVERY user of this group is allowed to send enabled commands. You have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog. If 'Allow user commands' is enabled, these users still use their private settings in addition to the group settings.");
                 $('#telegram-user-allowed-chkbox').append("<div class=\"control-group\"><div class=\"controls\"><label class=\"checkbox\"><input id=\"telegram-user-allowed-chkbox-box\" type=\"checkbox\" data-bind=\"checked: settings.settings.plugins.telegram.chats['"+data['id']+"']['allow_users']\"> Allow user commands <span class=\"help-block\"><small>When this is enabled, users with command access are allowed to send their individual enabled commands from this group. No other user in this group is allowed to send commands.</small></span></label></div></div>");
-                ko.applyBindings(self, $("#telegram-user-allowed-chkbox-box")[0]);
             }
             else{
                 $('#telegram-groupNotify-hint').append("After enabling this option, you have to set permissions for individual commands by clicking the blue command icon in the list after closing this dialog.");
-                $('#telegram-user-allowed-chkbox').append("<input id=\"telegram-user-allowed-chkbox-box\" style=\"display:none\" type=\"checkbox\" data-bind=\"checked: settings.settings.plugins.telegram.chats['"+data['id']+"']['allow_users']\"> ");
-                ko.applyBindings(self, $("#telegram-user-allowed-chkbox-box")[0]);
+                $('#telegram-user-allowed-chkbox').append("<input id=\"telegram-user-allowed-chkbox-box\" class=\"tDispN\" type=\"checkbox\" data-bind=\"checked: settings.settings.plugins.telegram.chats['"+data['id']+"']['allow_users']\"> "); 
             }
+            ko.applyBindings(self, $("#telegram-user-allowed-chkbox-box")[0]);
             
 	        self.editChatDialog.modal("show");
         }
@@ -437,7 +455,7 @@ $(function() {
         }
 
         self.onSettingsShown = function() {
-            self.requestData(true,false);
+            self.requestData(true);
             self.requestData();
             self.requestBindings();
             self.testToken();
@@ -460,7 +478,7 @@ $(function() {
             if(self.reloadUsr())
                 self.requestData();
             else
-                self.requestData(true,false);
+                self.requestData(true);
                 self.requestData();
             self.requestBindings();
         }

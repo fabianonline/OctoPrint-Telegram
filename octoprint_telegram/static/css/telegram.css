@@ -13,11 +13,11 @@
 }
 
 .vMid{
-	vertical-align: middle;
+	vertical-align: middle !important;
 }
 
 .tWidth{
-	width: 70px;
+	width: 70px !important;
 }
 
 .tSolid{
@@ -84,7 +84,7 @@
 }
 
 .tDeco{
-	text-decoration: none;
+	text-decoration: none !important;
 }
 
 .tColB{
@@ -119,5 +119,9 @@
 }
 
 .tDispN{
-	display: none;
+	display: none !important;
+}
+
+.tNoMarg{
+	margin-bottom: 0px;
 }

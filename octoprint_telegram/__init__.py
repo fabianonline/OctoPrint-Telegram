@@ -758,6 +758,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.start_listening()
 		else:
 			self.connection_state_str = gettext("No token given.")
+		self.chats = self._settings.get(["chats"])
 
 	def on_settings_load(self):
 		data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
@@ -819,13 +820,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		)
 
 	def on_api_get(self, request):
-		# got an user-update with this command. so lets do that
-		if 'id' in request.args and 'cmd' in request.args and 'note' in request.args  and 'allow' in request.args:
-			self.chats[request.args['id']]['accept_commands'] = self.str2bool(str(request.args['cmd']))
-			self.chats[request.args['id']]['send_notifications'] = self.str2bool(str(request.args['note']))
-			self.chats[request.args['id']]['allow_users'] = self.str2bool(str(request.args['allow']))
-			self._logger.debug("Updated chat - " + str(request.args['id']))
-		elif 'bindings' in request.args:
+		if 'bindings' in request.args:
 			bind_text = {}
 			for key in {k: v for k, v in telegramMsgDict.iteritems() if 'bind_msg' in v }:
 				if telegramMsgDict[key]['bind_msg'] in bind_text:
@@ -837,7 +832,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
 				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
-		
 		retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
 		for chat in retChats:
 			if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
