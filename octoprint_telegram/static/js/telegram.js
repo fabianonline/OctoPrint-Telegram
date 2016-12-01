@@ -294,15 +294,32 @@ $(function() {
             var entries = response.chats;
             if (entries === undefined) return;
             var array = [];
+            var formerChats = _.pluck(self.chatListHelper.allItems, 'id');
+            var currentChats = [];
+            var newChats = false;
             for(var id in entries) {
                 var data = entries[id];
                 data['id'] = id;
                 data['image'] = data['image'] + "?" + $.now();
-                if(data['new'])
-                    data['newUsr']=true;
-                else
+                if(data['new']) {
+                    data['newUsr'] = true;
+                } else {
                     data['newUsr'] = false;
+                }
                 array.push(data);
+                currentChats.push(id);
+                newChats = newChats || !_.includes(formerChats, id);
+            }
+
+            var deletedChatIds = _.difference(formerChats, currentChats);
+            if (newChats || (deletedChatIds && deletedChatIds.length)) {
+                // Transfer the chats back to the server settings (because just hitting "save" on the Settings dialog
+                // won't transfer anything we haven't explicitely set).
+
+                // TODO: This whole workflow should be optimized!
+                // Currently it takes two full server/client round trips to get the chats in sync, and just reusing
+                // the plugin's API for that purpose would probably be way way more efficient and less error prone.
+                self.settings.saveData({plugins: {telegram: {chats: entries}}});
             }
             self.chatListHelper.updateItems(array);
             self.isloading(false);
