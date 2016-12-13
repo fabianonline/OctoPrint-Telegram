@@ -717,19 +717,19 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 
 	def on_settings_save(self, data):
-		delList = []
 		# Remove 'new'-flag and apply bindings for all chats
-		if data['chats']:
+		if 'chats' in data and data['chats']:
+			delList = []
 			for key in data['chats']:
 				if 'new' in data['chats'][key] or 'new' in data['chats'][key]:
 					data['chats'][key]['new'] = False
 				# Look for deleted chats
 				if not key in self.chats and not key == "zBOTTOMOFCHATS":
 					delList.append(key)
-		# Delete chats finally
-		for key in delList:
-			del data['chats'][key]
-		# Also remove 'new'-flag from self.chats so settingsUI is consistent 
+			# Delete chats finally
+			for key in delList:
+				del data['chats'][key]
+		# Also remove 'new'-flag from self.chats so settingsUI is consistent
 		# self.chats will only update to settings data on first received message after saving done
 		for key in self.chats:
 			if 'new' in self.chats[key]:
@@ -737,26 +737,28 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		self._logger.debug("Saving data: " + str(data))
 		# Check token for right format
-		data['token'] = data['token'].strip()
-		if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
-			self._logger.error("Not saving token because it doesn't seem to have the right format.")
-			self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
-			data['token'] = ""
+		if 'token' in data:
+			data['token'] = data['token'].strip()
+			if not re.match("^[0-9]+:[a-zA-Z0-9_\-]+$", data['token']):
+				self._logger.error("Not saving token because it doesn't seem to have the right format.")
+				self.connection_state_str = gettext("The previously entered token doesn't seem to have the correct format. It should look like this: 12345678:AbCdEfGhIjKlMnOpZhGtDsrgkjkZTCHJKkzvjhb")
+				data['token'] = ""
 		old_token = self._settings.get(["token"])
 		# Update Tracking
-		if not data['tracking_activated']:
+		if 'tracking_activated' in data and not data['tracking_activated']:
 			data['tracking_token'] = None
 		# Now save settings
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 		self.set_log_level()
 		# Reconnect on new token
 		# Will stop listener on invalid token
-		if data['token']!=old_token:
-			self.stop_listening()
-		if data['token']!="":
-			self.start_listening()
-		else:
-			self.connection_state_str = gettext("No token given.")
+		if 'token' in data:
+			if data['token']!=old_token:
+				self.stop_listening()
+			if data['token']!="":
+				self.start_listening()
+			else:
+				self.connection_state_str = gettext("No token given.")
 
 	def on_settings_load(self):
 		data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
