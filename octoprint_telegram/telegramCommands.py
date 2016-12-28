@@ -216,7 +216,32 @@ class TCMD():
 	def cmdSys(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter != "back":
 			params = parameter.split('_')
-			if params[0] == "do":
+			if params[0] == "sys":
+				if params[1] != "do":
+					self.main.send_msg(self.gEmo('question') +" *"+ params[1]+"*\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_sys_do_"+params[1]], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id), markup="Markdown")
+					return
+				try:
+					if params[2] == "Restart OctoPrint":
+						myCmd = self.main._settings.global_get(['server','commands','serverRestartCommand'])
+					elif params[2] == "Reboot System":
+						myCmd = self.main._settings.global_get(['server','commands','systemRestartCommand'])
+					elif params[2] == "Shutdown System":
+						myCmd = self.main._settings.global_get(['server','commands','systemShutdownCommand'])
+					
+					p = sarge.run(myCmd, stderr=sarge.Capture(), shell=True, async=False)
+					
+					if p.returncode != 0:
+						returncode = p.returncode
+						stderr_text = p.stderr.text
+						self._logger.warn("Command failed with return code %i: %s" % (returncode, stderr_text))
+						self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+						return
+					self.main.send_msg(self.gEmo('check') + " System Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				except Exception, e:
+					self._logger.warn("Command failed: %s" % e)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
+			elif params[0] == "do":
 				parameter = params[1]
 			else:
 				parameter = params[0]
@@ -250,12 +275,10 @@ class TCMD():
 				return
 		else:
 			message = self.gEmo('info') + " The following System Commands are known."
-			empty = True
 			keys = []
 			tmpKeys = []
 			i = 1
 			for action in self.main._settings.global_get(['system','actions']):
-				empty = False
 				if action['action'] != "divider":
 					tmpKeys.append([str(action['name']),"/sys_"+self.hashMe(action['action'])])
 					if i%2 == 0:
@@ -264,8 +287,9 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
+			keys.append([["Restart OctoPrint","/sys_sys_Restart OctoPrint"]])
+			keys.append([["Reboot System","/sys_sys_Reboot System"],["Shutdown System","/sys_sys_Shutdown System"]])
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
-			if empty: message += "\n\n"+self.gEmo('warning')+" No System Commands found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
 ############################################################################################
