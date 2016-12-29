@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import logging, sarge, hashlib, datetime,time
+import logging, sarge, hashlib, datetime,time,operator
 import octoprint.filemanager
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
@@ -19,7 +19,8 @@ class TCMD():
 		self.tuneTemp = [100,100]
 		self.tempTemp = []
 		self.conSettingsTemp = []
-		#self.dirHashDict = {}
+		self.dirHashDict = {}
+		self.tmpFileHash = ""
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
@@ -191,7 +192,6 @@ class TCMD():
 			page = 		int(par[1])
 			fileHash = 	par[2] if len(par) > 2 else ""
 			opt = 		par[3] if len(par) > 3 else ""
-						
 			if fileHash == "" and opt =="":
 				self.fileList(pathHash,page,cmd,chat_id)
 			elif opt == "":
@@ -208,6 +208,7 @@ class TCMD():
 				self.generate_dir_hash_dict()
 				self.cmdFiles(chat_id,from_id,cmd,self.hashMe(str(storages.keys()[0]+"/"),8)+"|0")
 			else:
+				self.generate_dir_hash_dict()
 				keys=[]
 				keys.extend([([k,(cmd+"_"+self.hashMe(k,8)+"/|0")] for k in storages)])
 				keys.append([[self.main.emojis['cross mark']+" Close","No"]])
@@ -556,7 +557,7 @@ class TCMD():
 		arrayD = []
 		for key in files:
 			if files[key]['type']=="folder":
-				arrayD.append([self.main.emojis['file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
+				arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
 			if files[key]['type']=="machinecode":
 				array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ files[key]['hash']])
 		arrayD.extend(array)
@@ -590,6 +591,7 @@ class TCMD():
 ############################################################################################
 	def fileDetails(self,pathHash,page,cmd,fileHash,chat_id,from_id,wait=0):
 		dest, path, file = self.find_file_by_hash(fileHash)
+		self.tmpFileHash = ""
 		meta = self.main._file_manager.get_metadata(dest,path)
 		msg = self.gEmo("info") + " <b>File Informations</b>\n\n"
 		msg += "<b>Name:</b> " + path
@@ -608,6 +610,8 @@ class TCMD():
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
 		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
+		keyMove = [self.main.emojis['black scissors']+" Move",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|m"]
+		keyCopy = [self.main.emojis['clipboard']+" Copy",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|c"]
 		keyDelete = [self.main.emojis['error']+" Delete",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|d"]
 		keyBack = [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+pathHash+"|"+str(page)]
 		keysRow = []
@@ -619,16 +623,21 @@ class TCMD():
 		keys.append(keysRow)
 		keysRow = []
 		if self.main.isCommandAllowed(chat_id, from_id, "/files"):
+			keysRow.append(keyMove)
+			keysRow.append(keyCopy)
+			keysRow.append(keyDelete)
+			keys.append(keysRow)
+			keysRow = []
 			if self.dirHashDict[pathHash].split("/")[0] == octoprint.filemanager.FileDestinations.LOCAL:
 				keysRow.append(keyDownload)
-			keysRow.append(keyDelete)
 		keysRow.append(keyBack)
 		keys.append(keysRow)
 		self.main.send_msg(msg,chatID=chat_id,markup="HTML",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
 ############################################################################################
 	def fileOption(self,loc,page,cmd,hash,opt,chat_id,from_id):
-		dest, path, file = self.find_file_by_hash(hash)
-		meta = self.main._file_manager.get_metadata(dest,path)
+		if opt != "m_m" and opt != "c_c":
+			dest, path, file = self.find_file_by_hash(hash)
+			meta = self.main._file_manager.get_metadata(dest,path)
 		if opt.startswith("inf"):
 			msg = self.gEmo("info") + " <b>Detailed File Informations</b>\n\n"
 			msg += "<b>Name:</b> " + path
@@ -681,19 +690,131 @@ class TCMD():
 				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
 			else:
 				self.main.send_file(chat_id,self.main._file_manager.path_on_disk(dest,path))
+		elif opt.startswith("m"):
+			msg_id = self.main.getUpdateMsgId(chat_id)
+			if opt == "m_m":
+				destM, pathM, fileM = self.find_file_by_hash(self.tmpFileHash)
+				targetPath = self.dirHashDict[hash]
+				cpRes = self.fileCopyMove(destM,"move",pathM,"/".join(targetPath.split("/")[1:]))
+				self._logger.debug("OUT MOVE: "+cpRes)
+				if cpRes == "GOOD":
+					self.main.send_msg(self.gEmo('info')+" File "+pathM+" moved",chatID=chat_id,msg_id=msg_id)
+					self.fileList(loc,page,cmd,chat_id,wait = 3)
+				else:
+					self.main.send_msg(self.gEmo('warning')+"FAILED: Move file "+pathM+"\nReason: "+cpRes,chatID=chat_id,msg_id=msg_id)
+					self.fileDetails(loc,page,cmd,self.tmpFileHash,chat_id,from_id,wait = 3)
+			else:
+				keys = [[[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
+				self.tmpFileHash = hash
+				for key,val in sorted(self.dirHashDict.items(), key = operator.itemgetter(1)):
+					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|m_m"]])
+				self.main.send_msg(self.gEmo('question') + " *Choose destination to move file*",chatID=chat_id,responses=keys,msg_id=msg_id,markup="Markdown")
+
+		elif opt.startswith("c"):
+			msg_id = self.main.getUpdateMsgId(chat_id)
+			if opt == "c_c":
+				destM, pathM, fileM = self.find_file_by_hash(self.tmpFileHash)
+				targetPath = self.dirHashDict[hash]
+				cpRes = self.fileCopyMove(destM,"copy",pathM,"/".join(targetPath.split("/")[1:]))
+				if cpRes == "GOOD":
+					self.main.send_msg(self.gEmo('info')+" File "+pathM+" copied",chatID=chat_id,msg_id=msg_id)
+					self.fileList(loc,page,cmd,chat_id,wait = 3)
+				else:
+					self.main.send_msg(self.gEmo('warning')+"FAILED: Copy file "+pathM+"\nReason: "+cpRes,chatID=chat_id,msg_id=msg_id)
+					self.fileDetails(loc,page,cmd,self.tmpFileHash,chat_id,from_id,wait = 3)
+			else:
+				keys = [[[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
+				self.tmpFileHash = hash
+				for key,val in sorted(self.dirHashDict.items(), key = operator.itemgetter(1)):
+					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|c_c"]])
+				self.main.send_msg(self.gEmo('question') + " *Choose destination to copy file*",chatID=chat_id,responses=keys,msg_id=msg_id,markup="Markdown")
+
 		elif opt.startswith("d"):
 			msg_id = self.main.getUpdateMsgId(chat_id)
 			if opt == "d_d":
-				try:
-					self.main._file_manager.remove_file(dest, path)
+				delRes = self.fileDelete(dest, path)
+				if delRes == "GOOD"	:
 					self.main.send_msg(self.gEmo('info')+" File "+path+" deleted",chatID=chat_id,msg_id=msg_id)
 					self.fileList(loc,page,cmd,chat_id,wait = 3)
-				except Exception as ex:
-					self.main.send_msg(self.gEmo('warning')+"FAILED: Delete file "+path,chatID=chat_id,msg_id=msg_id)
+				else:
+					self.main.send_msg(self.gEmo('warning')+"FAILED: Delete file "+path+"\nReason: "+delRes,chatID=chat_id,msg_id=msg_id)
 					self.fileList(loc,page,cmd,chat_id,wait = 3)
 			else:
 				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|d_d"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)			
+### From filemanager plugin
+############################################################################################
+	def fileCopyMove(self, target, command, source, destination):
+		from octoprint.server.api.files import _verifyFolderExists, _verifyFileExists
+		if not _verifyFileExists(target, source) and not _verifyFolderExists(target, source):
+			return "Source does not exist"
+
+		if _verifyFolderExists(target, destination):
+			path, name = self.main._file_manager.split_path(target, source)
+			destination = self.main._file_manager.join_path(target, destination, name)
+
+		if _verifyFileExists(target, destination) or _verifyFolderExists(target, destination):
+			return "Destination does not exist"
+
+		if command == "copy":
+			if self.main._file_manager.file_exists(target, source):
+				self.main._file_manager.copy_file(target, source, destination)
+			elif self.main._file_manager.folder_exists(target, source):
+				self.main._file_manager.copy_folder(target, source, destination)
+		elif command == "move":
+			from octoprint.server.api.files import _isBusy
+			if _isBusy(target, source):
+				return "You can't move a file while it is in use"
+
+			# deselect the file if it's currently selected
+			from octoprint.server.api.files import _getCurrentFile
+			currentOrigin, currentFilename = _getCurrentFile()
+			if currentFilename is not None and source == currentFilename:
+				self.main._printer.unselect_file()
+
+			if self.main._file_manager.file_exists(target, source):
+				self.main._file_manager.move_file(target, source, destination)
+			elif self.main._file_manager.folder_exists(target, source):
+				self.main._file_manager.move_folder(target, source, destination)
+		return "GOOD"
+### From filemanager plugin
+############################################################################################
+	def fileDelete(self, target, source):
+		from octoprint.server.api.files import _verifyFolderExists, _verifyFileExists, _isBusy
+
+		# prohibit deleting or moving files that are currently in use
+		from octoprint.server.api.files import _getCurrentFile
+		currentOrigin, currentFilename = _getCurrentFile()
+
+		if _verifyFileExists(target, source):
+			from octoprint.server.api.files import _isBusy
+			if _isBusy(target, source):
+				return "Trying to delete a file that is currently in use"
+
+			# deselect the file if it's currently selected
+			if currentFilename is not None and source == currentFilename:
+				self.main._printer.unselect_file()
+
+			# delete it
+			if target == octoprint.filemanager.FileDestinations.SDCARD:
+				self.main._printer.delete_sd_file(source)
+			else:
+				self.main._file_manager.remove_file(target, source)
+		elif _verifyFolderExists(target, source):
+			if not target in [octoprint.filemanager.FileDestinations.LOCAL]:
+				return "Unknown target"
+
+			folderpath = source
+			if _isBusy(target, folderpath):
+				return "Trying to delete a folder that contains a file that is currently in use"
+
+			# deselect the file if it's currently selected
+			if currentFilename is not None and self._file_manager.file_in_path(target, folderpath, currentFilename):
+				self.main._printer.unselect_file()
+
+			# delete it
+			self.main._file_manager.remove_folder(target, folderpath)
+		return "GOOD"
 ############################################################################################
 	def generate_dir_hash_dict(self):
 		self.dirHashDict = {}
