@@ -41,6 +41,8 @@ class TCMD():
 			'/tune':		{'cmd': self.cmdTune, 'param': True},
 			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True}
 		}
+		
+
 ############################################################################################
 # COMMAND HANDLERS
 ############################################################################################
@@ -216,7 +218,7 @@ class TCMD():
 				self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
 ############################################################################################
 	def cmdUpload(self,chat_id,from_id,cmd,parameter):
-		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.\nThe file will be stored in 'TelegramPlugin' folder.",chatID=chat_id)
 ############################################################################################
 	def cmdSys(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter != "back":
@@ -623,8 +625,9 @@ class TCMD():
 		keys.append(keysRow)
 		keysRow = []
 		if self.main.isCommandAllowed(chat_id, from_id, "/files"):
-			keysRow.append(keyMove)
-			keysRow.append(keyCopy)
+			if self.main.get_octoprint_base_version() >= 1.3:
+				keysRow.append(keyMove)
+				keysRow.append(keyCopy)
 			keysRow.append(keyDelete)
 			keys.append(keysRow)
 			keysRow = []
@@ -742,7 +745,7 @@ class TCMD():
 			else:
 				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|d_d"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)			
-### From filemanager plugin
+### From filemanager plugin - https://github.com/Salandora/OctoPrint-FileManager/blob/master/octoprint_filemanager/__init__.py
 ############################################################################################
 	def fileCopyMove(self, target, command, source, destination):
 		from octoprint.server.api.files import _verifyFolderExists, _verifyFileExists
@@ -777,7 +780,7 @@ class TCMD():
 			elif self.main._file_manager.folder_exists(target, source):
 				self.main._file_manager.move_folder(target, source, destination)
 		return "GOOD"
-### From filemanager plugin
+### From filemanager plugin - https://github.com/Salandora/OctoPrint-FileManager/blob/master/octoprint_filemanager/__init__.py
 ############################################################################################
 	def fileDelete(self, target, source):
 		from octoprint.server.api.files import _verifyFolderExists, _verifyFileExists, _isBusy

@@ -164,7 +164,13 @@ class TelegramListener(threading.Thread):
 					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
 					raise ExitThisLoopException()
 				# download the file
-				target_filename = "telegram_" + file_name
+				if self.main.get_octoprint_base_version() >= 1.3:
+					target_filename = "TelegramPlugin/"+file_name
+					from octoprint.server.api.files import _verifyFolderExists
+					if not _verifyFolderExists(octoprint.filemanager.FileDestinations.LOCAL, "TelegramPlugin"):
+						self.main._file_manager.add_folder(octoprint.filemanager.FileDestinations.LOCAL,"TelegramPlugin")
+				else:
+					target_filename = "telegram_"+file_name
 				# for parameter no_markup see _send_edit_msg()
 				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id)
 				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
@@ -402,7 +408,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'play': u'\U000025B6',
 			'stop': u'\U000025FC'
 		}
-		self.emojis.update(telegramEmojiDict)
+		self.emojis.update(telegramEmojiDict) 
 	# all emojis will be get via this method to disable them globaly by the corrosponding setting	
 	# so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]
 	def gEmo(self,key):
@@ -1074,6 +1080,35 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 ### Helper methods
 ##########
+
+# gets octoprint base version as float (e.g 1.2)
+### From filemanager plugin - https://github.com/Salandora/OctoPrint-FileManager/blob/master/octoprint_filemanager/__init__.py
+	def get_octoprint_base_version(self):
+		import pkg_resources
+		from octoprint.server import VERSION
+		octoprint_version_string = VERSION
+
+		if "-" in octoprint_version_string:
+			octoprint_version_string = octoprint_version_string[:octoprint_version_string.find("-")]
+
+		octoprint_version = pkg_resources.parse_version(octoprint_version_string)
+		if isinstance(octoprint_version, tuple):
+			# old setuptools
+			base_version = []
+			for part in octoprint_version:
+				if part.startswith("*"):
+					break
+				base_version.append(part)
+			octoprint_version = ".".join(base_version)
+		else:
+			# new setuptools
+			octoprint_version = pkg_resources.parse_version(octoprint_version.base_version)
+
+		oVersion = []
+		for k in octoprint_version.split("."):
+			oVersion.append(str(int(k)))
+		oVersion = float(".".join(oVersion))
+		return oVersion
 
 	def str2bool(self,v):
 		return v.lower() in ("yes", "true", "t", "1")
