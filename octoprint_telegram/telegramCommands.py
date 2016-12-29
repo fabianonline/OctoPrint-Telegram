@@ -186,26 +186,30 @@ class TCMD():
 ############################################################################################
 	def cmdFiles(self,chat_id,from_id,cmd,parameter):
 		if parameter:
-			par = parameter.split('|')
-			loc = par[0]
-			hash = par[2] if len(par) > 2 else ""
-			opt = par[3] if len(par) > 3 else ""
-			page = int(par[1])			
-			if len(par) < 3:
-				self.fileList(loc,page,cmd,chat_id)
-			elif len(par) < 4:
-				self.fileDetails(loc,page,cmd,hash,chat_id,from_id)	
+			par = 		parameter.split('|')
+			pathHash = 	par[0]
+			page = 		int(par[1])
+			fileHash = 	par[2] if len(par) > 2 else ""
+			opt = 		par[3] if len(par) > 3 else ""
+						
+			if fileHash == "" and opt =="":
+				self.fileList(pathHash,page,cmd,chat_id)
+			elif opt == "":
+				self.fileDetails(pathHash,page,cmd,fileHash,chat_id,from_id)	
 			else:
-				self.fileOption(loc,page,cmd,hash,opt,chat_id,from_id)
+				if opt.startswith("dir"):
+					self.fileList(fileHash,0,cmd,chat_id)
+				else:
+					self.fileOption(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
 		else:
 			storages = self.main._file_manager.list_files(recursive=False)
-			#self.generate_dir_hash_dict()
 			if len(storages.keys()) < 2:
 				self.main.send_msg("Loading files...",chatID=chat_id)
-				self.cmdFiles(chat_id,from_id,cmd,str(storages.keys()[0])+"|0")
+				self.generate_dir_hash_dict()
+				self.cmdFiles(chat_id,from_id,cmd,self.hashMe(str(storages.keys()[0]+"/"),8)+"|0")
 			else:
 				keys=[]
-				keys.extend([([k,(cmd+"_"+k+"|0")] for k in storages)])
+				keys.extend([([k,(cmd+"_"+self.hashMe(k,8)+"/|0")] for k in storages)])
 				keys.append([[self.main.emojis['cross mark']+" Close","No"]])
 				msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 				self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
@@ -541,9 +545,22 @@ class TCMD():
 ############################################################################################
 # FILE HELPERS
 ############################################################################################
-	def fileList(self,loc,page,cmd,chat_id,wait = 0):
-		storage = self.main._file_manager.list_files(recursive=False)
-		files = self.list_files(storage[loc],loc,page,cmd)
+	def fileList(self,pathHash,page,cmd,chat_id,wait = 0):
+		fullPath = self.dirHashDict[pathHash]
+		storageKeys = self.main._file_manager.list_files(recursive=False).keys()
+		dest = fullPath.split("/")[0]
+		path = "/".join(fullPath.split("/")[1:])
+		fileList = self.main._file_manager.list_files(path = path, destinations = dest, recursive=False)
+		files = fileList[dest]
+		array = []
+		arrayD = []
+		for key in files:
+			if files[key]['type']=="folder":
+				arrayD.append([self.main.emojis['file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
+			if files[key]['type']=="machinecode":
+				array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ files[key]['hash']])
+		arrayD.extend(array)
+		files = sorted(arrayD)
 		pageDown = page-1 if page > 0 else 0
 		pageUp = page+1 if len(files)-(page+1)*10 > 0 else page
 		keys = []
@@ -558,21 +575,21 @@ class TCMD():
 		if len(tmpKeys):
 			keys.append(tmpKeys)
 		tmpKeys = []
-		backBut = [[self.main.emojis['cross mark']+" Close","No"]] if len(storage.keys()) < 2 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_back"],["Close","No"]]
+		backBut = [[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['cross mark']+" Close","No"]]
 		if pageDown != pageUp:
 			if pageDown != page:
-				tmpKeys.append([self.main.emojis['black left-pointing triangle'],cmd+"_"+loc+"|"+ str(pageDown)])
+				tmpKeys.append([self.main.emojis['black left-pointing triangle'],cmd+"_"+pathHash+"|"+ str(pageDown)])
 			tmpKeys.extend(backBut)
 			if pageUp != page:
-				tmpKeys.append([self.main.emojis['black right-pointing triangle'],cmd+"_"+loc+"|"+str(pageUp)])
+				tmpKeys.append([self.main.emojis['black right-pointing triangle'],cmd+"_"+pathHash+"|"+str(pageUp)])
 		else:
 			tmpKeys.extend(backBut)
 		keys.append(tmpKeys)
 		pageStr = str(page+1)+"/"+str(len(files)/10 + (1 if len(files)%10 > 0 else 0))
-		self.main.send_msg(self.gEmo('save') + " *Files on "+loc+" storage*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
+		self.main.send_msg(self.gEmo('save') + " Files in */"+fullPath[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
 ############################################################################################
-	def fileDetails(self,loc,page,cmd,hash,chat_id,from_id,wait=0):
-		dest, path, file = self.find_file_by_hash(hash)
+	def fileDetails(self,pathHash,page,cmd,fileHash,chat_id,from_id,wait=0):
+		dest, path, file = self.find_file_by_hash(fileHash)
 		meta = self.main._file_manager.get_metadata(dest,path)
 		msg = self.gEmo("info") + " <b>File Informations</b>\n\n"
 		msg += "<b>Name:</b> " + path
@@ -588,11 +605,11 @@ class TCMD():
 						msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 			if 'estimatedPrintTime' in meta['analysis']:
 				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
-		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+hash]
-		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|info"]
-		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|dl"]
-		keyDelete = [self.main.emojis['error']+" Delete",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|del"]
-		keyBack = [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+loc+"|"+str(page)]
+		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
+		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
+		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
+		keyDelete = [self.main.emojis['error']+" Delete",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|d"]
+		keyBack = [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+pathHash+"|"+str(page)]
 		keysRow = []
 		keys = []
 		chkID = chat_id 
@@ -602,7 +619,7 @@ class TCMD():
 		keys.append(keysRow)
 		keysRow = []
 		if self.main.isCommandAllowed(chat_id, from_id, "/files"):
-			if loc == octoprint.filemanager.FileDestinations.LOCAL:
+			if self.dirHashDict[pathHash].split("/")[0] == octoprint.filemanager.FileDestinations.LOCAL:
 				keysRow.append(keyDownload)
 			keysRow.append(keyDelete)
 		keysRow.append(keyBack)
@@ -612,7 +629,7 @@ class TCMD():
 	def fileOption(self,loc,page,cmd,hash,opt,chat_id,from_id):
 		dest, path, file = self.find_file_by_hash(hash)
 		meta = self.main._file_manager.get_metadata(dest,path)
-		if opt.startswith("info"):
+		if opt.startswith("inf"):
 			msg = self.gEmo("info") + " <b>Detailed File Informations</b>\n\n"
 			msg += "<b>Name:</b> " + path
 			msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
@@ -664,9 +681,9 @@ class TCMD():
 				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
 			else:
 				self.main.send_file(chat_id,self.main._file_manager.path_on_disk(dest,path))
-		elif opt.startswith("del"):
+		elif opt.startswith("d"):
 			msg_id = self.main.getUpdateMsgId(chat_id)
-			if opt == "del_do":
+			if opt == "d_d":
 				try:
 					self.main._file_manager.remove_file(dest, path)
 					self.main.send_msg(self.gEmo('info')+" File "+path+" deleted",chatID=chat_id,msg_id=msg_id)
@@ -675,38 +692,24 @@ class TCMD():
 					self.main.send_msg(self.gEmo('warning')+"FAILED: Delete file "+path,chatID=chat_id,msg_id=msg_id)
 					self.fileList(loc,page,cmd,chat_id,wait = 3)
 			else:
-				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|del_do"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
-				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)
-			
+				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|d_d"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
+				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)			
 ############################################################################################
-	def list_files(self, tree, source,page,cmd,base=""):
-		array = []
-		#arrayD = []
+	def generate_dir_hash_dict(self):
+		self.dirHashDict = {}
+		tree = self.main._file_manager.list_files(recursive=True)
 		for key in tree:
-			#if tree[key]['type']=="folder":
-				#arrayD.append([self.main.emojis['file folder']+" "+key,"/files_"+source+"|"+str(page)+"|"+self.hashMe(base+key+"/")+"|d"])
-			if tree[key]['type']=="machinecode":
-				array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + source + "|"+str(page)+"|"+ tree[key]['hash']])
-		#arrayD.extend(array)
-		return sorted(array)
-### Some preparation for Dir suppurt (comming in octoprint 1.3.0)
+			self.dirHashDict.update({str(self.hashMe(key+"/",8)):key+"/"})
+			self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key],key+"/"))
+		self._logger.debug(str(self.dirHashDict))
 ############################################################################################
-	#def generate_dir_hash_dict(self):
-		#self.dirHashDict = {}
-		#tree = self.main._file_manager.list_files(recursive=True)
-		#for key in tree:
-			#self.dirHashDict.update({key:self.generate_dir_hash_dict_recursively(tree[key],key)})
-############################################################################################
-	#def generate_dir_hash_dict_recursively(self,tree,loc,base=""):
-		#myDict = {}
-		#self._logger.debug("SATRT RECUR")
-		#for key in tree:
-			#self._logger.debug("TEST: "+key)
-			#if tree[key]['type']=="folder":
-				#self._logger.debug("FOLER: "+key)
-				#myDict.update({self.hashMe(loc+base+key+"/"):base+key+"/"})
-				#self.generate_dir_hash_dict_recursively(tree[key]['children'],base+key+"/")
-		#return myDict
+	def generate_dir_hash_dict_recursively(self,tree,loc):
+		myDict = {}
+		for key in tree:
+			if tree[key]['type']=="folder":
+				myDict.update({self.hashMe(loc+key+"/",8):loc+key+"/"})
+				self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key]['children'],loc+key+"/"))
+		return myDict
 ############################################################################################	
 	def find_file_by_hash(self, hash):
 		tree = self.main._file_manager.list_files(recursive=True)

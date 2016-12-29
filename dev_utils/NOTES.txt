@@ -1,3 +1,7 @@
+### README
+		- /sys also system commands. Not only self defined
+		- Latest Version incement
+
 ### NOW
 		admin only settings
 
@@ -56,3 +60,11 @@
 	TelegramAPI message Group objects (new_chat_icon, left_chat_member, etc.)
 	update user photos on startUp???
 	settings.save() on start user?
+
+
+hash 		40
+pathHash 	8
+page 		2
+opt 		4
+/files_ 	7
+
