@@ -109,11 +109,11 @@ class TCMD():
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
 		else:
 			self.SettingsTemp = [self.main._settings.get_float(["notification_height"]),self.main._settings.get_float(["notification_time"])]
-			msg = self.gEmo('settings') + gettext(" Current notification settings are:\n\n"+self.gEmo('height')+" Height: %(height).2fmm\n\n"+self.gEmo('clock')+" Time: %(time)dmin",
+			msg = self.gEmo('settings') + gettext(" *Current notification settings are:*\n\n"+self.gEmo('height')+" Height: %(height).2fmm\n\n"+self.gEmo('clock')+" Time: %(time)dmin",
 				height=self.main._settings.get_float(["notification_height"]),
 				time=self.main._settings.get_int(["notification_time"]))
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"], [self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id)
+			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"]], [[self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
 	def cmdAbort(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter == "stop":
@@ -557,13 +557,19 @@ class TCMD():
 		files = fileList[dest]
 		array = []
 		arrayD = []
-		for key in files:
-			if files[key]['type']=="folder":
-				arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
-			if files[key]['type']=="machinecode":
-				array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ files[key]['hash']])
-		arrayD.extend(array)
-		files = sorted(arrayD)
+		L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
+		M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
+		for key in M:
+			arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
+		for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
+			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ files[key]['hash']])
+		self._logger.debug("FILES: "+str(sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True)))
+		arrayD = sorted(arrayD)
+		if not self.main._settings.get_boolean(["fileOrder"]):
+			arrayD.extend(sorted(array))
+		else:
+			arrayD.extend(array)
+		files = arrayD
 		pageDown = page-1 if page > 0 else 0
 		pageUp = page+1 if len(files)-(page+1)*10 > 0 else page
 		keys = []
@@ -578,13 +584,14 @@ class TCMD():
 		if len(tmpKeys):
 			keys.append(tmpKeys)
 		tmpKeys = []
-		backBut = [[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['cross mark']+" Close","No"]]
+		backBut = [[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]]
 		if pageDown != pageUp:
 			if pageDown != page:
 				tmpKeys.append([self.main.emojis['black left-pointing triangle'],cmd+"_"+pathHash+"|"+ str(pageDown)])
-			tmpKeys.extend(backBut)
 			if pageUp != page:
 				tmpKeys.append([self.main.emojis['black right-pointing triangle'],cmd+"_"+pathHash+"|"+str(pageUp)])
+			tmpKeys.extend(backBut)
+			
 		else:
 			tmpKeys.extend(backBut)
 		keys.append(tmpKeys)
@@ -745,6 +752,16 @@ class TCMD():
 			else:
 				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|d_d"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)			
+		elif opt.startswith("s"):
+			if opt == "s_n":
+				self.main._settings.set_boolean(["fileOrder"],False)
+				self.fileList(loc,page,cmd,chat_id)
+			elif opt == "s_d":
+				self.main._settings.set_boolean(["fileOrder"],True)
+				self.fileList(loc,page,cmd,chat_id)
+			else:
+				keys = [[[self.main.emojis['input symbol for latin letters']+" By name",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|s_n"], [self.main.emojis['tear-off calendar']+" By date",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|s_d"]],[ [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+loc+"|"+str(page)]]]
+				self.main.send_msg(self.gEmo('question') + " *Choose sorting order of files*",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id))
 ### From filemanager plugin - https://github.com/Salandora/OctoPrint-FileManager/blob/master/octoprint_filemanager/__init__.py
 ############################################################################################
 	def fileCopyMove(self, target, command, source, destination):

@@ -525,7 +525,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			chats = {'zBOTTOMOFCHATS':{'send_notifications': False,'accept_commands':False,'private':False}},
 			debug = False,
 			send_icon = True,
-			image_not_connected = True
+			image_not_connected = True,
+			fileOrder = False
 		)
 
 	def get_settings_preprocessors(self):
