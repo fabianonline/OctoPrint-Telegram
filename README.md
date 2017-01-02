@@ -87,13 +87,13 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 1. Open your Octoprint settings and select *Telegram* on the left.
 
 
-2. Send a start message (any message will do) to your new bot. You should receive a message from your bot which tells you something like "Now i know you".
+2. Send a start message (any message will do) to your new bot. You should receive a message from your bot which tells you something like "Now I know you".
 
 
 3. Now hit the "reload" button under the known chats list. The chat should appear in the list.
 
 
-4. Save settings to accept new user(s)/group(s) in list
+4. Save settings to accept new user(s)/group(s) in list.
 
 
 5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#users))
