@@ -277,10 +277,14 @@ $(function() {
             if(!response.ok){
                 $('#teleErrored').addClass("text-error");
                 $('#teleErrored').removeClass("text-success");
+                $('#teleErrored2').addClass("text-error");
+                $('#teleErrored2').removeClass("text-success");
             }
             else{
                 $('#teleErrored').addClass("text-success");
                 $('#teleErrored').removeClass("text-error");
+                $('#teleErrored2').addClass("text-success");
+                $('#teleErrored2').removeClass("text-error");
             }
 
         }
@@ -443,6 +447,6 @@ $(function() {
         [ "settingsViewModel" ],
 
         // e.g. #settings_plugin_telegram, #tab_plugin_telegram, ...
-        [ '#settings_plugin_telegram' ]
+        [ '#settings_plugin_telegram','#wizard_plugin_telegram']
     ]);
 });

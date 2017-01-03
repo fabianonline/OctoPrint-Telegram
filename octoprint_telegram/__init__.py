@@ -360,7 +360,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
                      octoprint.plugin.ShutdownPlugin,
                      octoprint.plugin.TemplatePlugin,
                      octoprint.plugin.SimpleApiPlugin,
-                     octoprint.plugin.AssetPlugin
+                     octoprint.plugin.AssetPlugin,
+                     octoprint.plugin.WizardPlugin
                      ):
 
 	def __init__(self):
@@ -450,6 +451,19 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		]
 
 ##########
+### Wizard API
+##########
+
+	def is_wizard_required(self):
+		return True
+
+	def get_wizard_version(self):
+		return 1
+		# Wizard version numbers used in releases
+		# < 1.4.2 : no settings versioning
+		# 1.4.2 : 1
+
+##########
 ### Startup/Shutdown API
 ##########
 
@@ -512,6 +526,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		# 1.3.2 : 2
 		# 1.3.3 : 2
 		# 1.4.0 : 3
+		# 1.4.1 : 3
 
 	def get_settings_defaults(self):
 		return dict(
