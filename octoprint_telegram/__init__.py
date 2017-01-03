@@ -265,7 +265,7 @@ class TelegramListener(threading.Thread):
 		# send welcome message and skip message
 		if chat_id not in self.main.chats:
 			self.main.chats[chat_id] = data
-			self.main.send_msg(self.gEmo('info') + "Now i know you. Before you can do anything, go to OctoPrint Settings and edit some rights.",chatID=chat_id)
+			self.main.send_msg(self.gEmo('info') + "Now I know you. Before you can do anything, go to OctoPrint Settings and edit some rights.",chatID=chat_id)
 			kwargs = {'chat_id':int(chat_id)}
 			t = threading.Thread(target=self.main.get_usrPic, kwargs=kwargs)
 			t.daemon = True
