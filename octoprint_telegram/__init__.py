@@ -455,7 +455,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def is_wizard_required(self):
-		return True
+		return self._settings.get(["token"]) is ""
 
 	def get_wizard_version(self):
 		return 1
