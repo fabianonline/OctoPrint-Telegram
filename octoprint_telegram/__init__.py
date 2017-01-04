@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL
+import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
 from flask.ext.login import current_user
@@ -164,7 +164,7 @@ class TelegramListener(threading.Thread):
 					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
 					raise ExitThisLoopException()
 				# download the file
-				if self.main.get_octoprint_base_version() >= 1.3:
+				if self.main.version >= 1.3:
 					target_filename = "TelegramPlugin/"+file_name
 					from octoprint.server.api.files import _verifyFolderExists
 					if not _verifyFolderExists(octoprint.filemanager.FileDestinations.LOCAL, "TelegramPlugin"):
@@ -353,18 +353,17 @@ class ExitThisLoopException(Exception):
 ############## THE PLUGIN ##############
 ########################################
 ########################################
-
 class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
                      octoprint.plugin.SettingsPlugin,
                      octoprint.plugin.StartupPlugin,
                      octoprint.plugin.ShutdownPlugin,
                      octoprint.plugin.TemplatePlugin,
                      octoprint.plugin.SimpleApiPlugin,
-                     octoprint.plugin.AssetPlugin,
-                     octoprint.plugin.WizardPlugin
+                     octoprint.plugin.AssetPlugin
                      ):
 
-	def __init__(self):
+	def __init__(self,version):
+		self.version = float(version)
 		# for more init stuff see on_after_startup()
 		self.thread = None
 		self.bot_url = None
@@ -1097,35 +1096,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ### Helper methods
 ##########
 
-# gets octoprint base version as float (e.g 1.2)
-### From filemanager plugin - https://github.com/Salandora/OctoPrint-FileManager/blob/master/octoprint_filemanager/__init__.py
-	def get_octoprint_base_version(self):
-		import pkg_resources
-		from octoprint.server import VERSION
-		octoprint_version_string = VERSION
-
-		if "-" in octoprint_version_string:
-			octoprint_version_string = octoprint_version_string[:octoprint_version_string.find("-")]
-
-		octoprint_version = pkg_resources.parse_version(octoprint_version_string)
-		if isinstance(octoprint_version, tuple):
-			# old setuptools
-			base_version = []
-			for part in octoprint_version:
-				if part.startswith("*"):
-					break
-				base_version.append(part)
-			octoprint_version = ".".join(base_version)
-		else:
-			# new setuptools
-			octoprint_version = pkg_resources.parse_version(octoprint_version.base_version)
-
-		oVersion = []
-		for k in octoprint_version.split("."):
-			oVersion.append(str(int(k)))
-		oVersion = float(".".join(oVersion))
-		return oVersion
-
 	def str2bool(self,v):
 		return v.lower() in ("yes", "true", "t", "1")
 
@@ -1220,8 +1190,68 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				(r"/img/static/(.*)", LargeResponseHandler, dict(path=self._basefolder + "/static/img/", as_attachment=True,allow_client_caching =True))
 				]
 
+########################################
+########################################
+### Some methods to check version and
+### get the right implementation
+########################################
+########################################
+
+# copied from pluginmanager plugin
+def _is_octoprint_compatible(compatibility_entries):
+	"""
+	Tests if the current octoprint_version is compatible to any of the provided ``compatibility_entries``.
+	"""
+
+	octoprint_version = _get_octoprint_version()
+	for octo_compat in compatibility_entries:
+		if not any(octo_compat.startswith(c) for c in ("<", "<=", "!=", "==", ">=", ">", "~=", "===")):
+			octo_compat = ">={}".format(octo_compat)
+
+		s = next(pkg_resources.parse_requirements("OctoPrint" + octo_compat))
+		if octoprint_version in s:
+			break
+	else:
+		return False
+
+	return True
+
+# copied from pluginmanager plugin
+def _get_octoprint_version():
+	from octoprint.server import VERSION
+	octoprint_version_string = VERSION
+
+	if "-" in octoprint_version_string:
+		octoprint_version_string = octoprint_version_string[:octoprint_version_string.find("-")]
+
+	octoprint_version = pkg_resources.parse_version(octoprint_version_string)
+	if isinstance(octoprint_version, tuple):
+		# old setuptools
+		base_version = []
+		for part in octoprint_version:
+			if part.startswith("*"):
+				break
+			base_version.append(part)
+		octoprint_version = ".".join(base_version)
+	else:
+		# new setuptools
+		octoprint_version = pkg_resources.parse_version(octoprint_version.base_version)
+
+	return octoprint_version
+# check if we have min version 1.3.0 
+# this is important because of WizardPlugin mixin and folders in filebrowser
+def get_implementation_class():
+	if not _is_octoprint_compatible(["1.3.0"]):
+		return TelegramPlugin(1.2)
+	else:
+		class NewTelegramPlugin(TelegramPlugin,octoprint.plugin.WizardPlugin):
+			def __init__(self,version):
+				super(self.__class__, self).__init__(version)
+		return NewTelegramPlugin(1.3)
+
+		
 __plugin_name__ = "Telegram Notifications"
-__plugin_implementation__ = TelegramPlugin()
+__plugin_implementation__ = get_implementation_class()
 __plugin_hooks__ = {
 	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
 	"octoprint.server.http.routes": __plugin_implementation__.route_hook

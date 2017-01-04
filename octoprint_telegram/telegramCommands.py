@@ -555,15 +555,15 @@ class TCMD():
 		path = "/".join(fullPath.split("/")[1:])
 		fileList = self.main._file_manager.list_files(path = path, destinations = dest, recursive=False)
 		files = fileList[dest]
-		array = []
 		arrayD = []
+		if self.main.version >= 1.3:
+			M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
+			for key in M:
+				arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
+		array = []
 		L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
-		M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
-		for key in M:
-			arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
 		for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
 			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ files[key]['hash']])
-		self._logger.debug("FILES: "+str(sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True)))
 		arrayD = sorted(arrayD)
 		if not self.main._settings.get_boolean(["fileOrder"]):
 			arrayD.extend(sorted(array))
@@ -605,17 +605,35 @@ class TCMD():
 		msg = self.gEmo("info") + " <b>File Informations</b>\n\n"
 		msg += "<b>Name:</b> " + path
 		msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
+		filaLen = 0
+		printTime = 0
 		if 'analysis' in meta:
 			if 'filament' in meta['analysis']:
 				msg += "\n<b>Filament:</b> "
 				filament = meta['analysis']['filament']
 				if len(filament) == 1:
 					msg += self.formatFilament(filament['tool0'])
+					filaLen += float(filament['tool0']['length'])
 				else:
 					for key in sorted(filament):
 						msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
+						filaLen += float(filament[key]['length'])
 			if 'estimatedPrintTime' in meta['analysis']:
 				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
+				printTime = meta['analysis']['estimatedPrintTime']
+		if self.main._plugin_manager.get_plugin("cost"):
+			if printTime != 0 and filaLen != 0:
+				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
+				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
+				curr = self.main._settings.global_get(["plugins","cost","currency"])
+				try:
+					curr = curr.decode("utf-8")
+				except Exception, ex:
+					pass
+				self._logger.debug("AF TRY")
+				msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+			else:
+				msg += "\n<b>Cost:</b> -" 
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
 		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
@@ -632,7 +650,7 @@ class TCMD():
 		keys.append(keysRow)
 		keysRow = []
 		if self.main.isCommandAllowed(chat_id, from_id, "/files"):
-			if self.main.get_octoprint_base_version() >= 1.3:
+			if self.main.version >= 1.3:
 				keysRow.append(keyMove)
 				keysRow.append(keyCopy)
 			keysRow.append(keyDelete)
@@ -653,17 +671,35 @@ class TCMD():
 			msg += "<b>Name:</b> " + path
 			msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
 			msg += "\n<b>Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+			filaLen = 0
+			printTime = 0
 			if 'analysis' in meta:
 				if 'filament' in meta['analysis']:
 					msg += "\n<b>Filament:</b> "
 					filament = meta['analysis']['filament']
 					if len(filament) == 1:
 						msg += self.formatFilament(filament['tool0'])
+						filaLen += float(filament['tool0']['length'])
 					else:
 						for key in sorted(filament):
 							msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
+							filaLen += float(filament[key]['length'])
 				if 'estimatedPrintTime' in meta['analysis']:
 					msg += "\n<b>Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
+					printTime = float(meta['analysis']['estimatedPrintTime'])
+			if self.main._plugin_manager.get_plugin("cost"):
+				if printTime != 0 and filaLen != 0:
+					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
+					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
+					curr = self.main._settings.global_get(["plugins","cost","currency"])
+					try:
+						curr = curr.decode("utf-8")
+					except Exception, ex:
+						pass
+					self._logger.debug("AF TRY")
+					msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+				else:
+					msg += "\n<b>Cost:</b> -"
 			if 'statistics' in meta:
 				if 'averagePrintTime' in meta['statistics']:
 					msg += "\n<b>Average Print Time:</b>"
