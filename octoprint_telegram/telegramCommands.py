@@ -1037,7 +1037,7 @@ class TCMD():
 	def ConConnect(self,chat_id,parameter):
 		if parameter:
 			if parameter[0] == "a":
-					self.conSettingsTemp.extend(["Auto",0,self.main._printer_profile_manager.get_default()['id']])
+					self.conSettingsTemp.extend([None,None,None])
 			elif parameter[0] == "d":
 					self.conSettingsTemp.extend([self.main._settings.global_get(["serial","port"]),self.main._settings.global_get(["serial","baudrate"]),self.main._printer_profile_manager.get_default()])
 			elif parameter[0] == "p" and len(parameter) < 2:
@@ -1057,7 +1057,7 @@ class TCMD():
 			self.main._printer.connect(port=self.conSettingsTemp[0],baudrate=self.conSettingsTemp[1],profile=self.conSettingsTemp[2])
 			self.conSettingsTemp = []
 			con = self.main._printer.get_current_connection()
-			waitStates=["Offline","Detecting baudrate","Connecting"]
+			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port"]
 			while any(s in con[0] for s in waitStates):
 				con = self.main._printer.get_current_connection()
 			self._logger.debug("EXIT WITH: "+str(con[0]))
