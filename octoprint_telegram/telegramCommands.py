@@ -552,6 +552,7 @@ class TCMD():
 		fullPath = self.dirHashDict[pathHash]
 		storageKeys = self.main._file_manager.list_files(recursive=False).keys()
 		dest = fullPath.split("/")[0]
+		pathWoDest = "/".join(fullPath.split("/")[1:]) if len(fullPath.split("/")) > 1 else fullPath
 		path = "/".join(fullPath.split("/")[1:])
 		fileList = self.main._file_manager.list_files(path = path, destinations = dest, recursive=False)
 		files = fileList[dest]
@@ -563,7 +564,7 @@ class TCMD():
 		array = []
 		L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
 		for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
-			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ files[key]['hash']])
+			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ self.hashMe(pathWoDest + key + files[key]['hash'])])
 		arrayD = sorted(arrayD)
 		if not self.main._settings.get_boolean(["fileOrder"]):
 			arrayD.extend(sorted(array))
@@ -596,7 +597,7 @@ class TCMD():
 			tmpKeys.extend(backBut)
 		keys.append(tmpKeys)
 		pageStr = str(page+1)+"/"+str(len(files)/10 + (1 if len(files)%10 > 0 else 0))
-		self.main.send_msg(self.gEmo('save') + " Files in */"+fullPath[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
+		self.main.send_msg(self.gEmo('save') + " Files in */"+pathWoDest[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
 ############################################################################################
 	def fileDetails(self,pathHash,page,cmd,fileHash,chat_id,from_id,wait=0):
 		dest, path, file = self.find_file_by_hash(fileHash)
@@ -611,13 +612,14 @@ class TCMD():
 			if 'filament' in meta['analysis']:
 				msg += "\n<b>Filament:</b> "
 				filament = meta['analysis']['filament']
-				if len(filament) == 1:
+				if len(filament) == 1 and 'length' in filament['tool0']:
 					msg += self.formatFilament(filament['tool0'])
 					filaLen += float(filament['tool0']['length'])
 				else:
 					for key in sorted(filament):
-						msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
-						filaLen += float(filament[key]['length'])
+						if 'length' in filament[key]:
+							msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
+							filaLen += float(filament[key]['length'])
 			if 'estimatedPrintTime' in meta['analysis']:
 				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 				printTime = meta['analysis']['estimatedPrintTime']
@@ -630,7 +632,6 @@ class TCMD():
 					curr = curr.decode("utf-8")
 				except Exception, ex:
 					pass
-				self._logger.debug("AF TRY")
 				msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
 			else:
 				msg += "\n<b>Cost:</b> -" 
@@ -677,13 +678,14 @@ class TCMD():
 				if 'filament' in meta['analysis']:
 					msg += "\n<b>Filament:</b> "
 					filament = meta['analysis']['filament']
-					if len(filament) == 1:
+					if len(filament) == 1 and 'length' in filament['tool0']:
 						msg += self.formatFilament(filament['tool0'])
 						filaLen += float(filament['tool0']['length'])
 					else:
 						for key in sorted(filament):
-							msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
-							filaLen += float(filament[key]['length'])
+							if 'length' in filament[key]:
+								msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
+								filaLen += float(filament[key]['length'])
 				if 'estimatedPrintTime' in meta['analysis']:
 					msg += "\n<b>Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
 					printTime = float(meta['analysis']['estimatedPrintTime'])
@@ -903,7 +905,7 @@ class TCMD():
 				if result is not None:
 					return result, file
 				continue
-			if tree[key]['hash'].startswith(hash):
+			if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
 				return base+key, tree[key]
 		return None, None
 ############################################################################################
