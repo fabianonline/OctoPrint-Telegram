@@ -3,7 +3,7 @@
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages (settings, start a print and much more). Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized commands. You may also use this bot in groups.
 
-**Lates release: [1.4.1](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
+**Latest release: [1.4.2](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
 ## Contents
 * [Installation](#installation)
@@ -103,6 +103,8 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
+**The paragraph numbers below correspond to the numbers in the picture!**
+
 1. Token: Enter your bot token here. You got this from @botfather, when you [created](#create-telegram-bot) your bot there. *(admin users only)*
 
 
@@ -124,6 +126,8 @@ Configuration is done via the Octoprint settings dialog. Note that only admin us
 
 ### Users
 There are users (private chat with single user) or groups you will see in the list of known chats. These settings are only accessible by admin users.
+
+**The paragraph numbers below correspond to the numbers in the picture!**
 
 1. When clicking the *command* icon, a dialog with a list of checkboxes for every accepted command will open. Check a box to enable the user/group to use the command. When done, close the dialog. Don't forget to enable general command execution in `3.`
 
@@ -158,6 +162,8 @@ There are users (private chat with single user) or groups you will see in the li
 
 ### Notifications
 In this section you can configure the content of the notification messages.
+
+**The paragraph numbers below correspond to the numbers in the picture!**
 
 1. These three buttons will open dialogs which provide you informations about using markup, variables and emojis in the messages.
 
