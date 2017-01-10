@@ -3,7 +3,7 @@
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages (settings, start a print and much more). Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized commands. You may also use this bot in groups.
 
-**Lates release: [1.4.0](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
+**Latest release: [1.4.2](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
 ## Contents
 * [Installation](#installation)
@@ -87,13 +87,13 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 1. Open your Octoprint settings and select *Telegram* on the left.
 
 
-2. Send a start message (any message will do) to your new bot. You should receive a message from your bot which tells you something like "Now i know you".
+2. Send a start message (any message will do) to your new bot. You should receive a message from your bot which tells you something like "Now I know you".
 
 
 3. Now hit the "reload" button under the known chats list. The chat should appear in the list.
 
 
-4. Save settings to accept new user(s)/group(s) in list
+4. Save settings to accept new user(s)/group(s) in list.
 
 
 5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#users))
@@ -103,6 +103,8 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
+**The paragraph numbers below correspond to the numbers in the picture!**
+
 1. Token: Enter your bot token here. You got this from @botfather, when you [created](#create-telegram-bot) your bot there. *(admin users only)*
 
 
@@ -124,6 +126,8 @@ Configuration is done via the Octoprint settings dialog. Note that only admin us
 
 ### Users
 There are users (private chat with single user) or groups you will see in the list of known chats. These settings are only accessible by admin users.
+
+**The paragraph numbers below correspond to the numbers in the picture!**
 
 1. When clicking the *command* icon, a dialog with a list of checkboxes for every accepted command will open. Check a box to enable the user/group to use the command. When done, close the dialog. Don't forget to enable general command execution in `3.`
 
@@ -158,6 +162,8 @@ There are users (private chat with single user) or groups you will see in the li
 
 ### Notifications
 In this section you can configure the content of the notification messages.
+
+**The paragraph numbers below correspond to the numbers in the picture!**
 
 1. These three buttons will open dialogs which provide you informations about using markup, variables and emojis in the messages.
 
@@ -194,7 +200,7 @@ In this section you can configure the content of the notification messages.
 
 **`/settings`** - Displays the current notification settings (time and height) and allows you to change them.
 
-**`/files`** - Lists all the files available for printing in upload folder. No subdirectories are not listed. and lets you download and delete them. You also can view detailed informations of the file like print history.
+**`/files`** - Lists all the files available for printing in upload folder and allows you download and delete them. You also can view detailed informations of the file like print history. If OctoPrint Version is >= 1.3.0, subdirectories are listed and you are able to move/copy files. 
 
 **`/print`** - Will open a file dialog showing the files stored in octoprint. You can select a file to print it. 
 

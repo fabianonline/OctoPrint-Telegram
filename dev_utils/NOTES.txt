@@ -1,3 +1,7 @@
+### README
+		- /sys also system commands. Not only self defined
+		- Latest Version incement
+
 ### NOW
 		admin only settings
 
@@ -7,25 +11,18 @@
 
 ### CleanUp
 		css
-	  ! readme
 	  	code documentation
 
 ### Commands
-		delete/download files
-		File List multipage
 		message/icon/delay settings
 		[send video, makes no sense since telegram can't play .mpg]
 		user settings --> admin
 
 ### Features
-		SD-Card in Files
 		@uninstall:
 			- backup tracking token?
 			- del user images
 		combine _send_msg and _edit_send_msg
-		/files with folder representation?
-			- move files
-
 		save user settings in files
 		check webcam integration to hide/prevent "with image"
 		tab page with individual settings per print
@@ -38,7 +35,6 @@
 		admin user?  --> admin
 	    on "left_chat_member" dont delete --> deactivate
 	    option to deactivate group chats if bot leaves a group to hold the settings if reentering --> deactivate
-	  ! gEmo() in message texts (.format(**locals()) to make settings send_icon work?
 	    octoprint.util.repeated timer for notification time
 	    check octoprint.util for useful things (dict!)
 
@@ -49,10 +45,21 @@
 	  ! after print start wait for nozzel and bed heated befor starting print notification
 	  		times are from octoprint so there has to be own counter??? :(
 
-	    check systems.actions[].confirm when doing sysCommand
+	  	wrong image rotation
+
 
 ### Watchlist
 
 	TelegramAPI message Group objects (new_chat_icon, left_chat_member, etc.)
 	update user photos on startUp???
 	settings.save() on start user?
+	SD-Card in Files
+
+
+
+hash 		40
+pathHash 	8
+page 		2
+opt 		4
+/files_ 	7
+
