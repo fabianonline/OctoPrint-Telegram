@@ -480,6 +480,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'send_notifications' : False, 
 			'new': True, 
 			'allow_users': False,
+			'print': False,
+			'slice': False,
 			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
 			}
@@ -517,7 +519,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_settings_version(self):
-		return 3
+		return 6
 		# Settings version numbers used in releases
 		# < 1.3.0: no settings versioning
 		# 1.3.0 : 1
@@ -526,6 +528,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		# 1.3.3 : 2
 		# 1.4.0 : 3
 		# 1.4.1 : 3
+		# 1.4.2 : 3
+		# 1.4.3 : 4
 
 	def get_settings_defaults(self):
 		return dict(
@@ -662,9 +666,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				# this for loop updates commands and notifications settings items of chats 
 				# if there are changes in commandDict or telegramMsgDict
 				for chat in chats:
+					# handle new setting
+					if 'slice' not in chats[chat]:
+						chats[chat].update({'slice': False});
 					# handle renamed commands
 					if '/list' in chats[chat]['commands']:
 						chats[chat]['commands'].update({'/files':chats[chat]['commands']['/list']})
+					if '/print' in chats[chat]['commands']:
+						chats[chat].update({'print':chats[chat]['commands']['/print']})
 					if '/imsorrydontshutup' in chats[chat]['commands']:
 						chats[chat]['commands'].update({'/dontshutup':chats[chat]['commands']['/imsorrydontshutup']})
 					delCmd = []
@@ -730,10 +739,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		### save the settings after Migration is done
 		##########
 		self._logger.debug("SAVED Chats: " + str(self._settings.get(['chats'])))
-		try:
-			self._settings.save()
-		except Exception as ex:
-			self._logger.error("MIGRATED Save failed - " + str(ex)) 
+
 		self._logger.debug("MIGRATED Saved")
 
 
@@ -820,7 +826,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def on_event(self, event, payload, **kwargs):
 		try:
 			# if we know the event, start handler
-			if event in self.tmsg.msgCmdDict:
+			if self.tmsg and event in self.tmsg.msgCmdDict:
 				self._logger.debug("Got an event: " + event + " Payload: " + str(payload))
 				# Start event handler
 				self.tmsg.startEvent(event, payload, **kwargs)

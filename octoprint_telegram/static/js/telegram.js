@@ -370,7 +370,13 @@ $(function() {
             keys = self.bind[option].sort();
             for(var id in keys) {
                 if( self.bind['no_setting'].indexOf(keys[id]) < 0) {
-                    $("#telegram-cmd-chkbox-grp").append('<span id="telegram-cmd-chkbox'+self.cmdCnt+'"><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\'][\''+keys[id]+'\']"> <span>'+keys[id]     +'</span><label></span>');
+                    appendText = '<span id="telegram-cmd-chkbox'+self.cmdCnt+'"><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\'][\''+keys[id]+'\']"> <span>'+keys[id]     +'</span><label>';
+                    if(keys[id] === "/files"){
+                        appendText += '<ul>'
+                        appendText += '<li><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\'print\'], enable: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\'][\''+keys[id]+'\']"> <span>allow printing</span><label></li><li><label class="checkbox"><input  type="checkbox" data-bind="checked: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\'slice\'], enable: settings.settings.plugins.telegram.chats[\''+data['id']+'\'][\''+option+'\'][\''+keys[id]+'\']"> <span>allow slicing</span><label></li></ul>';
+                    }
+                    appendText += '</span>';
+                    $("#telegram-cmd-chkbox-grp").append(appendText);
                     ko.applyBindings(self, $("#telegram-cmd-chkbox"+self.cmdCnt++)[0]);
                 }
             }

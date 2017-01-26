@@ -31,7 +31,6 @@ class TCMD():
 			'/togglepause':	{'cmd': self.cmdTogglePause},
 			'/shutup':  	{'cmd': self.cmdShutup},
 			'/dontshutup':  {'cmd': self.cmdNShutup},
-			'/print':  		{'cmd': self.cmdPrint, 'param': True},
 			'/files':  		{'cmd': self.cmdFiles, 'param': True},
 			'/upload':  	{'cmd': self.cmdUpload},
 			'/sys': 		{'cmd': self.cmdSys, 'param': True},
@@ -53,6 +52,7 @@ class TCMD():
 		self.main.send_msg(gettext("Maybe next time."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id),inline=False)
 ############################################################################################
 	def cmdTest(self,chat_id,from_id,cmd,parameter):
+		self._logger.debug(str(self.main._slicing_manager.slicing_enabled))
 		self.main.send_msg(self.gEmo('question') + gettext(" Is this a test?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"Yes"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
 ############################################################################################
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
@@ -147,46 +147,6 @@ class TCMD():
 			del self.main.shut_up[chat_id]
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id,inline=False)
 ############################################################################################
-	def cmdPrint(self,chat_id,from_id,cmd,parameter):
-		if parameter and len(parameter.split('|')) == 1:
-			if parameter =="s": # start print
-				data = self.main._printer.get_current_data()
-				if data['job']['file']['name'] is None:
-					self.main.send_msg(self.gEmo('warning') + gettext(" Uh oh... No file is selected for printing. Did you select one using /list?"),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				elif not self.main._printer.is_operational():
-					self.main.send_msg(self.gEmo('warning') + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				elif self.main._printer.is_printing():
-					self.main.send_msg(self.gEmo('warning') + " A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort?",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				else:
-					self.main._printer.start_print()
-					self.main.send_msg(self.gEmo('rocket') + gettext(" Started the print job."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-			elif parameter == "x": # do not print
-				self.main._printer.unselect_file()
-				self.main.send_msg(gettext("Maybe next time."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-			else:	# prepare print
-				self._logger.debug("Looking for hash: %s", parameter)
-				destination, file , f = self.find_file_by_hash(parameter)
-				if file is None:
-					msg = self.gEmo('warning') + " I'm sorry, but I couldn't find the file you wanted me to print. Perhaps you want to have a look at /list again?"
-					self.main.send_msg(msg,chatID=chat_id,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id))
-					return
-				if destination==octoprint.filemanager.FileDestinations.SDCARD:
-					self.main._printer.select_file(file, True, printAfterSelect=False)
-				else:
-					file = self.main._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file)
-					self._logger.debug("Using full path: %s", file)
-					self.main._printer.select_file(file, False, printAfterSelect=False)
-				data = self.main._printer.get_current_data()
-				if data['job']['file']['name'] is not None:
-					msg = self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name'])
-					self.main.send_msg(msg,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id), responses=[[[self.main.emojis['check']+gettext("Print"),"/print_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"/print_x"]]],chatID=chat_id)
-				elif not self.main._printer.is_operational():
-					self.main.send_msg(self.gEmo('warning') + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				else:
-					self.main.send_msg(self.gEmo('warning') + gettext(" Uh oh... Problems on loading the file for print."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-		else:
-			self.cmdFiles(chat_id,from_id,cmd,parameter)
-############################################################################################
 	def cmdFiles(self,chat_id,from_id,cmd,parameter):
 		if parameter:
 			par = 		parameter.split('|')
@@ -201,6 +161,10 @@ class TCMD():
 			else:
 				if opt.startswith("dir"):
 					self.fileList(fileHash,0,cmd,chat_id)
+				elif opt.startswith("prt"):
+					self.filePrint(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
+				elif opt.startswith("sli"):
+					self.fileSlice(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
 				else:
 					self.fileOption(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
 		else:
@@ -536,7 +500,6 @@ class TCMD():
 		                           "/status - Sends the current status including a current photo.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/files - Lists all the files available for printing.\n"
-		                           "/print - Lets you start a print. A confirmation is required.\n"
 		                           "/togglepause - Pause/Resume current Print.\n"
 		                           "/con - Connect/disconnect printer.\n"
 		                           "/upload - You can just send me a gcode file to save it to my library.\n"
@@ -558,13 +521,16 @@ class TCMD():
 		files = fileList[dest]
 		arrayD = []
 		if self.main.version >= 1.3:
-			M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
-			for key in M:
+			dirs =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
+			for key in dirs:
 				arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
 		array = []
-		L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
-		for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
+		F_machine = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
+		for key,val in sorted(F_machine.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
 			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ self.hashMe(pathWoDest + key + files[key]['hash'])])
+		F_model = {k:v for k,v in files.iteritems() if v['type']=="model"}
+		for key,val in sorted(F_model.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
+			array.append([self.main.emojis['moyai']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ self.hashMe(pathWoDest + key + files[key]['hash'])])
 		arrayD = sorted(arrayD)
 		if not self.main._settings.get_boolean(["fileOrder"]):
 			arrayD.extend(sorted(array))
@@ -585,7 +551,7 @@ class TCMD():
 		if len(tmpKeys):
 			keys.append(tmpKeys)
 		tmpKeys = []
-		backBut = [[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]]
+		backBut = [[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|set"],[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|set"],[self.main.emojis['cross mark']+" Close","No"]]
 		if pageDown != pageUp:
 			if pageDown != page:
 				tmpKeys.append([self.main.emojis['black left-pointing triangle'],cmd+"_"+pathHash+"|"+ str(pageDown)])
@@ -623,7 +589,7 @@ class TCMD():
 			if 'estimatedPrintTime' in meta['analysis']:
 				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 				printTime = meta['analysis']['estimatedPrintTime']
-		if self.main._plugin_manager.get_plugin("cost"):
+		if self.main._plugin_manager.get_plugin("cost") and file['type'] == "machinecode":
 			if printTime != 0 and filaLen != 0:
 				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
 				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
@@ -635,36 +601,42 @@ class TCMD():
 				msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
 			else:
 				msg += "\n<b>Cost:</b> -" 
-		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
-		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
-		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
-		keyMove = [self.main.emojis['black scissors']+" Move",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|m"]
-		keyCopy = [self.main.emojis['clipboard']+" Copy",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|c"]
-		keyDelete = [self.main.emojis['error']+" Delete",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|d"]
+		elif file['type'] == "model":
+			msg += "\n<b>Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+		param = cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash
+		keyPrint = [self.main.emojis['rocket']+" Print",param+"|prt"]
+		keySlice = [self.main.emojis['moyai']+" Slice",param+"|sli"]
+		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",param+"|inf"]
+		keyDownload = [self.main.emojis['save']+" Download",param+"|dl"]
+		keyMove = [self.main.emojis['black scissors']+" Move",param+"|mov"]
+		keyCopy = [self.main.emojis['clipboard']+" Copy",param+"|cpy"]
+		keyDelete = [self.main.emojis['error']+" Delete",param+"|del"]
 		keyBack = [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+pathHash+"|"+str(page)]
 		keysRow = []
 		keys = []
 		chkID = chat_id 
-		if self.main.isCommandAllowed(chat_id, from_id, "/print"):
-			keysRow.append(keyPrint)
-		keysRow.append(keyDetails)
+		if file['type'] == "machinecode":
+			if self.fileActionAllowed(chat_id, from_id, "print"):
+				keysRow.append(keyPrint)
+			keysRow.append(keyDetails)
+		elif self.fileActionAllowed(chat_id, from_id, "slice") and file['type'] == "model" and self.main._slicing_manager.slicing_enabled:
+			keysRow.append(keySlice)
 		keys.append(keysRow)
 		keysRow = []
-		if self.main.isCommandAllowed(chat_id, from_id, "/files"):
-			if self.main.version >= 1.3:
-				keysRow.append(keyMove)
-				keysRow.append(keyCopy)
-			keysRow.append(keyDelete)
-			keys.append(keysRow)
-			keysRow = []
-			if self.dirHashDict[pathHash].split("/")[0] == octoprint.filemanager.FileDestinations.LOCAL:
-				keysRow.append(keyDownload)
+		if self.main.version >= 1.3:
+			keysRow.append(keyMove)
+			keysRow.append(keyCopy)
+		keysRow.append(keyDelete)
+		keys.append(keysRow)
+		keysRow = []
+		if self.dirHashDict[pathHash].split("/")[0] == octoprint.filemanager.FileDestinations.LOCAL:
+			keysRow.append(keyDownload)
 		keysRow.append(keyBack)
 		keys.append(keysRow)
 		self.main.send_msg(msg,chatID=chat_id,markup="HTML",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
 ############################################################################################
 	def fileOption(self,loc,page,cmd,hash,opt,chat_id,from_id):
-		if opt != "m_m" and opt != "c_c":
+		if not opt.startswith("mov") and not opt.startswith("cpy"):
 			dest, path, file = self.find_file_by_hash(hash)
 			meta = self.main._file_manager.get_metadata(dest,path)
 		if opt.startswith("inf"):
@@ -738,11 +710,14 @@ class TCMD():
 				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
 			else:
 				self.main.send_file(chat_id,self.main._file_manager.path_on_disk(dest,path))
-		elif opt.startswith("m"):
+		elif opt.startswith("mov"):
 			msg_id = self.main.getUpdateMsgId(chat_id)
-			if opt == "m_m":
+			if opt == "mov_m":
+				self._logger.debug("MOVE")
+				self._logger.debug(str(self.find_file_by_hash(self.tmpFileHash)))
 				destM, pathM, fileM = self.find_file_by_hash(self.tmpFileHash)
 				targetPath = self.dirHashDict[hash]
+				self._logger.debug(str(destM)+" move "+str(pathM)+ "  "+"/".join(targetPath.split("/")[1:]))
 				cpRes = self.fileCopyMove(destM,"move",pathM,"/".join(targetPath.split("/")[1:]))
 				self._logger.debug("OUT MOVE: "+cpRes)
 				if cpRes == "GOOD":
@@ -752,15 +727,16 @@ class TCMD():
 					self.main.send_msg(self.gEmo('warning')+"FAILED: Move file "+pathM+"\nReason: "+cpRes,chatID=chat_id,msg_id=msg_id)
 					self.fileDetails(loc,page,cmd,self.tmpFileHash,chat_id,from_id,wait = 3)
 			else:
+				self._logger.debug("MOVE")
 				keys = [[[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.tmpFileHash = hash
 				for key,val in sorted(self.dirHashDict.items(), key = operator.itemgetter(1)):
-					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|m_m"]])
+					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|mov_m"]])
 				self.main.send_msg(self.gEmo('question') + " *Choose destination to move file*",chatID=chat_id,responses=keys,msg_id=msg_id,markup="Markdown")
 
-		elif opt.startswith("c"):
+		elif opt.startswith("cpy"):
 			msg_id = self.main.getUpdateMsgId(chat_id)
-			if opt == "c_c":
+			if opt == "cpy_c":
 				destM, pathM, fileM = self.find_file_by_hash(self.tmpFileHash)
 				targetPath = self.dirHashDict[hash]
 				cpRes = self.fileCopyMove(destM,"copy",pathM,"/".join(targetPath.split("/")[1:]))
@@ -774,12 +750,12 @@ class TCMD():
 				keys = [[[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.tmpFileHash = hash
 				for key,val in sorted(self.dirHashDict.items(), key = operator.itemgetter(1)):
-					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|c_c"]])
+					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|cpy_c"]])
 				self.main.send_msg(self.gEmo('question') + " *Choose destination to copy file*",chatID=chat_id,responses=keys,msg_id=msg_id,markup="Markdown")
 
-		elif opt.startswith("d"):
+		elif opt.startswith("del"):
 			msg_id = self.main.getUpdateMsgId(chat_id)
-			if opt == "d_d":
+			if opt == "del_d":
 				delRes = self.fileDelete(dest, path)
 				if delRes == "GOOD"	:
 					self.main.send_msg(self.gEmo('info')+" File "+path+" deleted",chatID=chat_id,msg_id=msg_id)
@@ -788,17 +764,17 @@ class TCMD():
 					self.main.send_msg(self.gEmo('warning')+"FAILED: Delete file "+path+"\nReason: "+delRes,chatID=chat_id,msg_id=msg_id)
 					self.fileList(loc,page,cmd,chat_id,wait = 3)
 			else:
-				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|d_d"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
+				keys = [[[self.main.emojis['check']+" Yes",cmd+"_" + loc + "|"+str(page)+"|"+ hash+"|del_d"],[self.main.emojis['cross mark']+" No",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.main.send_msg(self.gEmo('warning')+" Delete "+path+" ?",chatID=chat_id,responses=keys,msg_id=msg_id)			
-		elif opt.startswith("s"):
-			if opt == "s_n":
+		elif opt.startswith("set"):
+			if opt == "set_n":
 				self.main._settings.set_boolean(["fileOrder"],False)
 				self.fileList(loc,page,cmd,chat_id)
-			elif opt == "s_d":
+			elif opt == "set_d":
 				self.main._settings.set_boolean(["fileOrder"],True)
 				self.fileList(loc,page,cmd,chat_id)
 			else:
-				keys = [[[self.main.emojis['input symbol for latin letters']+" By name",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|s_n"], [self.main.emojis['tear-off calendar']+" By date",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|s_d"]],[ [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+loc+"|"+str(page)]]]
+				keys = [[[self.main.emojis['input symbol for latin letters']+" By name",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|set_n"], [self.main.emojis['tear-off calendar']+" By date",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|set_d"]],[ [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+loc+"|"+str(page)]]]
 				self.main.send_msg(self.gEmo('question') + " *Choose sorting order of files*",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id))
 ### From filemanager plugin - https://github.com/Salandora/OctoPrint-FileManager/blob/master/octoprint_filemanager/__init__.py
 ############################################################################################
@@ -908,6 +884,89 @@ class TCMD():
 			if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
 				return base+key, tree[key]
 		return None, None
+############################################################################################
+	def fileSlice(self,loc,page,cmd,hash,opt,chat_id,from_id):
+		self._logger.debug("SL ENABLED:" + str(self.main._slicing_manager.slicing_enabled))
+		self._logger.debug("SL CONFIGURED:" + str(self.main._slicing_manager.configured_slicers))
+		self._logger.debug("SL DEFAULT:" + str(self.main._slicing_manager.default_slicer))
+		self._logger.debug("SL REGISTERD:" + str(self.main._slicing_manager.registered_slicers))
+		self._logger.debug("SL PROFILE:" + str(self.main._slicing_manager.get_slicer('cura').get_slicer_default_profile().display_name))
+		self._logger.debug("SL PROFILE:" + str(self.main._slicing_manager.get_slicer('cura').get_slicer_properties()))
+		#slice(slicer_name, source_path, dest_path, profile_name, callback, 
+		#callback_args=None, callback_kwargs=None, overrides=None, on_progress=None, 
+		#on_progress_args=None, on_progress_kwargs=None, printer_profile_id=None, position=None)
+		if opt == "sli_a":
+			slicer = self.main._slicing_manager.default_slicer
+			slProfile = self.main._settings.get_global(["slicing","defaultProfiles",slicer])
+			prProfile = self.main._printer_profile_manager.get_default()
+			dest, path, file = self.find_file_by_hash(hash)
+			self.main._slicing_manager.slice(slicer,path,file['name']+".stl",slProfile,self.fileSliceFinished,printer_profile=prProfile)
+			self.fileList(loc,page,cmd,chat_id)
+		elif opt == "sli_s":
+			self.main._settings.set_boolean(["fileOrder"],True)
+			self.fileList(loc,page,cmd,chat_id)
+		else:
+			keys = [[[self.main.emojis['lamp']+" Auto",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|sli_a"], [self.main.emojis['settings']+" Manual",cmd+"_"+loc+"|"+str(page)+"|"+hash+"|sli_s"]],[ [self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+loc+"|"+str(page)]]]
+			self.main.send_msg(self.gEmo('question') + " *Choose sorting order of files*",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id))
+############################################################################################
+	def fileSliceFinished(slef,_analysis=None, _error=None, _cancelled=None):
+		pass
+############################################################################################
+	def filePrint(self,loc,page,cmd,hash,opt,chat_id,from_id):
+		if opt =="prt_s": # start print
+			data = self.main._printer.get_current_data()
+			if data['job']['file']['name'] is None:
+				self.main.send_msg(self.gEmo('warning') + gettext(" Uh oh... No file is selected for printing. Did you select one using /list?"),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
+			elif not self.main._printer.is_operational():
+				self.main.send_msg(self.gEmo('warning') + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
+			elif self.main._printer.is_printing():
+				self.main.send_msg(self.gEmo('warning') + " A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort?",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
+			else:
+				self.main._printer.start_print()
+				self.main.send_msg(self.gEmo('rocket') + gettext(" Started the print job."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		elif opt == "prt_x": # do not print
+			self.main._printer.unselect_file()
+			#self.main.send_msg(gettext("Maybe next time."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+			self.fileDetails(loc,page,cmd,hash,chat_id,from_id)
+		else:	# prepare print
+			self._logger.debug("Looking for hash: %s", hash)
+			destination, file , f = self.find_file_by_hash(hash)
+			if file is None:
+				msg = self.gEmo('warning') + " I'm sorry, but I couldn't find the file you wanted me to print. Perhaps you want to have a look at /files again?"
+				self.main.send_msg(msg,chatID=chat_id,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
+			if destination==octoprint.filemanager.FileDestinations.SDCARD:
+				self.main._printer.select_file(file, True, printAfterSelect=False)
+			else:
+				file = self.main._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, file)
+				self._logger.debug("Using full path: %s", file)
+				self.main._printer.select_file(file, False, printAfterSelect=False)
+			data = self.main._printer.get_current_data()
+			if data['job']['file']['name'] is not None:
+				msg = self.gEmo('info') + gettext(" Okay. The file %(file)s is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name'])
+				self.main.send_msg(msg,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id), responses=[[[self.main.emojis['check']+gettext("Print"),cmd+"_" + loc + "|"+str(page)+"|"+ hash + "|prt_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),cmd+"_" + loc + "|"+str(page)+"|"+ hash + "|prt_x"]]],chatID=chat_id)
+			elif not self.main._printer.is_operational():
+				self.main.send_msg(self.gEmo('warning') + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
+			else:
+				self.main.send_msg(self.gEmo('warning') + gettext(" Uh oh... Problems on loading the file for print."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
+############################################################################################
+# checks if the received command is allowed to execute by the user
+	def fileActionAllowed(self, chat_id, from_id, command):
+		if self.main.chats[chat_id]['accept_commands']:
+			if self.main.chats[chat_id][command]:
+					return True
+			elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
+				if self.main.chats[from_id][command] and self.main.chats[from_id]['accept_commands']:
+					return True
+		elif int(chat_id) < 0 and self.main.chats[chat_id]['allow_users']:
+			if self.main.chats[from_id][command] and self.main.chats[from_id]['accept_commands']:
+					return True
+		return False
 ############################################################################################
 # CONTROL HELPERS
 ############################################################################################
