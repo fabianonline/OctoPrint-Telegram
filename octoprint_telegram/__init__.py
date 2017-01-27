@@ -1151,12 +1151,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		
 		if flipH or flipV or rotate:
 			image = Image.open(StringIO.StringIO(data))
-			if rotate:
-				image = image.transpose(Image.ROTATE_270)
 			if flipH:
 				image = image.transpose(Image.FLIP_LEFT_RIGHT)
 			if flipV:
 				image = image.transpose(Image.FLIP_TOP_BOTTOM)
+			if rotate:
+				image = image.transpose(Image.ROTATE_90)
 			output = StringIO.StringIO()
 			image.save(output, format="JPEG")
 			data = output.getvalue()
