@@ -234,7 +234,8 @@ class TelegramListener(threading.Thread):
 		if chat_id in self.main.chats:
 			data = self.main.chats[chat_id]
 		# update data or get data for new user
-		if chat['type']=='group':
+		data['type'] = chat['type'].upper()
+		if chat['type']=='group' or chat['type'] == 'supergroup':
 			data['private'] = False
 			data['title'] = chat['title']
 		elif chat['type']=='private':
@@ -459,8 +460,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def get_wizard_version(self):
 		return 1
 		# Wizard version numbers used in releases
-		# < 1.4.2 : no settings versioning
+		# < 1.4.2 : no wizard
 		# 1.4.2 : 1
+		# 1.4.3 : 1
 
 ##########
 ### Startup/Shutdown API
@@ -479,6 +481,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'accept_commands' : False, 
 			'send_notifications' : False, 
 			'new': True, 
+			'type': '',
 			'allow_users': False,
 			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
@@ -517,7 +520,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_settings_version(self):
-		return 3
+		return 4
 		# Settings version numbers used in releases
 		# < 1.3.0: no settings versioning
 		# 1.3.0 : 1
@@ -526,6 +529,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		# 1.3.3 : 2
 		# 1.4.0 : 3
 		# 1.4.1 : 3
+		# 1.4.2 : 3
+		# 1.4.3 : 4
 
 	def get_settings_defaults(self):
 		return dict(
@@ -561,6 +566,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'accept_commands' : False, 
 			'send_notifications' : False, 
 			'new': False, 
+			'type': '',
 			'allow_users': False,
 			'commands': {k: False for k,v in tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
@@ -667,6 +673,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						chats[chat]['commands'].update({'/files':chats[chat]['commands']['/list']})
 					if '/imsorrydontshutup' in chats[chat]['commands']:
 						chats[chat]['commands'].update({'/dontshutup':chats[chat]['commands']['/imsorrydontshutup']})
+					if 'type' not in chats[chat]:
+						chats[chat].update({'type': 'PRIVATE' if chats[chat]['private'] else 'GROUP'})
 					delCmd = []
 					# collect remove 'bind_none' commands
 					for cmd in tcmd.commandDict:
