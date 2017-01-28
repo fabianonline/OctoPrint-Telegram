@@ -317,7 +317,12 @@ class TCMD():
 					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
-					if type(command['command']) is type([]):
+					if 'script' in command:
+						try:
+							self.main._printer.script(command["command"])
+						except UnknownScript:
+							self.main.send_msg(self.gEmo('warning') + " Unknown script: " + command['command'],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					elif type(command['command']) is type([]):
 						for key in command['command']:
 							self.main._printer.commands(key)
 					else:
@@ -919,13 +924,16 @@ class TCMD():
 			if type(key) is type({}):
 				keyName = key['name'] if 'name' in key else ""
 				if base == "":
-					first = " "+keyName+" "
+					first = " "+keyName
 				if 'children' in key:
 					array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
-				elif ('commands' in key or 'command' in key) and not 'regex' in key and not 'input' in key and not 'script' in key:
-					# rename 'commands' to 'command' so its easier to handle later on
+				elif ('commands' in key or 'command' in key or 'script' in key) and not 'regex' in key and not 'input' in key:
 					newKey = {}
-					command = key['command'] if 'command' in key else key['commands']
+					if 'script' in key:
+						newKey['script'] = True
+						command = key['script']
+					else:
+						command = key['command'] if 'command' in key else key['commands']
 					newKey['name'] = base.replace(first,"") + " " + keyName
 					newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
 					newKey['command'] = command
