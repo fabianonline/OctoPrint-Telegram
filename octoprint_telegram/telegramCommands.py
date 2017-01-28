@@ -917,16 +917,17 @@ class TCMD():
 			tree = self.main._settings.global_get(['controls'])
 		for key in tree:
 			if type(key) is type({}):
+				keyName = key['name'] if 'name' in key else ""
 				if base == "":
-					first = " "+key['name']+" "
+					first = " "+keyName+" "
 				if 'children' in key:
-					array.extend(self.get_controls_recursively(key['children'], base + " " + key['name'],first))
+					array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
 				elif ('commands' in key or 'command' in key) and not 'regex' in key and not 'input' in key and not 'script' in key:
 					# rename 'commands' to 'command' so its easier to handle later on
 					newKey = {}
 					command = key['command'] if 'command' in key else key['commands']
-					newKey['name'] = base.replace(first,"") + " " + key['name']
-					newKey['hash'] = self.hashMe(base + " " + key['name'] + str(command), 6)
+					newKey['name'] = base.replace(first,"") + " " + keyName
+					newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
 					newKey['command'] = command
 					if 'confirm' in key:
 						newKey['confirm'] = key['confirm']
