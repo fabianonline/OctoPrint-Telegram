@@ -8,6 +8,7 @@ from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
 from .emojiDict import telegramEmojiDict # dict of known emojis
+import urlparse # to detect if a url is absolute
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -1137,6 +1138,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def take_image(self):
 		snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+		if not urlparse.urlparse(snapshot_url).netloc: # is not absolute
+		    snapshot_url = "http://localhost/" + snapshot_url # to absolute
 		self._logger.debug("Snapshot URL: " + str(snapshot_url))
 		data = None
 		if snapshot_url:
