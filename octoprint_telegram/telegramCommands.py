@@ -281,7 +281,6 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 		else:
-			message = self.gEmo('info') + " The following System Commands are known."
 			keys = []
 			tmpKeys = []
 			i = 1
@@ -294,7 +293,29 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-			keys.append([["Restart OctoPrint","/sys_sys_Restart OctoPrint"]])
+
+			tmpKeys = []
+			i = 1
+			serverCommands = { 'systemShutdownCommand':  ["Shutdown System","/sys_sys_Shutdown System"],
+ 					   'serverRestartCommand':   ["Restart OctoPrint", "/sys_sys_Restart OctoPrint"],
+ 				   'systemRestartCommand':   ["Reboot System", "/sys_sys_Reboot System"]
+			for index in serverCommands:
+				commandText = self.main._settings.global_get(['server', 'commands', index])
+				if commandText is not None:
+					tmpKeys.append(serverCommands[index])
+					if i % 2 == 0:
+						keys.append(tmpKeys)
+						tmpKeys = []
+					i += 1
+			if len(tmpKeys) > 0:
+				keys.append(tmpKeys)
+
+			if len(keys) > 0 :
+				message_text = " The following System Commands are known."
+			else:
+				message_text = " No known System Commands."
+			message = self.gEmo('info') + message_text
+
 			keys.append([["Reboot System","/sys_sys_Reboot System"],["Shutdown System","/sys_sys_Shutdown System"]])
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
