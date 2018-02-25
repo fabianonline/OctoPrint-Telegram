@@ -1090,13 +1090,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				r = self.get_file(file_id)
 
 			file_name = self.get_plugin_data_folder() + "/img/user/pic" + str(chat_id) + ".jpg"
-			buf = StringIO.StringIO(r)
 			if Image:
+				buf = StringIO.StringIO(r)
 				img = Image.open(buf)
 				img = img.resize((40, 40), PIL.Image.ANTIALIAS)
 				img.save(file_name, format="JPEG")
 			else:
-				print(subprocess.check_output(["convert", "-", "-resize", "40x40", file_name], stdin=buf))
+				p = subprocess.Popen(["convert", "-", "-resize", "40x40", file_name], stdin=subprocess.PIPE)
+				p.communicate(r)
 			self._logger.debug("Saved Photo "+ str(chat_id))
 
 		except Exception as ex:
@@ -1167,8 +1168,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		rotate= self._settings.global_get(["webcam", "rotate90"])
 
 		if flipH or flipV or rotate:
-			buf = StringIO.StringIO(data)
 			if Image:
+				buf = StringIO.StringIO(data)
 				image = Image.open(buf)
 				if flipH:
 					image = image.transpose(Image.FLIP_LEFT_RIGHT)
@@ -1189,9 +1190,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				if rotate:
 					args += ["-rotate", "90"]
 				args += "jpeg:-"
-				p = subprocess.Popen(args, stdin=buf, stdout=subprocess.PIPE)
-				p.wait()
-				data = p.stdout.read()
+				p = subprocess.Popen(args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+				data, _ = p.communicate(data)
 			buf.close()
 		return data
 
