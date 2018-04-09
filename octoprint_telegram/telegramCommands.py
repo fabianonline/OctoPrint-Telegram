@@ -355,7 +355,7 @@ class TCMD():
 		msg += "*ID:* " + str(chat_id) + "\n"
 		msg += "*Name:* " + str(self.main.chats[chat_id]['title']) + "\n"
 		if self.main.chats[chat_id]['private']:
-			msg += "*Type:* Priavte\n\n"
+			msg += "*Type:* Private\n\n"
 		else:
 			msg += "*Type:* Group\n"
 			if self.main.chats[chat_id]['accept_commands']:
