@@ -56,6 +56,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	status - Sends the current status including a current photo.
 	settings - Displays the current notification settings and allows you to change them.
 	files - Lists all the files available for printing.
+	filament - Shows you your filament spools or lets you change it.
 	print - Lets you start a print. A confirmation is required.
 	togglepause - Pause/Resume current Print.
 	con - Connect/disconnect printer.
@@ -204,6 +205,8 @@ In this section you can configure the content of the notification messages.
 **`/settings`** - Displays the current notification settings (time and height) and allows you to change them.
 
 **`/files`** - Lists all the files available for printing in upload folder and allows you download and delete them. You also can view detailed informations of the file like print history. If OctoPrint Version is >= 1.3.0, subdirectories are listed and you are able to move/copy files. 
+
+**`/filament`** - Shows your filament spools and the percentage of usage. In addition you can change the filament spool with this command. Requires the [Filament Manager Plugin](https://plugins.octoprint.org/plugins/filamentmanager/)
 
 **`/print`** - Will open a file dialog showing the files stored in octoprint. You can select a file to print it. 
 
