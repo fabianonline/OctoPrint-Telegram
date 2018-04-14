@@ -256,7 +256,7 @@ class TCMD():
 			command = next((d for d in actions if 'action' in d and self.hashMe(d['action']) == parameter) , False)
 			if command :
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return	
 				else:
 					async = command["async"] if "async" in command else False
