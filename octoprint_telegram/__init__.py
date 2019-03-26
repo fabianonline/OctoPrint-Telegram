@@ -75,11 +75,17 @@ class TelegramListener(threading.Thread):
 			self.first_contact = False
 			self.main.on_event("PrinterStart",{})
 	
+	def set_update_offset(self, new_value):
+		if new_value >= self.update_offset:
+			self._logger.debug("Updating update_offset from {} to {}".format(self.update_offset, 1 + new_value))
+			self.update_offset = 1 + new_value
+		else:
+			self._logger.debug("Not changing update_offset - otherwise would reduce it from {} to {}".format(self.update_offset, 1 + new_value))
+	
 	def processMessage(self, message):
 		self._logger.debug("MESSAGE: " + str(message))
 		# Get the update_id to only request newer Messages the next time
-		if message['update_id'] >= self.update_offset:
-			self.update_offset = message['update_id']+1
+		self.set_update_offset(message['update_id'])
 		# no message no cookies
 		if 'message' in message and message['message']['chat']:
 		
@@ -290,14 +296,13 @@ class TelegramListener(threading.Thread):
 						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
 						time.sleep(120)
 						raise ExitThisLoopException()
-					if len(json['result']) > 0 and 'update_id' in json['result'][0]: 
-						if json['result'][0]['update_id'] >= self.update_offset:
-							self.update_offset = json['result'][0]['update_id']+1
+					if len(json['result']) > 0 and 'update_id' in json['result'][0]:
+						self.set_update_offset(json['result'][0]['update_id'])
 					res = json['result']
 					if len(res) < 1:
 						self._logger.debug("Ignoring message because first_contact is True.")
 				if self.update_offset == 0:
-					self.update_offset = 1
+					self.set_update_offset(0)
 			else:
 				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40)
 		except requests.exceptions.Timeout:
@@ -320,6 +325,9 @@ class TelegramListener(threading.Thread):
 			self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
 			time.sleep(120)
 			raise ExitThisLoopException()
+		if "result" in json and len(json['result']) > 0:
+			for entry in json['result']:
+				self.set_update_offset(entry['update_id'])
 		return json
 
 	# stop the listener
