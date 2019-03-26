@@ -66,7 +66,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	togglepause - Pause/Resume current Print.
 	con - Connect/disconnect printer.
 	upload - You can just send me a gcode file to save it to my library.
-	sys - Execute Octoprint System Comamnds.
+	sys - Execute Octoprint System Commands.
 	ctrl - Use self defined controls from Octoprint.
 	tune - Set feed- and flowrate. Control temperatures.
 	user - get user info.
