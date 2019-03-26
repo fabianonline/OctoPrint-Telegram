@@ -1,5 +1,6 @@
 
 # OctoPrint-Telegram
+
 <img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/logo/octoprint_telegram_logo.png" width="25%" align="left"> 
  
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
@@ -9,6 +10,7 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 
 
 ## Contents
+
 * [Installation](#installation)
   * [Create Telegram Bot](#create-telegram-bot) 
   * [Plugin Setup](#plugin-setup)
@@ -21,13 +23,16 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 * [Info / Contact / Help](#info--contact--help)
 
 ## Screenshots
+
 ![Screenshot](https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/telegram_screen.png)
-<br><br><br>
+
 ## Installation
-To set Octoprint Telegram up, you have to do the following three parts.
+
+To set up Octoprint Telegram, you have to follow the following three steps.
+
 ### Create Telegram Bot
 
-To allow the plugin to send messages via telegram, you have to register a telegram bot. 
+To allow the plugin to send messages via telegram, you need to register a telegram bot. 
 
 If you already have a bot, you only need your bot token to proceed. GOTO `4.` (optional) or go dirctly over to [Plugin Setup](#plugin-setup).
 
@@ -40,6 +45,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 3. The botfather hands you a token. You need this to use your bot. Keep this token secret!
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_new.png" alt="Register new bot" width="35%" align="center"/>
+	
 #### OPTIONAL
 
 	While you're there, you could also do the following steps:
@@ -84,7 +90,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 5. Hit "Save" at the bottom of the settings dialog.
 
-Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
+Congratulations! Your printer is now connected to your Telegram bot.
+
 ### User setup
 
 1. Open your Octoprint settings and select *Telegram* on the left.
@@ -101,11 +108,12 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 
 5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#users))
 
-<br>
 ## Configuration
+
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
+
 **The paragraph numbers below correspond to the numbers in the picture!**
 
 1. Token: Enter your bot token here. You got this from @botfather, when you [created](#create-telegram-bot) your bot there. *(admin users only)*
@@ -128,6 +136,7 @@ Configuration is done via the Octoprint settings dialog. Note that only admin us
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_general.png" alt="General settings" width="70%" align="center"/><br><br><br>
 
 ### Users
+
 There are users (private chat with single user) or groups you will see in the list of known chats. These settings are only accessible by admin users.
 
 **The paragraph numbers below correspond to the numbers in the picture!**
@@ -164,6 +173,7 @@ There are users (private chat with single user) or groups you will see in the li
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_user.png" alt="User settings" width="70%" align="center"/><br><br><br>
 
 ### Notifications
+
 In this section you can configure the content of the notification messages.
 
 **The paragraph numbers below correspond to the numbers in the picture!**
@@ -193,6 +203,7 @@ In this section you can configure the content of the notification messages.
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_messages.png" alt="Optional bot settings" width="70%" align="center"/><br><br><br>
 
 ## Available Commands
+
 **`/abort`** - Aborts the currently running print. A confirmation is required.
 
 **`/shutup`** - Disables automatic notifications till the print ends.
@@ -224,6 +235,7 @@ In this section you can configure the content of the notification messages.
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
 #### Notes:
+
 * the `/help` command is always allowed
 
 
