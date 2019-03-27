@@ -257,7 +257,7 @@ class TCMD():
 			if command :
 				if 'confirm' in command and params[0] != "do":
 					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-					return	
+					return
 				else:
 					async = command["async"] if "async" in command else False
 					self._logger.info("Performing command: %s" % command["command"])
@@ -293,12 +293,13 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-
+			
 			tmpKeys = []
 			i = 1
-			serverCommands = { 'systemShutdownCommand':  ["Shutdown System","/sys_sys_Shutdown System"],
- 					   'serverRestartCommand':   ["Restart OctoPrint", "/sys_sys_Restart OctoPrint"],
- 				   'systemRestartCommand':   ["Reboot System", "/sys_sys_Reboot System"]
+			serverCommands = { 'serverRestartCommand':   ["Restart OctoPrint", "/sys_sys_Restart OctoPrint"],
+							  'systemRestartCommand':   ["Reboot System", "/sys_sys_Reboot System"],
+						      'systemShutdownCommand':  ["Shutdown System","/sys_sys_Shutdown System"]
+			}
 			for index in serverCommands:
 				commandText = self.main._settings.global_get(['server', 'commands', index])
 				if commandText is not None:
@@ -309,14 +310,13 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-
+			
 			if len(keys) > 0 :
 				message_text = " The following System Commands are known."
 			else:
 				message_text = " No known System Commands."
 			message = self.gEmo('info') + message_text
-
-			keys.append([["Reboot System","/sys_sys_Reboot System"],["Shutdown System","/sys_sys_Shutdown System"]])
+			
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
@@ -376,7 +376,7 @@ class TCMD():
 		msg += "*ID:* " + str(chat_id) + "\n"
 		msg += "*Name:* " + str(self.main.chats[chat_id]['title']) + "\n"
 		if self.main.chats[chat_id]['private']:
-			msg += "*Type:* Priavte\n\n"
+			msg += "*Type:* Private\n\n"
 		else:
 			msg += "*Type:* Group\n"
 			if self.main.chats[chat_id]['accept_commands']:
