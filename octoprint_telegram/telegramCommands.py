@@ -139,12 +139,16 @@ class TCMD():
 ############################################################################################							
 	def cmdShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id not in self.main.shut_up:
-			self.main.shut_up[chat_id] = True
+			self.main.shut_up[chat_id] = 0
+		self.main.shut_up[chat_id] += 1
+		if self.main.shut_up[chat_id] >= 5:
+			self._logger.warn("shut_up value is %d. Shutting down.", self.main.shut_up[chat_id])
+			self.main.shutdown()
 		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished." + self.gEmo('shutup')+" Use /dontshutup to let me talk again before that. "),chatID=chat_id,inline=False)
 ############################################################################################
 	def cmdNShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id in self.main.shut_up:
-			del self.main.shut_up[chat_id]
+			self.main.shut_up[chat_id] = 0
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id,inline=False)
 ############################################################################################
 	def cmdPrint(self,chat_id,from_id,cmd,parameter):

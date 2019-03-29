@@ -382,8 +382,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		requests.packages.urllib3.disable_warnings()
 		self.updateMessageID = {}
 		self.shut_up = {}
+		self.send_messages = True
 		self.tcmd = None
 		self.tmsg = None
+		self.sending_okay_minute = None
+		self.sending_okay_count = 0
 		# initial settings for new chat. See on_after_startup()
 		# !!! sync with newUsrDict in on_settings_migrate() !!!
 		self.newChat = {}
@@ -441,6 +444,27 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Stopping listener.")
 			self.thread.stop()
 			self.thread = None
+	
+	def shutdown(self):
+		self._logger.warn("shutdown() running!")
+		self.stop_listening()
+		self.send_messages = False
+	
+	def sending_okay(self):
+		# If the count ever goeas above 10, we stop doing everything else and just return False
+		# so if this is ever reached, it will stay this way.
+		if self.sending_okay_count > 10:
+			self._logger.warn("Sent more than 10 messages in the last minute. Shutting down...")
+			self.shutdown()
+			return False
+		
+		if self.sending_okay_minute != datetime.datetime.now().minute:
+			self.sending_okay_minute = datetime.datetime.now().minute
+			self.sending_okay_count = 1
+		else:
+			self.sending_okay_count += 1
+			
+		return True
 
 ##########
 ### Asset API
@@ -914,6 +938,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def send_msg(self, message, **kwargs):
+		if not self.send_messages:
+			return
+			
 		kwargs['message'] = message
 		try:
 			# If it's a regular event notification
@@ -921,7 +948,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.debug("Send_msg() found event: " + str(kwargs['event']))
 				for key in self.chats: 
 					if key != 'zBOTTOMOFCHATS':
-						if self.chats[key]['notifications'][kwargs['event']] and key not in self.shut_up and self.chats[key]['send_notifications']:
+						if self.chats[key]['notifications'][kwargs['event']] and (key not in self.shut_up or self.shut_up[key]==0) and self.chats[key]['send_notifications']:
 							kwargs['chatID'] = key
 							t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 			# Seems to be a broadcast
@@ -944,6 +971,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	# by setting no_markup = true we got a messageg_id on sending the message which is saved in selfupdateMessageID 
 	# if this message_id is passed in msg_id to send_msg() then this method will be called
 	def _send_edit_msg(self,message="",msg_id="",chatID="", responses= None, inline=True, markup=None,delay=0, **kwargs):
+		if not self.send_messages:
+			return
+			
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -974,6 +1004,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
 	def _send_msg(self, message="", with_image=False, responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
+		if not self.send_messages:
+			return
+			
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1040,6 +1073,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
 	
 	def send_file(self,chat_id,path):
+		if not self.send_messages:
+			return
+			
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 			files = {'document': open(path, 'rb')} 
@@ -1048,11 +1084,17 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			pass
 
 	def send_video(self, message, video_file):
+		if not self.send_messages:
+			return
+			
 		files = {'video': open(video_file, 'rb')}
 		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
 		self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
 	
 	def get_file(self, file_id):
+		if not self.send_messages:
+			return
+			
 		self._logger.debug("Requesting file with id %s.", file_id)
 		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id})
 		# {"ok":true,"result":{"file_id":"BQADAgADCgADrWJxCW_eFdzxDPpQAg","file_size":26,"file_path":"document\/file_3.gcode"}}
@@ -1067,6 +1109,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return r.content
 
 	def get_usrPic(self,chat_id, file_id=""):
+		if not self.send_messages:
+			return
+			
 		self._logger.debug("Requesting Profile Photo for chat_id: " + str(chat_id))
 		try:
 			if file_id == "":
@@ -1094,6 +1139,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.error("Can't load UserImage: " + str(ex))
 	
 	def test_token(self, token=None):
+		if not self.send_messages:
+			return
+			
 		if token is None:
 			token = self._settings.get(["token"])
 		response = requests.get("https://api.telegram.org/bot" + token + "/getMe")
