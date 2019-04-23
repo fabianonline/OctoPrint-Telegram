@@ -991,7 +991,7 @@ class TCMD():
 			if len(tmpKeys) > 0 and len(tmpKeys) < 3:
 				keys.append(tmpKeys)
 			keys.append([[self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/con_"+parent]])
-			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+con['portPreference'],responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
+			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+(str(con['portPreference']) if con['portPreference'] else "AUTO"),responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def ConBaud(self,chat_id,parameter,parent):
 		if parameter:
