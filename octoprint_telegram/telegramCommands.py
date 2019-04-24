@@ -1072,7 +1072,7 @@ class TCMD():
 			self.main._printer.connect(port=self.conSettingsTemp[0],baudrate=self.conSettingsTemp[1],profile=self.conSettingsTemp[2])
 			self.conSettingsTemp = []
 			con = self.main._printer.get_current_connection()
-			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port"]
+			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port","Detecting serial port"]
 			while any(s in con[0] for s in waitStates):
 				con = self.main._printer.get_current_connection()
 			self._logger.debug("EXIT WITH: "+str(con[0]))
