@@ -158,6 +158,17 @@
                <span class="help-block"><small>Send image with "Not connected" status message?</small></span>
 		</div>
 	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('"Not connected"-status') }}</label>
+		<div class="controls">
+                <label id="chkGifBtn0" class="btn btn-mini" title="Toggle 'Send with gif'">
+               	<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.gif_not_connected, click: toggleGif('0')"/>
+                <i id="chkGif0" class=""></i> 
+               <span id="chkGifTxt0"></span></label>
+               <span class="help-block"><small>Send Gif with "Not connected" status message?</small></span>
+		</div>
+	</div>
 	 
 	<div class="control-group">
 		<label class="control-label">{{ _('Send Emojis') }}</label>

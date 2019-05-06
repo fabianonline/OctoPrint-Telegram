@@ -26,6 +26,7 @@ class TCMD():
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
 			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
 			'/status':  	{'cmd': self.cmdStatus},
+			'/gif':  		{'cmd': self.cmdGif}, #GWE 05/05/19 add gif command
 			'/settings':  	{'cmd': self.cmdSettings, 'param': True},
 			'/abort':  		{'cmd': self.cmdAbort, 'param': True},
 			'/togglepause':	{'cmd': self.cmdTogglePause},
@@ -58,11 +59,27 @@ class TCMD():
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
 		if not self.main._printer.is_operational():
 			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			with_gif = self.main._settings.get_boolean(["gif_not_connected"])
 			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 		elif self.main._printer.is_printing():
 			self.main.on_event("StatusPrinting", {},chatID=chat_id)
 		else:
 			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+############################################################################################
+	def cmdGif(self,chat_id,from_id,cmd,parameter): #GWE 05/05/2019 add command to get gif
+		if not self.main._printer.is_operational():
+			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
+		elif self.main._printer.is_printing():
+			#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+			self._logger.info("Will try to create a gif from 10 images with 5 seconds")
+			ret = self.main.create_gif()
+			if ret = 0:
+				self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+			#self.send_video(chatID, video)
+		else:
+			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+
 ############################################################################################
 	def cmdSettings(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter != "back":
@@ -543,6 +560,7 @@ class TCMD():
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
 		                           "/dontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
+								   "/gif - Sends a gif of the current status.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/files - Lists all the files available for printing.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
@@ -991,7 +1009,8 @@ class TCMD():
 			if len(tmpKeys) > 0 and len(tmpKeys) < 3:
 				keys.append(tmpKeys)
 			keys.append([[self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/con_"+parent]])
-			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+con['portPreference'],responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
+			#self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+con['portPreference'],responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
+			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+(str(con['portPreference']) if con['portPreference'] else "AUTO"),responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def ConBaud(self,chat_id,parameter,parent):
 		if parameter:
@@ -1072,7 +1091,8 @@ class TCMD():
 			self.main._printer.connect(port=self.conSettingsTemp[0],baudrate=self.conSettingsTemp[1],profile=self.conSettingsTemp[2])
 			self.conSettingsTemp = []
 			con = self.main._printer.get_current_connection()
-			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port"]
+			#waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port"]
+			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port","Detecting serial port"]
 			while any(s in con[0] for s in waitStates):
 				con = self.main._printer.get_current_connection()
 			self._logger.debug("EXIT WITH: "+str(con[0]))

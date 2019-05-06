@@ -14,54 +14,63 @@ telegramMsgDict = {
 			'PrinterStart': {
 				'text': "{emo:rocket} " + gettext("Hello. I'm online and ready to receive your commands."),
 				'image': False,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrinterShutdown': {
 				'text': "{emo:octo} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintStarted': {
 				'text': gettext("Started printing {file}."),
 				'image': True,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintPaused': {
 				'text': gettext("Paused printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintResumed': {
 				'text': gettext("Resumed printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintFailed': {
 				'text': gettext("Printing {file} failed."),
 				'image': True,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'ZChange': {
 				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining."),
 				'image': True,
+				'gif': True,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintDone': {
 				'text': gettext("Finished printing {file}."),
 				'image': True,
+				'gif': False,
 				'combined' : True,
 				'markup': "off"
 			},
 			'StatusNotPrinting': {
 				'text': gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
+				'gif': False,
 				'combined' : True,
 				'markup': "off",
 				'no_setting': True
@@ -160,6 +169,7 @@ class TMSG():
 		event = kwargs['event']
 		kwargs['event'] = telegramMsgDict[event]['bind_msg'] if 'bind_msg' in telegramMsgDict[event] else event
 		kwargs['with_image'] = self.main._settings.get(['messages',str(kwargs['event']),'image'])
+		kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #GWE 05/05/19
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z
@@ -205,7 +215,7 @@ class TMSG():
 		if timediff and timediff > 0:
 			# check the timediff
 			if self.last_notification_time + timediff*60 <= time.time():
-				self.last_notification_time = time.time();
+				self.last_notification_time = time.time()
 				return True
 		zdiff = self.main._settings.get_float(['notification_height'])
 		if zdiff and zdiff > 0.0:
@@ -218,5 +228,6 @@ class TMSG():
 				return False
 			if new_z >= self.last_z + zdiff or new_z < self.last_z:
 				self.last_z= new_z
+				self.last_notification_time = time.time() # GWE 05/05/19 force last time notification also if Zdiff notification
 				return True
 		return False

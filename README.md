@@ -113,7 +113,6 @@ Congratulations! Your printer is now connected to your Telegram bot.
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
-
 **The paragraph numbers below correspond to the numbers in the picture!**
 
 1. Token: Enter your bot token here. You got this from @botfather, when you [created](#create-telegram-bot) your bot there. *(admin users only)*

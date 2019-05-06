@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources
+import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess #imageio
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
 from flask.ext.login import current_user
@@ -577,6 +577,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			debug = False,
 			send_icon = True,
 			image_not_connected = True,
+			gif_not_connected = True, #GWE 05/05/19 
 			fileOrder = False
 		)
 
@@ -1003,7 +1004,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
-	def _send_msg(self, message="", with_image=False, responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
+	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
 		if not self.send_messages:
 			return
 			
@@ -1024,7 +1025,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					t = threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
 
-			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
+			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
 			data['disable_web_page_preview'] = not showWeb  
@@ -1041,7 +1042,22 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				
 			image_data = None
 			if with_image:
-				image_data = self.take_image()
+				try:
+					image_data = self.take_image()
+				except Exception as ex:
+					self._logger.info("Caught an exception trying take image: " + str(ex))
+
+			if with_gif : #GWE 05/05/19
+				try:
+					self._logger.info("Will try to create a gif of 5 seconds with 10 images")
+					ret = self.create_gif()
+					if ret = 0:
+						self.send_file(chatID, self.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+					#self.send_video(chatID, video)
+				except Exception as ex:
+					self._logger.info("Caught an exception trying send gif: " + str(ex))
+
+			self._logger.info("data so far: " + str(data))
 			self._logger.debug("data so far: " + str(data))
 
 			if not image_data and with_image:
@@ -1218,7 +1234,41 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data = output.getvalue()
 			output.close()
 		return data
-		
+
+	def create_gif(self):  #GWE 05/05/2019
+		i=0
+		ret = 0
+		try:
+			saveDir = os.getcwd()
+			os.chdir(self.get_plugin_data_folder()+"/img/tmp")
+			self._logger.info("will try to save image in path " + os.getcwd())
+			while(i<20):
+				data = self.take_image()
+				try:
+					image = Image.open(StringIO.StringIO(data))
+					image.save('Test_Telegram_%02d.jpg' % i, 'JPEG')
+				except Exception as ex:
+					self._logger.info("Caught an exception trying create gif() in loop as open of save image : " + str(ex))
+					ret = -2
+				i+=1
+			try:
+				subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf', 'scale=1280:720','timelapse.mp4'])
+			except Exception as ex:
+				self._logger.info("Caught an exception trying create mp4 : " + str(ex))
+				try:
+					subprocess.call(['avconv','-r 3','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
+				except Exception as ex:
+					self._logger.info("Caught an exception trying create mp4 2 : " + str(ex))
+					ret = -1
+		#subprocess.call(['avconv -r 3 -y -i Test_Telegram_%02d.jpg -r 3 -vcodec libx264 -vf  scale=1280:720 timelapse.mp4'])
+		#avconv -r 3 -y -i Test_Telegram_%02d.jpg -r 3 -vcodec libx264 -vf  scale=1280:720 timelapse.mp4
+		except Exception as ex:
+			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
+			ret = -3
+		os.chdir(saveDir)
+		return ret
+
+
 	def track_action(self, action):
 		if not self._settings.get_boolean(["tracking_activated"]):
 			return
@@ -1248,7 +1298,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			os.mkdir(self.get_plugin_data_folder()+"/img")
 		if not os.path.exists(self.get_plugin_data_folder()+"/img/user"):
 			os.mkdir(self.get_plugin_data_folder()+"/img/user")
-
+		if not os.path.exists(self.get_plugin_data_folder()+"/img/tmp"): #GWE 05/05/2019 add a folder temp to put image used in gif
+			os.mkdir(self.get_plugin_data_folder()+"/img/tmp")
 		return [
 				(r"/img/user/(.*)", LargeResponseHandler, dict(path=self.get_plugin_data_folder() + r"/img/user/", as_attachment=True,allow_client_caching =False)),
 				(r"/img/static/(.*)", LargeResponseHandler, dict(path=self._basefolder + "/static/img/", as_attachment=True,allow_client_caching =True))
