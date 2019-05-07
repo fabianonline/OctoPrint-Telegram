@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import logging, sarge, hashlib, datetime,time,operator
+import logging, sarge, hashlib, datetime,time,operator,timedelta
 import octoprint.filemanager
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
@@ -74,7 +74,7 @@ class TCMD():
 			#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 			self._logger.info("Will try to create a gif from 10 images with 5 seconds")
 			ret = self.main.create_gif()
-			if ret = 0:
+			if ret == 0:
 				self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
 			#self.send_video(chatID, video)
 		else:
@@ -650,16 +650,28 @@ class TCMD():
 			if 'estimatedPrintTime' in meta['analysis']:
 				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 				printTime = meta['analysis']['estimatedPrintTime']
+		# GWE 06/05/19
+		try:
+			finalTime = datetime.now().second + timedelta(seconds=printTime)
+			msg += "\n<b>Finishing Time:</b> "+ format(finalTime, '%H:%M:%S')
+		except Exception ex:
+			self._logger.error("An Exception in get final time : " + str(ex) )
+
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
-				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
-				curr = self.main._settings.global_get(["plugins","cost","currency"])
 				try:
-					curr = curr.decode("utf-8")
+					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
+					curr = self.main._settings.global_get(["plugins","cost","currency"])
+					try:
+						curr = curr.decode("utf-8")
+						msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+					except Exception, ex:
+						self._logger.error("An Exception the cost function in decode : " + str(ex) )
+						msg += "\n<b>Cost:</b> -"
 				except Exception, ex:
-					pass
-				msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+					self._logger.error("An Exception the cost function on get: " + str(ex) )
+					msg += "\n<b>Cost:</b> -"
 			else:
 				msg += "\n<b>Cost:</b> -" 
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
@@ -716,17 +728,27 @@ class TCMD():
 				if 'estimatedPrintTime' in meta['analysis']:
 					msg += "\n<b>Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
 					printTime = float(meta['analysis']['estimatedPrintTime'])
+			try:
+				finalTime = datetime.now().second + timedelta(seconds=printTime)
+				msg += "\n<b>Finishing Time:</b> "+ format(finalTime, '%H:%M:%S')
+			except Exception ex:
+				self._logger.error("An Exception in get final time : " + str(ex) )
+				
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
-					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
-					curr = self.main._settings.global_get(["plugins","cost","currency"])
 					try:
-						curr = curr.decode("utf-8")
+						cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+						cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
+						curr = self.main._settings.global_get(["plugins","cost","currency"])
+						try:
+							curr = curr.decode("utf-8")
+							msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+						except Exception, ex:
+							self._logger.error("An Exception the cost function in decode : " + str(ex) )
+							msg += "\n<b>Cost:</b> -"
 					except Exception, ex:
-						pass
-					self._logger.debug("AF TRY")
-					msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+						self._logger.error("An Exception the cost function on get: " + str(ex) )
+						msg += "\n<b>Cost:</b> -"
 				else:
 					msg += "\n<b>Cost:</b> -"
 			if 'statistics' in meta:
