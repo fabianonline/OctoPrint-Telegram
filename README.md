@@ -28,7 +28,12 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 
 ## Installation
 
-To set up Octoprint Telegram, you have to follow the following three steps.
+To set up Octoprint Telegram with gif, you have to follow the following four steps.
+
+### Install avconv
+
+sudo apt-get install avconv
+sudo apt-get install libav-tools
 
 ### Create Telegram Bot
 
@@ -71,6 +76,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	tune - Set feed- and flowrate. Control temperatures.
 	user - get user info.
 	help - show list of commands.
+	gif - send a gif create from 20 images
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -191,7 +197,7 @@ In this section you can configure the content of the notification messages.
    * `{file}` (only usable while printing) - The currently printing file.
    * `{z}` (only for height change events) - The current z value.
    * `{percent}` (only useful for height change notifications) - The current percentage of the print progress.
-   * `{time_done}`, `{time_left}` (only useful for height change events) - Time done / left in the print.
+   * `{time_done}`, `{time_left}`, `{time_finish}` (only useful for height change events) - Time done / left in the print / ETA.
    * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
    * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
    * You are also able to access the current printer state data. See [here](./dev_utils/datastructures/octoprint/_printer.get_current_data.py) for datastructure of this data. The base variable is `{status}`.
@@ -232,6 +238,8 @@ In this section you can configure the content of the notification messages.
 **`/user`** - Get user/group information. This will contain saved user/group data, allowed comamnds and the notifications send to the user/group.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
+
+**`/gif`** - Send a gif create from 20 images.
 
 #### Notes:
 
