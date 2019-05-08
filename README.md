@@ -33,6 +33,7 @@ To set up Octoprint Telegram with gif, you have to follow the following four ste
 ### Install avconv
 
 sudo apt-get install avconv
+
 sudo apt-get install libav-tools
 
 ### Create Telegram Bot
