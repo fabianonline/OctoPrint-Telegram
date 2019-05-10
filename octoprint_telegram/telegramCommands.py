@@ -634,8 +634,8 @@ class TCMD():
 				printTime = meta['analysis']['estimatedPrintTime']
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
-				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
+				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
 				curr = self.main._settings.global_get(["plugins","cost","currency"])
 				try:
 					curr = curr.decode("utf-8")
@@ -700,8 +700,8 @@ class TCMD():
 					printTime = float(meta['analysis']['estimatedPrintTime'])
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
-					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
+					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
 					curr = self.main._settings.global_get(["plugins","cost","currency"])
 					try:
 						curr = curr.decode("utf-8")
