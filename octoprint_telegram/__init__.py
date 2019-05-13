@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess #imageio
+import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob #imageio
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
 from flask.ext.login import current_user
@@ -167,9 +167,14 @@ class TelegramListener(threading.Thread):
 				file_name = message['message']['document']['file_name']
 				#if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
 				self._logger.debug(str(file_name.lower().split('.')[-1]))
+				isZipFile = False
 				if not octoprint.filemanager.valid_file_type(file_name,"machinecode"):
-					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
-					raise ExitThisLoopException()
+					#giloser 09/05/2019 try to zip the gcode file to lower the size
+					if file_name.lower().endswith('.zip'):
+						isZipFile = True
+					else:
+						self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g or .zip extension.", chatID=chat_id)
+						raise ExitThisLoopException()
 				# download the file
 				if self.main.version >= 1.3:
 					target_filename = "TelegramPlugin/"+file_name
@@ -182,15 +187,69 @@ class TelegramListener(threading.Thread):
 				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id)
 				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 				data = self.main.get_file(message['message']['document']['file_id'])
-				stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
-				self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
-				# for parameter msg_id see _send_edit_msg()
-				self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+				#giloser 09/05/2019 try to zip the gcode file to lower the size
+				try:
+					#stream = octoprint.filemanager.util.StreamWrapper(target_filename, io.BytesIO(data))
+					zip_filename= self.main.get_plugin_data_folder()+"/img/tmp/" +file_name
+					with open(zip_filename,'w') as f:
+						f.write(data)
+					#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+				except Exception as ex:
+					self._logger.info("Exception occured during save file : "+ traceback.format_exc() )
+				if isZipFile:
+					self._logger.info('read archive '  + zip_filename)
+					try:
+						
+						zf = zipfile.ZipFile(zip_filename, 'r')
+						self._logger.info('namelist ')
+						list_files = zf.namelist()
+						stringmsg = ""
+						for filename in list_files:
+							if octoprint.filemanager.valid_file_type(filename,"machinecode"):
+								try:
+									data = zf.read(filename)
+									stream = octoprint.filemanager.util.StreamWrapper(filename, io.BytesIO(data))
+									if self.main.version >= 1.3:
+										target_filename = "TelegramPlugin/"+filename
+										from octoprint.server.api.files import _verifyFolderExists
+										if not _verifyFolderExists(octoprint.filemanager.FileDestinations.LOCAL, "TelegramPlugin"):
+											self.main._file_manager.add_folder(octoprint.filemanager.FileDestinations.LOCAL,"TelegramPlugin")
+									else:
+										target_filename = "telegram_"+filename
+									self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+									if stringmsg == "":
+										stringmsg = self.gEmo('upload') + " I've successfully saved the file you sent me as {}".format(target_filename)
+									else:
+										stringmsg = stringmsg + ", " + target_filename
+									# for parameter msg_id see _send_edit_msg()
+								except Exception as ex:
+									self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+							else:
+								self._logger.info('File '+ filename + ' is not a valide filename ')
+					except Exception as ex:
+						self.main.send_msg(self.gEmo('warning') + " Sorry, Problem managing the zip file.", chatID=chat_id)
+						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+						raise ExitThisLoopException()
+					finally:
+						self._logger.info('will now close the zip file')
+						zf.close()
+					if stringmsg != "":
+						self.main.send_msg(stringmsg,msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+					else:
+						self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+					#self.main._file_manager.remove_file(zip_filename)
+					os.remove(zip_filename)
+				else:
+					#stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
+					#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+					# for parameter msg_id see _send_edit_msg()
+					self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 			except ExitThisLoopException:
 				pass
 			except Exception as ex:
 				self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
-				self._logger.debug("Exception occured during processing of a file: "+ traceback.format_exc() )
+				self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
 		else:
 			self._logger.warn("Previous file was from an unauthorized user.")
 			self.main.send_msg("Don't feed the octopuses! " + self.gEmo('octo'),chatID=chat_id)
@@ -1050,7 +1109,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			if with_gif : #GWE 05/05/19
 				try:
-					self._logger.info("Will try to create a gif of 5 seconds with 10 images")
+					self._logger.info("Will try to create a gif ")
 					ret = self.create_gif()
 					if ret == 0:
 						self.send_file(chatID, self.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
@@ -1253,19 +1312,26 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					strdate = " Tomorrow"
 				else:
 					strtime = " " + format_date(finish_time,"EEE d")
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.info("An Exception in get final time : " + str(ex) )
 
 		return strtime + strdate
 
-	def create_gif(self):  #GWE 05/05/2019
+	def create_gif(self,nbImg = 20):  #GWE 05/05/2019
 		i=0
 		ret = 0
 		try:
 			saveDir = os.getcwd()
 			os.chdir(self.get_plugin_data_folder()+"/img/tmp")
+			try:
+				list_files = glob.glob('Test_Telegram_*.jpg')
+				for filename in list_files:
+					os.remove(filename)
+				os.remove(self.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+			except Exception as ex:
+				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
 			self._logger.info("will try to save image in path " + os.getcwd())
-			while(i<20):
+			while(i<nbImg):
 				data = self.take_image()
 				try:
 					image = Image.open(StringIO.StringIO(data))
@@ -1275,12 +1341,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					ret = -2
 				i+=1
 			try:
-				subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf','scale=1280:720','timelapse.mp4'])
+				subprocess.check_call(['avconv', '-r', '10', '-y', '-i' ,'Test_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', 'timelapse.mp4'])
+				#subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf','scale=1280:720','timelapse.mp4'])
 				#subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf', 'scale=1280:720','timelapse.mp4'])
 			except Exception as ex:
 				self._logger.info("Caught an exception trying create mp4 : " + str(ex))
 				try:
-					subprocess.call(['avconv','-r 3','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
+#					subprocess.call(['avconv','-r 3','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
+					subprocess.call(['avconv','-r 10','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
 				except Exception as ex:
 					self._logger.info("Caught an exception trying create mp4 2 : " + str(ex))
 					ret = -1
