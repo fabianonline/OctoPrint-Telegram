@@ -169,7 +169,7 @@ class TMSG():
 		event = kwargs['event']
 		kwargs['event'] = telegramMsgDict[event]['bind_msg'] if 'bind_msg' in telegramMsgDict[event] else event
 		kwargs['with_image'] = self.main._settings.get(['messages',str(kwargs['event']),'image'])
-		kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #GWE 05/05/19
+		kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z
@@ -184,7 +184,7 @@ class TMSG():
 		percent = int(status['progress']['completion'] or 0)
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 		time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
-		# GWE 06/05/19
+		#giloser 06/05/19
 		try:
 			time_finish = self.main.calculate_ETA(time_left)
 		except Exception, ex:
