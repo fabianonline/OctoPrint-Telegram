@@ -649,7 +649,11 @@ class TCMD():
 		meta = self.main._file_manager.get_metadata(dest,path)
 		msg = self.gEmo("info") + " <b>File Informations</b>\n\n"
 		msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path  
-		msg += "\n<b>"+self.main.emojis['bowling']+"Size:</b> " + self.formatSize(file['size'])
+		try:
+			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+		except Exception, ex:
+			self._logger.info("An Exception in get upload time : " + str(ex) )
+		msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 		filaLen = 0
 		printTime = 0
 		if 'analysis' in meta:
@@ -665,7 +669,7 @@ class TCMD():
 							msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 							filaLen += float(filament[key]['length'])
 			if 'estimatedPrintTime' in meta['analysis']:
-				msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
+				msg += "\n<b>"+self.main.emojis['hourglass with flowing sand']+"Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 				printTime = meta['analysis']['estimatedPrintTime']
 		# GWE 06/05/19''
 		try:
@@ -725,7 +729,7 @@ class TCMD():
 		if opt.startswith("inf"):
 			msg = self.gEmo("info") + " <b>Detailed File Informations</b>\n\n"
 			msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path
-			msg += "\n<b>"+self.main.emojis['bowling']+"Size:</b> " + self.formatSize(file['size'])
+			msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
 			filaLen = 0
 			printTime = 0
@@ -742,7 +746,7 @@ class TCMD():
 								msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 								filaLen += float(filament[key]['length'])
 				if 'estimatedPrintTime' in meta['analysis']:
-					msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
+					msg += "\n<b>"+self.main.emojis['hourglass with flowing sand']+"Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
 					printTime = float(meta['analysis']['estimatedPrintTime'])
 					
 			try:
