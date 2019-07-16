@@ -263,7 +263,7 @@ class TCMD():
 			if command :
 				if 'confirm' in command and params[0] != "do":
 					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-					return	
+					return
 				else:
 					async = command["async"] if "async" in command else False
 					self._logger.info("Performing command: %s" % command["command"])
@@ -287,7 +287,6 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 		else:
-			message = self.gEmo('info') + " The following System Commands are known."
 			keys = []
 			tmpKeys = []
 			i = 1
@@ -300,8 +299,30 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-			keys.append([["Restart OctoPrint","/sys_sys_Restart OctoPrint"]])
-			keys.append([["Reboot System","/sys_sys_Reboot System"],["Shutdown System","/sys_sys_Shutdown System"]])
+			
+			tmpKeys = []
+			i = 1
+			serverCommands = { 'serverRestartCommand':   ["Restart OctoPrint", "/sys_sys_Restart OctoPrint"],
+							  'systemRestartCommand':   ["Reboot System", "/sys_sys_Reboot System"],
+						      'systemShutdownCommand':  ["Shutdown System","/sys_sys_Shutdown System"]
+			}
+			for index in serverCommands:
+				commandText = self.main._settings.global_get(['server', 'commands', index])
+				if commandText is not None:
+					tmpKeys.append(serverCommands[index])
+					if i % 2 == 0:
+						keys.append(tmpKeys)
+						tmpKeys = []
+					i += 1
+			if len(tmpKeys) > 0:
+				keys.append(tmpKeys)
+			
+			if len(keys) > 0 :
+				message_text = " The following System Commands are known."
+			else:
+				message_text = " No known System Commands."
+			message = self.gEmo('info') + message_text
+			
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
