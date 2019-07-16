@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 import logging, sarge, hashlib, datetime,time,operator
 import octoprint.filemanager
+import requests
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
 
@@ -34,6 +35,7 @@ class TCMD():
 			'/print':  		{'cmd': self.cmdPrint, 'param': True},
 			'/files':  		{'cmd': self.cmdFiles, 'param': True},
 			'/upload':  	{'cmd': self.cmdUpload},
+			'/filament':	{'cmd': self.cmdFilament, 'param': True},
 			'/sys': 		{'cmd': self.cmdSys, 'param': True},
 			'/ctrl': 		{'cmd': self.cmdCtrl, 'param': True},
 			'/con': 		{'cmd': self.cmdConnection, 'param': True},
@@ -139,12 +141,16 @@ class TCMD():
 ############################################################################################							
 	def cmdShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id not in self.main.shut_up:
-			self.main.shut_up[chat_id] = True
+			self.main.shut_up[chat_id] = 0
+		self.main.shut_up[chat_id] += 1
+		if self.main.shut_up[chat_id] >= 5:
+			self._logger.warn("shut_up value is %d. Shutting down.", self.main.shut_up[chat_id])
+			self.main.shutdown()
 		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished." + self.gEmo('shutup')+" Use /dontshutup to let me talk again before that. "),chatID=chat_id,inline=False)
 ############################################################################################
 	def cmdNShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id in self.main.shut_up:
-			del self.main.shut_up[chat_id]
+			self.main.shut_up[chat_id] = 0
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id,inline=False)
 ############################################################################################
 	def cmdPrint(self,chat_id,from_id,cmd,parameter):
@@ -256,7 +262,7 @@ class TCMD():
 			command = next((d for d in actions if 'action' in d and self.hashMe(d['action']) == parameter) , False)
 			if command :
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
 					async = command["async"] if "async" in command else False
@@ -554,6 +560,99 @@ class TCMD():
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			self.main.send_msg(msg, responses=keys,chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
+	def cmdFilament(self,chat_id,from_id,cmd,parameter):
+		if parameter and parameter != "back":
+			self._logger.info("Parameter received for filament: %s" % parameter)
+			params = parameter.split('_')
+			apikey = self.main._settings.global_get(['api','key'])
+			errorText = ""
+			if params[0] == "spools":
+				try:
+					resp = requests.get("http://localhost/plugin/filamentmanager/spools?apikey="+apikey)
+					resp2 = requests.get("http://localhost/plugin/filamentmanager/selections?apikey="+apikey)
+					if (resp.status_code != 200):
+						errorText = resp.text
+					resp = resp.json()
+					resp2 = resp2.json()
+					self._logger.info("Spools: %s" % resp["spools"])
+					message = self.gEmo('info') + " The following Spools are known:\n"
+					for spool in resp["spools"]:
+						weight = spool["weight"]
+						used = spool["used"]
+						usedPercent = int(used / weight * 100)
+						message += str(spool["name"]) + "- Used: " + str(usedPercent) + "%\n"
+					for selection in resp2["selections"]:
+						if selection["tool"] == 0:
+							message += "\n\nCurrently selected is spool: " + str(selection["spool"]["name"])
+					msg_id=self.main.getUpdateMsgId(chat_id)
+					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+				except ValueError:
+					message = self.gEmo('mistake')+" Error getting spools. Are you sure, you have installed the Filament Manager Plugin?"
+					if (errorText != ""):
+						message += "\nError text: " + str(errorText)
+					msg_id=self.main.getUpdateMsgId(chat_id)
+					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)	
+			if params[0] == "changeSpool":
+				self._logger.info("Command to change spool: %s" % params)
+				if len(params) > 1:
+					self._logger.info("Changing to spool: %s" % params[1])
+					try:
+						payload = {"selection": {"spool": {"id": params[1]},"tool": 0}}
+						self._logger.info("Payload: %s" % payload)
+						resp = requests.patch("http://localhost/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
+						if (resp.status_code != 200):
+							errorText = resp.text
+						self._logger.info("Response: %s" % resp)
+						resp = resp.json()
+						message = self.gEmo('check')+"Selected Spool is now: " + str(resp["selection"]["spool"]["name"])
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+					except ValueError:
+						message = self.gEmo('mistake')+" Error changing spool"
+						if (errorText != ""):
+							message += "\nError text: " + str(errorText)
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+				else:
+					self._logger.info("Asking for spool")
+					try:
+						resp = requests.get("http://localhost/plugin/filamentmanager/spools?apikey="+apikey)
+						if (resp.status_code != 200):
+							errorText = resp.text
+						resp = resp.json()
+						message = self.gEmo('question') + " which filament spool do you want to select?"
+						keys = []
+						tmpKeys = []
+						i = 1
+						for spool in resp["spools"]:
+							self._logger.info("Appending spool: %s" % spool)
+							tmpKeys.append([str(spool['name']),"/filament_changeSpool_"+str(spool['id'])])
+							if i%2 == 0:
+								keys.append(tmpKeys)
+								tmpKeys = []
+							i += 1
+						if len(tmpKeys) > 0:
+							keys.append(tmpKeys)
+						keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self._logger.info("Sending message")
+						self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+					except ValueError:
+						message = self.gEmo('mistake')+" Error changing spool"
+						if (errorText != ""):
+							message += "\nError text: " + str(errorText)
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+		else:
+			message = self.gEmo('info') + " The following Filament Commands are known."
+			keys = []
+			keys.append([["Show Spools","/filament_spools"]])
+			keys.append([["Change Spool","/filament_changeSpool"]])
+			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+
+############################################################################################	
 	def cmdHelp(self,chat_id,from_id,cmd,parameter):
 		self.main.send_msg(self.gEmo('info') + gettext(" *The following commands are known:*\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
@@ -562,6 +661,7 @@ class TCMD():
 		                           "/status - Sends the current status including a current photo.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/files - Lists all the files available for printing.\n"
+								   "/filament - Shows you your filament spools or lets you change it. Requires the Filament Manager plugin.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
 		                           "/togglepause - Pause/Resume current Print.\n"
 		                           "/con - Connect/disconnect printer.\n"
@@ -651,8 +751,8 @@ class TCMD():
 				printTime = meta['analysis']['estimatedPrintTime']
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
-				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
+				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
 				curr = self.main._settings.global_get(["plugins","cost","currency"])
 				try:
 					curr = curr.decode("utf-8")
@@ -717,8 +817,8 @@ class TCMD():
 					printTime = float(meta['analysis']['estimatedPrintTime'])
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
-					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
+					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
 					curr = self.main._settings.global_get(["plugins","cost","currency"])
 					try:
 						curr = curr.decode("utf-8")
