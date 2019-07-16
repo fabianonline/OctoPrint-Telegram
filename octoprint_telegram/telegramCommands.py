@@ -1108,7 +1108,7 @@ class TCMD():
 			if len(tmpKeys) > 0 and len(tmpKeys) < 3:
 				keys.append(tmpKeys)
 			keys.append([[self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/con_"+parent]])
-			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+con['portPreference'],responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
+			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+(str(con['portPreference']) if con['portPreference'] else "AUTO"),responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def ConBaud(self,chat_id,parameter,parent):
 		if parameter:
@@ -1189,7 +1189,7 @@ class TCMD():
 			self.main._printer.connect(port=self.conSettingsTemp[0],baudrate=self.conSettingsTemp[1],profile=self.conSettingsTemp[2])
 			self.conSettingsTemp = []
 			con = self.main._printer.get_current_connection()
-			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port"]
+			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port","Detecting serial port"]
 			while any(s in con[0] for s in waitStates):
 				con = self.main._printer.get_current_connection()
 			self._logger.debug("EXIT WITH: "+str(con[0]))
