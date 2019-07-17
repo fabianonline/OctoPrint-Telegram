@@ -8,6 +8,7 @@ from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
 from .emojiDict import telegramEmojiDict # dict of known emojis
+from babel.dates import format_date, format_datetime, format_time                            
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -1219,6 +1220,28 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			output.close()
 		return data
 		
+
+	def calculate_ETA(self,printTime = 0):
+		try:
+			strtime = ""
+			strdate = ""
+			currentData = self._printer.get_current_data()
+			current_time = datetime.datetime.today()
+			if not currentData["progress"]["printTimeLeft"]:
+				finish_time = current_time + datetime.timedelta(0,printTime)
+			else:
+				finish_time = current_time + datetime.timedelta(0,currentData["progress"]["printTimeLeft"])
+			strtime = format_time(finish_time)
+			strdate = ""
+			if finish_time.day > current_time.day:
+				if finish_time.day == current_time.day + 1:
+					strdate = " Tomorrow"
+				else:
+					strtime = " " + format_date(finish_time,"EEE d")
+		except Exception as ex:
+			self._logger.info("An Exception in get final time : " + str(ex) )
+
+		return strtime + strdate
 	def track_action(self, action):
 		if not self._settings.get_boolean(["tracking_activated"]):
 			return

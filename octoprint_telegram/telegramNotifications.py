@@ -48,7 +48,7 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'ZChange': {
-				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining."),
+				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining.\nCompleted time {time_finish}."),
 				'image': True,
 				'combined' : True,
 				'markup': "off"
@@ -174,6 +174,12 @@ class TMSG():
 		percent = int(status['progress']['completion'] or 0)
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 		time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
+        #giloser 17/07/19
+		try:
+			time_finish = self.main.calculate_ETA(time_left)
+		except Exception, ex:
+			time_finish = str(ex)
+			self._logger.error("Exception on formatting message: " +str(ex))
 		if status['progress']['printTimeLeft'] == None:
 			time_left = gettext('[Unknown]')
 		file = ""

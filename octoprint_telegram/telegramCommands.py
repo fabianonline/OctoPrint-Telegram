@@ -742,13 +742,17 @@ class TCMD():
 		self.tmpFileHash = ""
 		meta = self.main._file_manager.get_metadata(dest,path)
 		msg = self.gEmo("info") + " <b>File Informations</b>\n\n"
-		msg += "<b>Name:</b> " + path
-		msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
+		msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path  
+		try:
+			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+		except Exception, ex:
+			self._logger.info("An Exception in get upload time : " + str(ex) )
+		msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 		filaLen = 0
 		printTime = 0
 		if 'analysis' in meta:
 			if 'filament' in meta['analysis']:
-				msg += "\n<b>Filament:</b> "
+				msg += "\n<b>"+self.main.emojis['straight ruler']+"Filament:</b> "
 				filament = meta['analysis']['filament']
 				if len(filament) == 1 and 'length' in filament['tool0']:
 					msg += self.formatFilament(filament['tool0'])
@@ -759,20 +763,31 @@ class TCMD():
 							msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 							filaLen += float(filament[key]['length'])
 			if 'estimatedPrintTime' in meta['analysis']:
-				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
+				msg += "\n<b>"+self.main.emojis['hourglass with flowing sand']+"Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 				printTime = meta['analysis']['estimatedPrintTime']
+        # giloser 17/07/19''
+		try:
+			time_finish = self.main.calculate_ETA(printTime)
+			msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
+		except Exception, ex:
+			self._logger.info("An Exception in get final time : " + str(ex) )
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
-				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
-				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
-				curr = self.main._settings.global_get(["plugins","cost","currency"])
 				try:
-					curr = curr.decode("utf-8")
+					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
+					curr = self.main._settings.global_get(["plugins","cost","currency"])
+					try:
+						curr = curr.decode("utf-8")
+						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+					except Exception, ex:
+						self._logger.error("An Exception the cost function in decode : " + str(ex) )
+						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 				except Exception, ex:
-					pass
-				msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+					self._logger.error("An Exception the cost function on get: " + str(ex) )
+					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			else:
-				msg += "\n<b>Cost:</b> -" 
+				msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -" 
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
 		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
@@ -807,14 +822,14 @@ class TCMD():
 			meta = self.main._file_manager.get_metadata(dest,path)
 		if opt.startswith("inf"):
 			msg = self.gEmo("info") + " <b>Detailed File Informations</b>\n\n"
-			msg += "<b>Name:</b> " + path
-			msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
-			msg += "\n<b>Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+			msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path
+			msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
+			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
 			filaLen = 0
 			printTime = 0
 			if 'analysis' in meta:
 				if 'filament' in meta['analysis']:
-					msg += "\n<b>Filament:</b> "
+					msg += "\n<b>"+self.main.emojis['straight ruler']+"Filament:</b> "
 					filament = meta['analysis']['filament']
 					if len(filament) == 1 and 'length' in filament['tool0']:
 						msg += self.formatFilament(filament['tool0'])
@@ -825,21 +840,32 @@ class TCMD():
 								msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 								filaLen += float(filament[key]['length'])
 				if 'estimatedPrintTime' in meta['analysis']:
-					msg += "\n<b>Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
+					msg += "\n<b>"+self.main.emojis['hourglass with flowing sand']+"Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 					printTime = float(meta['analysis']['estimatedPrintTime'])
+			# giloser 17/07/19 add ETA and try catch on cost plugin + emo
+			try:
+				time_finish = self.main.calculate_ETA(printTime)
+				msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
+			except Exception, ex:
+				self._logger.error("An Exception in get final time : " + str(ex) )
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
-					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
-					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
-					curr = self.main._settings.global_get(["plugins","cost","currency"])
 					try:
-						curr = curr.decode("utf-8")
+						cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+						cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
+						curr = self.main._settings.global_get(["plugins","cost","currency"])
+						try:
+							curr = curr.decode("utf-8")
+							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+						except Exception, ex:
+							self._logger.error("An Exception the cost function in decode : " + str(ex) )
+							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
+						self._logger.debug("AF TRY")	
 					except Exception, ex:
-						pass
-					self._logger.debug("AF TRY")
-					msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+						self._logger.error("An Exception the cost function on get: " + str(ex) )
+						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 				else:
-					msg += "\n<b>Cost:</b> -"
+					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			if 'statistics' in meta:
 				if 'averagePrintTime' in meta['statistics']:
 					msg += "\n<b>Average Print Time:</b>"
