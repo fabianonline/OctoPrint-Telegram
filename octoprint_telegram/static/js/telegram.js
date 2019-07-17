@@ -304,7 +304,7 @@ $(function() {
             for(var id in entries) {
                 var data = entries[id];
                 data['id'] = id;
-                data['image'] = data['image'] + "?" + $.now();
+                data['image'] = data['image'];
                 if(data['new']) {
                     data['newUsr'] = true;
                 } else {
