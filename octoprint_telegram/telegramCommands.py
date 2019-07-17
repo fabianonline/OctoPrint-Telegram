@@ -1207,7 +1207,7 @@ class TCMD():
 			self._logger.debug("EXIT WITH: "+str(con[0]))
 
 			if con[0] == "Operational":
-				self.main.send_msg(self.gEmo('info') + " Connection started.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.main.send_msg(self.gEmo('check') + " Connection established.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 			else:
 				self.main.send_msg(self.gEmo('warning') + " Failed to start connection.\n\n"+con[0],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		else:
