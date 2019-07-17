@@ -341,7 +341,7 @@ class TCMD():
 			command = next((d for d in actions if d['hash'] == parameter), False)
 			if command:
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + str(command['name']) + "\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
 					if 'script' in command:
