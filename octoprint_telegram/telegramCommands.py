@@ -449,10 +449,13 @@ class TCMD():
 			params = parameter.split('_')
 			if params[0] == "feed":
 				if len(params) > 1:
+					base = 1000
+					if params[1].endswith('*'):
+						base = 2500
 					if params[1].startswith('+'):
-						self.tuneTemp[0] += 100/(10**len(params[1]))
+						self.tuneTemp[0] += base/(10**len(params[1]))
 					elif params[1].startswith('-'):
-						self.tuneTemp[0] -= 100/(10**len(params[1]))
+						self.tuneTemp[0] -= base/(10**len(params[1]))
 					else:
 						self.main._printer.feed_rate(int(self.tuneTemp[0]))
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -463,16 +466,19 @@ class TCMD():
 						self.tuneTemp[0] = 200
 				msg = self.gEmo('black right-pointing double triangle') + gettext(" Set feedrate.\nCurrent:  *%(height)d%%*",height=self.tuneTemp[0])
 				keys = [
-						[["+10","/tune_feed_+"],["+1","/tune_feed_++"],["-1","/tune_feed_--"],["-10","/tune_feed_-"]],
+						[["+25","/tune_feed_+*"],["+10","/tune_feed_++"],["+1","/tune_feed_+++"],["-1","/tune_feed_---"],["-10","/tune_feed_--"],["-25","/tune_feed_-*"]],
 						[[self.main.emojis['check']+" Set","/tune_feed_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
 			elif params[0] == "flow":
 				if len(params) > 1:
+					base = 1000
+					if params[1].endswith('*'):
+						base = 2500
 					if params[1].startswith('+'):
-						self.tuneTemp[1] += 100/(10**len(params[1]))
+						self.tuneTemp[1] += base/(10**len(params[1]))
 					elif params[1].startswith('-'):
-						self.tuneTemp[1] -= 100/(10**len(params[1]))
+						self.tuneTemp[1] -= base/(10**len(params[1]))
 					else:
 						self.main._printer.flow_rate(int(self.tuneTemp[1]))
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -483,7 +489,7 @@ class TCMD():
 						self.tuneTemp[1] = 200
 				msg = self.gEmo('black down-pointing double triangle') + gettext(" Set flowrate.\nCurrent: *%(time)d%%*",time=self.tuneTemp[1])
 				keys = [
-						[["+10","/tune_flow_+"],["+1","/tune_flow_++"],["-1","/tune_flow_--"],["-10","/tune_flow_-"]],
+						[["+25","/tune_flow_+*"],["+10","/tune_flow_++"],["+1","/tune_flow_+++"],["-1","/tune_flow_---"],["-10","/tune_flow_--"],["-25","/tune_flow_-*"]],
 						[[self.main.emojis['check']+" Set","/tune_flow_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
@@ -491,10 +497,13 @@ class TCMD():
 				temps = self.main._printer.get_current_temperatures()
 				toolNo = int(params[1])
 				if len(params) > 2:
+					base = 1000
+					if params[2].endswith('*'):
+						base = 5000
 					if params[2].startswith('+'):
-						self.tempTemp[toolNo] += 1000/(10**len(params[2]))
+						self.tempTemp[toolNo] += base/(10**len(params[2]))
 					elif params[2].startswith('-'):
-						self.tempTemp[toolNo] -= 1000/(10**len(params[2]))
+						self.tempTemp[toolNo] -= base/(10**len(params[2]))
 					elif params[2].startswith('s'):
 						self.main._printer.set_temperature("tool"+str(toolNo),self.tempTemp[toolNo])
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -508,8 +517,8 @@ class TCMD():
 						self.tempTemp[toolNo] = 0
 				msg = self.gEmo('fire') + gettext(" Set temperature for tool "+params[1]+".\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["tool"+params[1]]['actual'],time=self.tempTemp[toolNo])
 				keys = [
-						[["+100","/tune_e_"+params[1]+"_+"],["+10","/tune_e_"+params[1]+"_++"],["+1","/tune_e_"+params[1]+"_+++"]],
-						[["-100","/tune_e_"+params[1]+"_-"],["-10","/tune_e_"+params[1]+"_--"],["-1","/tune_e_"+params[1]+"_---"]],
+						[["+100","/tune_e_"+params[1]+"_+"],["+50","/tune_e_"+params[1]+"_+*"],["+10","/tune_e_"+params[1]+"_++"],["+5","/tune_e_"+params[1]+"_++*"],["+1","/tune_e_"+params[1]+"_+++"]],
+						[["-100","/tune_e_"+params[1]+"_-"],["-50","/tune_e_"+params[1]+"_-*"],["-10","/tune_e_"+params[1]+"_--"],["-5","/tune_e_"+params[1]+"_--*"],["-1","/tune_e_"+params[1]+"_---"]],
 						[[self.main.emojis['check']+" Set","/tune_e_"+params[1]+"_s"],[self.main.emojis['snowflake']+" Off","/tune_e_"+params[1]+"_off"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
@@ -517,10 +526,13 @@ class TCMD():
 				temps = self.main._printer.get_current_temperatures()
 				toolNo = len(self.tempTemp)-1
 				if len(params) > 1:
+					base = 1000
+					if params[1].endswith('*'):
+						base = 5000
 					if params[1].startswith('+'):
-						self.tempTemp[toolNo] += 1000/(10**len(params[1]))
+						self.tempTemp[toolNo] += base/(10**len(params[1]))
 					elif params[1].startswith('-'):
-						self.tempTemp[toolNo] -= 1000/(10**len(params[1]))
+						self.tempTemp[toolNo] -= base/(10**len(params[1]))
 					elif params[1].startswith('s'):
 						self.main._printer.set_temperature("bed",self.tempTemp[toolNo])
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -536,8 +548,8 @@ class TCMD():
 				self._logger.debug("BED self.TEMPS: "+str(self.tempTemp))
 				msg = self.gEmo('hot springs') + gettext(" Set temperature for bed.\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["bed"]['actual'],time=self.tempTemp[toolNo])
 				keys = [
-						[["+100","/tune_b_+"],["+10","/tune_b_++"],["+1","/tune_b_+++"]],
-						[["-100","/tune_b_-"],["-10","/tune_b_--"],["-1","/tune_b_---"]],
+						[["+100","/tune_b_+"],["+50","/tune_b_+*"],["+10","/tune_b_++"],["+5","/tune_b_++*"],["+1","/tune_b_+++"]],
+						[["-100","/tune_b_-"],["-50","/tune_b_-*"],["-10","/tune_b_--"],["-5","/tune_b_--*"],["-1","/tune_b_---"]],
 						[[self.main.emojis['check']+" Set","/tune_b_s"],[self.main.emojis['snowflake']+" Off","/tune_b_off"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
