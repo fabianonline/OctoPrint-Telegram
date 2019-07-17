@@ -575,15 +575,15 @@ class TCMD():
 					resp = resp.json()
 					resp2 = resp2.json()
 					self._logger.info("Spools: %s" % resp["spools"])
-					message = self.gEmo('info') + " The following Spools are known:\n"
+					message = self.gEmo('info') + " Available filament spools are:\n"
 					for spool in resp["spools"]:
 						weight = spool["weight"]
 						used = spool["used"]
-						usedPercent = int(used / weight * 100)
-						message += str(spool["name"]) + "- Used: " + str(usedPercent) + "%\n"
+						percent = int(100 - (used / weight * 100))
+						message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
 					for selection in resp2["selections"]:
 						if selection["tool"] == 0:
-							message += "\n\nCurrently selected is spool: " + str(selection["spool"]["name"])
+							message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + str(selection["spool"]["profile"]["material"])
 					msg_id=self.main.getUpdateMsgId(chat_id)
 					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 				except ValueError:
@@ -604,7 +604,7 @@ class TCMD():
 							errorText = resp.text
 						self._logger.info("Response: %s" % resp)
 						resp = resp.json()
-						message = self.gEmo('check')+"Selected Spool is now: " + str(resp["selection"]["spool"]["name"])
+						message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
 						msg_id=self.main.getUpdateMsgId(chat_id)
 						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 					except ValueError:
@@ -626,7 +626,7 @@ class TCMD():
 						i = 1
 						for spool in resp["spools"]:
 							self._logger.info("Appending spool: %s" % spool)
-							tmpKeys.append([str(spool['name']),"/filament_changeSpool_"+str(spool['id'])])
+							tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
 							if i%2 == 0:
 								keys.append(tmpKeys)
 								tmpKeys = []
@@ -644,10 +644,10 @@ class TCMD():
 						msg_id=self.main.getUpdateMsgId(chat_id)
 						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 		else:
-			message = self.gEmo('info') + " The following Filament Commands are known."
+			message = self.gEmo('info') + " The following Filament Manager commands are known."
 			keys = []
-			keys.append([["Show Spools","/filament_spools"]])
-			keys.append([["Change Spool","/filament_changeSpool"]])
+			keys.append([["Show spools","/filament_spools"]])
+			keys.append([["Change spool","/filament_changeSpool"]])
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
@@ -661,7 +661,7 @@ class TCMD():
 		                           "/status - Sends the current status including a current photo.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/files - Lists all the files available for printing.\n"
-								   "/filament - Shows you your filament spools or lets you change it. Requires the Filament Manager plugin.\n"
+								   "/filament - Shows you your filament spools or lets you change it. Requires the Filament Manager Plugin.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
 		                           "/togglepause - Pause/Resume current Print.\n"
 		                           "/con - Connect/disconnect printer.\n"
