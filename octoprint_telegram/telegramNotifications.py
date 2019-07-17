@@ -18,7 +18,7 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'PrinterShutdown': {
-				'text': "{emo:octo} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
+				'text': "{emo:octopus} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
 				'combined' : True,
 				'markup': "off"
@@ -78,10 +78,10 @@ class EmojiFormatter():
 		self.main = main
 
 	def __format__(self,format):
+		self.main._logger.debug("Formatting emoticon: `" + format +"`")
 		if format in self.main.emojis:
 			return self.main.gEmo(format).encode("utf-8")
 		return ""
-
 
 class TMSG():
 	def __init__(self, main):
@@ -183,7 +183,7 @@ class TMSG():
 		emo = EmojiFormatter(self.main)
 		try:
 			# call format with emo class object to handle emojis, otherwise use locals
-			message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())
+			message = self.main._settings.get(["messages",kwargs['event'],"text"]).encode('utf-8').format(emo,**locals())
 		except Exception as ex:
 			self._logger.debug("Exception on formatting message: " + str(ex))
 			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+event+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + event + "'."
