@@ -380,7 +380,7 @@ class TCMD():
 	def cmdUser(self,chat_id,from_id,cmd,parameter):
 		msg = self.gEmo('info') + " *Your user settings:*\n\n"
 		msg += "*ID:* " + str(chat_id) + "\n"
-		msg += "*Name:* " + str(self.main.chats[chat_id]['title']) + "\n"
+		msg += "*Name:* " + self.main.chats[chat_id]['title'] + "\n"
 		if self.main.chats[chat_id]['private']:
 			msg += "*Type:* Private\n\n"
 		else:
