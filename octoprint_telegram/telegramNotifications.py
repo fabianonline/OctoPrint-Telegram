@@ -174,7 +174,6 @@ class TMSG():
 		percent = int(status['progress']['completion'] or 0)
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 		time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
-        #giloser 17/07/19
 		try:
 			time_finish = self.main.calculate_ETA(time_left)
 		except Exception, ex:
@@ -182,10 +181,12 @@ class TMSG():
 			self._logger.error("Exception on formatting message: " +str(ex))
 		if status['progress']['printTimeLeft'] == None:
 			time_left = gettext('[Unknown]')
-		file = ""
+		file = status['job']['file']['name']
+		path = status['job']['file']['path']
 		if "file" in payload: file = payload["file"]
 		if "gcode" in payload: file = payload["gcode"]
 		if "filename" in payload: file = payload["filename"]
+		self._logger.debug("VARS - " + str(locals()))
 		emo = EmojiFormatter(self.main)
 		try:
 			# call format with emo class object to handle emojis, otherwise use locals

@@ -190,7 +190,7 @@ In this section you can configure the content of the notification messages.
 5. This buttons sets the markup options for the message text. Only available when no image will be send or if image will be send in a separate message.
 
 6. You can use variables in the messages :
-   * `{file}` (only usable while printing) - The currently printing file.
+   * `{file}`, `{path}` (only usable while printing) - The currently printing file, with or without path information.
    * `{z}` (only for height change events) - The current z value.
    * `{percent}` (only useful for height change notifications) - The current percentage of the print progress.
    * `{time_done}`, `{time_left}`, `{time_finish}` (only useful for height change events) - Time done / left in the print and ETA.
