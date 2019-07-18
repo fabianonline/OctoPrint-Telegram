@@ -1205,7 +1205,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		flipH = self._settings.global_get(["webcam", "flipH"])
 		flipV = self._settings.global_get(["webcam", "flipV"])
 		rotate= self._settings.global_get(["webcam", "rotate90"])
-		
+		self._logger.debug("Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate)
 		if flipH or flipV or rotate:
 			image = Image.open(StringIO.StringIO(data))
 			if flipH:
