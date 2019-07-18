@@ -27,6 +27,8 @@ class TCMD():
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
 			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
 			'/status':  	{'cmd': self.cmdStatus},
+			'/gif':  		{'cmd': self.cmdGif}, #giloser 05/05/19 add gif command
+			'/supergif':  	{'cmd': self.cmdSuperGif}, #giloser 05/05/19 add gif command
 			'/settings':  	{'cmd': self.cmdSettings, 'param': True},
 			'/abort':  		{'cmd': self.cmdAbort, 'param': True},
 			'/togglepause':	{'cmd': self.cmdTogglePause},
@@ -60,11 +62,44 @@ class TCMD():
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
 		if not self.main._printer.is_operational():
 			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			with_gif = self.main._settings.get_boolean(["gif_not_connected"])
 			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 		elif self.main._printer.is_printing():
 			self.main.on_event("StatusPrinting", {},chatID=chat_id)
 		else:
 			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+############################################################################################
+	def cmdGif(self,chat_id,from_id,cmd,parameter): #GWE 05/05/2019 add command to get gif
+		if not self.main._printer.is_operational():
+			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
+		elif self.main._printer.is_printing():
+			#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+			self._logger.info("Will try to create a gif")
+			ret = self.main.create_gif()
+			if ret == 0:
+				self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+				#self.send_video(chatID, video)
+			else:
+				self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chat_id)
+		else:
+			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+############################################################################################
+	def cmdSuperGif(self,chat_id,from_id,cmd,parameter): #GWE 05/05/2019 add command to get gif
+		if not self.main._printer.is_operational():
+			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
+		elif self.main._printer.is_printing():
+			#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+			self._logger.info("Will try to create a super gif")
+			ret = self.main.create_gif(60)
+			if ret == 0:
+				self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+			#self.send_video(chatID, video)
+		else:
+			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+
+
 ############################################################################################
 	def cmdSettings(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter != "back":
@@ -676,6 +711,8 @@ class TCMD():
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
 		                           "/dontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
+								   "/gif - Sends a gif from the current video.\n"
+								   "/supergif - Sends a bigger gif from the current video.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/files - Lists all the files available for printing.\n"
 								   "/filament - Shows you your filament spools or lets you change it. Requires the Filament Manager Plugin.\n"
