@@ -1,5 +1,5 @@
 from __future__ import absolute_import
-import logging, sarge, hashlib, datetime,time,operator
+import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
 from flask.ext.babel import gettext
@@ -321,6 +321,11 @@ class TCMD():
 				message_text = " The following System Commands are known."
 			else:
 				message_text = " No known System Commands."
+			try:
+				server_ip = [(s.connect((self.main._settings.global_get(["server","onlineCheck","host"]), self.main._settings.global_get(["server","onlineCheck","port"]))), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
+				message_text += "\n\nIP: " + server_ip
+			except Exception as ex: self._logger.error("Exception retrieving IP address: " + str(ex))
+			
 			message = self.gEmo('info') + message_text
 			
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
