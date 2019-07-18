@@ -1140,6 +1140,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					ret = self.create_gif()
 					if ret == 0:
 						self.send_file(chatID, self.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+					else:
+						self.send_msg(self.gEmo('warning') + gettext(" Error trying to create gif, please be sure you have install avconv with command : "),chatID=chat_id,inline=False,with_image=False)
 					#self.send_video(chatID, video)
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))

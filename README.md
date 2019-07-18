@@ -91,6 +91,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 5. Hit "Save" at the bottom of the settings dialog.
 
+6. If you want to create gif and receive them as notification you have to manually install libav-tools with commmand line like <code>sudo apt-get install libav-tools</code>
+
 Congratulations! Your printer is now connected to your Telegram bot.
 
 ### User setup
