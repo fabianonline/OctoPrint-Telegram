@@ -188,15 +188,16 @@ class TelegramListener(threading.Thread):
 				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 				data = self.main.get_file(message['message']['document']['file_id'])
 				#giloser 09/05/2019 try to zip the gcode file to lower the size
-				try:
-					#stream = octoprint.filemanager.util.StreamWrapper(target_filename, io.BytesIO(data))
-					zip_filename= self.main.get_plugin_data_folder()+"/img/tmp/" +file_name
-					with open(zip_filename,'w') as f:
-						f.write(data)
-					#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
-				except Exception as ex:
-					self._logger.info("Exception occured during save file : "+ traceback.format_exc() )
 				if isZipFile:
+					try:
+						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, io.BytesIO(data))
+						zip_filename= self.main.get_plugin_data_folder()+"/img/tmp/" +file_name
+						with open(zip_filename,'w') as f:
+							f.write(data)
+						#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+					except Exception as ex:
+						self._logger.info("Exception occured during save file : "+ traceback.format_exc() )
+				
 					self._logger.info('read archive '  + zip_filename)
 					try:
 						zf = zipfile.ZipFile(zip_filename, 'r')
@@ -240,8 +241,8 @@ class TelegramListener(threading.Thread):
 					#self.main._file_manager.remove_file(zip_filename)
 					os.remove(zip_filename)
 				else:
-					#stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
-					#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+					stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
+					self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 					# for parameter msg_id see _send_edit_msg()
 					self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 			except ExitThisLoopException:
@@ -1145,6 +1146,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					#self.send_video(chatID, video)
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+
 
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
