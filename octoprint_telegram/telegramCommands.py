@@ -79,7 +79,7 @@ class TCMD():
 				self._logger.info("Will try to create a gif")
 				ret = self.main.create_gif()
 				if ret == 0:
-					self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+					self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/tmpgif/gif.mp4")
 					#self.send_video(chatID, video)
 				else:
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
@@ -99,7 +99,7 @@ class TCMD():
 				self._logger.info("Will try to create a super gif")
 				ret = self.main.create_gif(60)
 				if ret == 0:
-					self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+					self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/tmpgif/gif.mp4")
 				else:
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
 			except Exception as ex:

@@ -191,7 +191,8 @@ class TelegramListener(threading.Thread):
 				if isZipFile:
 					try:
 						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, io.BytesIO(data))
-						zip_filename= self.main.get_plugin_data_folder()+"/img/tmp/" +file_name
+						#self.main._file_manager.add_folder(self.get_plugin_data_folder() , "tmpzip", ignore_existing=True)
+						zip_filename= self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
 						with open(zip_filename,'w') as f:
 							f.write(data)
 						#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
@@ -238,6 +239,7 @@ class TelegramListener(threading.Thread):
 					else:
 						self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+					
 					#self.main._file_manager.remove_file(zip_filename)
 					os.remove(zip_filename)
 				else:
@@ -1140,7 +1142,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.info("Will try to create a gif ")
 					ret = self.create_gif()
 					if ret == 0:
-						self.send_file(chatID, self.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+						self.send_file(chatID, self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
 					else:
 						self.send_msg(self.gEmo('warning') + gettext(" Error trying to create gif, please be sure you have install avconv with command : "),chatID=chat_id,inline=False,with_image=False)
 					#self.send_video(chatID, video)
@@ -1307,7 +1309,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			currentData = self._printer.get_current_data()
 			current_time = datetime.datetime.today()
 			if not currentData["progress"]["printTimeLeft"]:
-				finish_time = current_time + datetime.timedelta(0,printTime)
+				if not printTime == 0:
+					finish_time = current_time + datetime.timedelta(0,printTime)
+				else:
+					return ""
 			else:
 				finish_time = current_time + datetime.timedelta(0,currentData["progress"]["printTimeLeft"])
 			strtime = format_time(finish_time)
@@ -1327,34 +1332,40 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		ret = 0
 		try:
 			saveDir = os.getcwd()
-			os.chdir(self.get_plugin_data_folder()+"/img/tmp")
+			os.chdir(self.get_plugin_data_folder()+"/tmpgif")
 			try:
-				list_files = glob.glob('Test_Telegram_*.jpg')
+				#self._file_manager.remove_folder(self.get_plugin_data_folder() , "/tmpgif", recursive=True)
+				list_files = glob.glob('Gif_Telegram_*.jpg')
 				for filename in list_files:
 					os.remove(filename)
-				os.remove(self.get_plugin_data_folder()+"/img/tmp/timelapse.mp4")
+				os.remove(self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
 			except Exception as ex:
 				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
 			self._logger.info("will try to save image in path " + os.getcwd())
+			#try:
+			#	self._file_manager.add_folder(self.get_plugin_data_folder() , "/tmpgif", ignore_existing=True)
+			#except Exception as ex:
+			#	self._logger.info("Caught an exception trying create tmpgif folder : " + str(ex))
 			while(i<nbImg):
 				data = self.take_image()
 				try:
+					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)
 					image = Image.open(StringIO.StringIO(data))
-					image.save('Test_Telegram_%02d.jpg' % i, 'JPEG')
+					image.save('Gif_Telegram_%02d.jpg' % i, 'JPEG')
 				except Exception as ex:
 					self._logger.info("Caught an exception trying create gif() in loop as open of save image : " + str(ex))
 					ret = -2
 				time.sleep(.5) #giloser 19/05/2019 add sleep to better gif
 				i+=1
 			try:
-				subprocess.check_call(['avconv', '-r', '10', '-y', '-i' ,'Test_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', 'timelapse.mp4'])
+				subprocess.check_call(['ffmpeg', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
 				#subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf','scale=1280:720','timelapse.mp4'])
 				#subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf', 'scale=1280:720','timelapse.mp4'])
 			except Exception as ex:
 				self._logger.info("Caught an exception trying create mp4 : " + str(ex))
 				try:
 #					subprocess.call(['avconv','-r 3','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
-					subprocess.call(['avconv','-r 10','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
+					subprocess.call(['ffmpeg','-r 10','-y','-i',self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%02d.jpg',self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
 				except Exception as ex:
 					self._logger.info("Caught an exception trying create mp4 2 : " + str(ex))
 					ret = -1
@@ -1396,8 +1407,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			os.mkdir(self.get_plugin_data_folder()+"/img")
 		if not os.path.exists(self.get_plugin_data_folder()+"/img/user"):
 			os.mkdir(self.get_plugin_data_folder()+"/img/user")
-		if not os.path.exists(self.get_plugin_data_folder()+"/img/tmp"): #GWE 05/05/2019 add a folder temp to put image used in gif
-			os.mkdir(self.get_plugin_data_folder()+"/img/tmp")
+		if not os.path.exists(self.get_plugin_data_folder()+"/tmpgif"): #GWE 05/05/2019 add a folder temp to put image used in gif
+			os.mkdir(self.get_plugin_data_folder()+"/tmpgif")
+		if not os.path.exists(self.get_plugin_data_folder()+"/tmpzip"): #GWE 05/05/2019 add a folder temp to put image used in gif
+			os.mkdir(self.get_plugin_data_folder()+"/tmpzip")
 		return [
 				(r"/img/user/(.*)", LargeResponseHandler, dict(path=self.get_plugin_data_folder() + r"/img/user/", as_attachment=True,allow_client_caching =False)),
 				(r"/img/static/(.*)", LargeResponseHandler, dict(path=self._basefolder + "/static/img/", as_attachment=True,allow_client_caching =True))
