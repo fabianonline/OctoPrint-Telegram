@@ -72,6 +72,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	tune - Set feed- and flowrate. Control temperatures.
 	user - get user info.
 	help - show list of commands.
+	gif - send a gif create from 20 images
+	supergif - send a gif create from 60 images
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -91,7 +93,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 5. Hit "Save" at the bottom of the settings dialog.
 
-6. If you want to create gif and receive them as notification you have to manually install libav-tools with commmand line like <code>sudo apt-get install libav-tools</code>
+6. If you want to create gif and receive them as notification we use ffmpeg like timelapse (if problem please check timelapse is configured).
 
 Congratulations! Your printer is now connected to your Telegram bot.
 
@@ -239,12 +241,26 @@ In this section you can configure the content of the notification messages.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
+**`/gif`** - Send a gif create from 20 images.
+
+**`/supergif`** - Send a gif create from 60 images.
+
 #### Notes:
 
 * the `/help` command is always allowed
 
 
 * `/files` and `/print` will basically show the same file dialog. If `/print` is disabled, no print button will be shown. If `/files` is disabled, no download and delete buttons will be shown. If both commands are enabled, all buttons will be shown regardles wether the user entered the dialog by `/files` or `/print`.
+
+
+If you have trouble with the image (get message like ***) please check the following step
+
+The plugin can't resolve a simple "/webcam/[...]" URL. There has to be a full address.
+Set the snapshot URL to one of the following:
+
+    http://127.0.0.1:8080/?action=snapshot
+    http://127.0.0.1/webcam/?action=snapshot
+
 <br><br><br>
 
 ## Info / Contact / Help
