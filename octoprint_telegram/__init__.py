@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources
+import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob #imageio
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
 from flask.ext.login import current_user
@@ -8,6 +8,7 @@ from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
 from .emojiDict import telegramEmojiDict # dict of known emojis
+from babel.dates import format_date, format_datetime, format_time                            
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -75,11 +76,17 @@ class TelegramListener(threading.Thread):
 			self.first_contact = False
 			self.main.on_event("PrinterStart",{})
 	
+	def set_update_offset(self, new_value):
+		if new_value >= self.update_offset:
+			self._logger.debug("Updating update_offset from {} to {}".format(self.update_offset, 1 + new_value))
+			self.update_offset = 1 + new_value
+		else:
+			self._logger.debug("Not changing update_offset - otherwise would reduce it from {} to {}".format(self.update_offset, 1 + new_value))
+	
 	def processMessage(self, message):
 		self._logger.debug("MESSAGE: " + str(message))
 		# Get the update_id to only request newer Messages the next time
-		if message['update_id'] >= self.update_offset:
-			self.update_offset = message['update_id']+1
+		self.set_update_offset(message['update_id'])
 		# no message no cookies
 		if 'message' in message and message['message']['chat']:
 		
@@ -159,10 +166,15 @@ class TelegramListener(threading.Thread):
 			try:
 				file_name = message['message']['document']['file_name']
 				#if not (file_name.lower().endswith('.gcode') or file_name.lower().endswith('.gco') or file_name.lower().endswith('.g')):
-				self._logger.debug(str(file_name.lower().split('.')[-1]))
+				self._logger.info(str(file_name.lower().split('.')[-1]))
+				isZipFile = False
 				if not octoprint.filemanager.valid_file_type(file_name,"machinecode"):
-					self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g extension.", chatID=chat_id)
-					raise ExitThisLoopException()
+					#giloser 09/05/2019 try to zip the gcode file to lower the size
+					if file_name.lower().endswith('.zip'):
+						isZipFile = True
+					else:
+						self.main.send_msg(self.gEmo('warning') + " Sorry, I only accept files with .gcode, .gco or .g or .zip extension.", chatID=chat_id)
+						raise ExitThisLoopException()
 				# download the file
 				if self.main.version >= 1.3:
 					target_filename = "TelegramPlugin/"+file_name
@@ -175,10 +187,66 @@ class TelegramListener(threading.Thread):
 				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id)
 				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 				data = self.main.get_file(message['message']['document']['file_id'])
-				stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
-				self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
-				# for parameter msg_id see _send_edit_msg()
-				self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+				#giloser 09/05/2019 try to zip the gcode file to lower the size
+				if isZipFile:
+					try:
+						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, io.BytesIO(data))
+						#self.main._file_manager.add_folder(self.get_plugin_data_folder() , "tmpzip", ignore_existing=True)
+						zip_filename= self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
+						with open(zip_filename,'w') as f:
+							f.write(data)
+						#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+					except Exception as ex:
+						self._logger.info("Exception occured during save file : "+ traceback.format_exc() )
+				
+					self._logger.info('read archive '  + zip_filename)
+					try:
+						zf = zipfile.ZipFile(zip_filename, 'r')
+						self._logger.info('namelist ')
+						list_files = zf.namelist()
+						stringmsg = ""
+						for filename in list_files:
+							if octoprint.filemanager.valid_file_type(filename,"machinecode"):
+								try:
+									data = zf.read(filename)
+									stream = octoprint.filemanager.util.StreamWrapper(filename, io.BytesIO(data))
+									if self.main.version >= 1.3:
+										target_filename = "TelegramPlugin/"+filename
+										from octoprint.server.api.files import _verifyFolderExists
+										if not _verifyFolderExists(octoprint.filemanager.FileDestinations.LOCAL, "TelegramPlugin"):
+											self.main._file_manager.add_folder(octoprint.filemanager.FileDestinations.LOCAL,"TelegramPlugin")
+									else:
+										target_filename = "telegram_"+filename
+									self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+									if stringmsg == "":
+										stringmsg = self.gEmo('upload') + " I've successfully saved the file you sent me as {}".format(target_filename)
+									else:
+										stringmsg = stringmsg + ", " + target_filename
+									# for parameter msg_id see _send_edit_msg()
+								except Exception as ex:
+									self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+							else:
+								self._logger.info('File '+ filename + ' is not a valide filename ')
+					except Exception as ex:
+						self.main.send_msg(self.gEmo('warning') + " Sorry, Problem managing the zip file.", chatID=chat_id)
+						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+						raise ExitThisLoopException()
+					finally:
+						self._logger.info('will now close the zip file')
+						zf.close()
+					if stringmsg != "":
+						self.main.send_msg(stringmsg,msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+					else:
+						self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
+					
+					#self.main._file_manager.remove_file(zip_filename)
+					os.remove(zip_filename)
+				else:
+					stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
+					self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
+					# for parameter msg_id see _send_edit_msg()
+					self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 			except ExitThisLoopException:
 				pass
 			except Exception as ex:
@@ -234,7 +302,8 @@ class TelegramListener(threading.Thread):
 		if chat_id in self.main.chats:
 			data = self.main.chats[chat_id]
 		# update data or get data for new user
-		if chat['type']=='group':
+		data['type'] = chat['type'].upper()
+		if chat['type']=='group' or chat['type'] == 'supergroup':
 			data['private'] = False
 			data['title'] = chat['title']
 		elif chat['type']=='private':
@@ -289,14 +358,13 @@ class TelegramListener(threading.Thread):
 						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
 						time.sleep(120)
 						raise ExitThisLoopException()
-					if len(json['result']) > 0 and 'update_id' in json['result'][0]: 
-						if json['result'][0]['update_id'] >= self.update_offset:
-							self.update_offset = json['result'][0]['update_id']+1
+					if len(json['result']) > 0 and 'update_id' in json['result'][0]:
+						self.set_update_offset(json['result'][0]['update_id'])
 					res = json['result']
 					if len(res) < 1:
 						self._logger.debug("Ignoring message because first_contact is True.")
 				if self.update_offset == 0:
-					self.update_offset = 1
+					self.set_update_offset(0)
 			else:
 				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40)
 		except requests.exceptions.Timeout:
@@ -319,6 +387,9 @@ class TelegramListener(threading.Thread):
 			self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
 			time.sleep(120)
 			raise ExitThisLoopException()
+		if "result" in json and len(json['result']) > 0:
+			for entry in json['result']:
+				self.set_update_offset(entry['update_id'])
 		return json
 
 	# stop the listener
@@ -373,8 +444,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		requests.packages.urllib3.disable_warnings()
 		self.updateMessageID = {}
 		self.shut_up = {}
+		self.send_messages = True
 		self.tcmd = None
 		self.tmsg = None
+		self.sending_okay_minute = None
+		self.sending_okay_count = 0
 		# initial settings for new chat. See on_after_startup()
 		# !!! sync with newUsrDict in on_settings_migrate() !!!
 		self.newChat = {}
@@ -432,6 +506,27 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Stopping listener.")
 			self.thread.stop()
 			self.thread = None
+	
+	def shutdown(self):
+		self._logger.warn("shutdown() running!")
+		self.stop_listening()
+		self.send_messages = False
+	
+	def sending_okay(self):
+		# If the count ever goeas above 10, we stop doing everything else and just return False
+		# so if this is ever reached, it will stay this way.
+		if self.sending_okay_count > 10:
+			self._logger.warn("Sent more than 10 messages in the last minute. Shutting down...")
+			self.shutdown()
+			return False
+		
+		if self.sending_okay_minute != datetime.datetime.now().minute:
+			self.sending_okay_minute = datetime.datetime.now().minute
+			self.sending_okay_count = 1
+		else:
+			self.sending_okay_count += 1
+			
+		return True
 
 ##########
 ### Asset API
@@ -459,8 +554,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def get_wizard_version(self):
 		return 1
 		# Wizard version numbers used in releases
-		# < 1.4.2 : no settings versioning
+		# < 1.4.2 : no wizard
 		# 1.4.2 : 1
+		# 1.4.3 : 1
 
 ##########
 ### Startup/Shutdown API
@@ -479,6 +575,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'accept_commands' : False, 
 			'send_notifications' : False, 
 			'new': True, 
+			'type': '',
 			'allow_users': False,
 			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
@@ -517,7 +614,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_settings_version(self):
-		return 3
+		return 4
 		# Settings version numbers used in releases
 		# < 1.3.0: no settings versioning
 		# 1.3.0 : 1
@@ -526,6 +623,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		# 1.3.3 : 2
 		# 1.4.0 : 3
 		# 1.4.1 : 3
+		# 1.4.2 : 3
+		# 1.4.3 : 4
 
 	def get_settings_defaults(self):
 		return dict(
@@ -540,6 +639,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			debug = False,
 			send_icon = True,
 			image_not_connected = True,
+			gif_not_connected = True, #GWE 05/05/19 
 			fileOrder = False
 		)
 
@@ -561,6 +661,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'accept_commands' : False, 
 			'send_notifications' : False, 
 			'new': False, 
+			'type': '',
 			'allow_users': False,
 			'commands': {k: False for k,v in tcmd.commandDict.iteritems()}, 
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
@@ -667,6 +768,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						chats[chat]['commands'].update({'/files':chats[chat]['commands']['/list']})
 					if '/imsorrydontshutup' in chats[chat]['commands']:
 						chats[chat]['commands'].update({'/dontshutup':chats[chat]['commands']['/imsorrydontshutup']})
+					if 'type' not in chats[chat]:
+						chats[chat].update({'type': 'PRIVATE' if chats[chat]['private'] else 'GROUP'})
 					delCmd = []
 					# collect remove 'bind_none' commands
 					for cmd in tcmd.commandDict:
@@ -809,7 +912,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				current=self._plugin_version,
 				user="fabianonline",
 				repo="OctoPrint-Telegram",
-				pip="https://github.com/fabianonline/OctoPrint-Telegram/archive/{target_version}.zip"
+				pip="https://github.com/fabianonline/OctoPrint-Telegram/releases/{target_version}/download/release.zip"
 			)
 		)
 
@@ -898,6 +1001,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def send_msg(self, message, **kwargs):
+		if not self.send_messages:
+			return
+			
 		kwargs['message'] = message
 		try:
 			# If it's a regular event notification
@@ -905,7 +1011,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.debug("Send_msg() found event: " + str(kwargs['event']))
 				for key in self.chats: 
 					if key != 'zBOTTOMOFCHATS':
-						if self.chats[key]['notifications'][kwargs['event']] and key not in self.shut_up and self.chats[key]['send_notifications']:
+						if self.chats[key]['notifications'][kwargs['event']] and (key not in self.shut_up or self.shut_up[key]==0) and self.chats[key]['send_notifications']:
 							kwargs['chatID'] = key
 							t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 			# Seems to be a broadcast
@@ -928,6 +1034,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	# by setting no_markup = true we got a messageg_id on sending the message which is saved in selfupdateMessageID 
 	# if this message_id is passed in msg_id to send_msg() then this method will be called
 	def _send_edit_msg(self,message="",msg_id="",chatID="", responses= None, inline=True, markup=None,delay=0, **kwargs):
+		if not self.send_messages:
+			return
+			
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -957,7 +1066,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
-	def _send_msg(self, message="", with_image=False, responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
+	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
+		if not self.send_messages:
+			return
+			
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -975,7 +1087,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					t = threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
 
-			self._logger.debug("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " chatID= " + str(chatID))
+			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
 			data['disable_web_page_preview'] = not showWeb  
@@ -992,7 +1104,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				
 			image_data = None
 			if with_image:
-				image_data = self.take_image()
+				try:
+					image_data = self.take_image()
+				except Exception as ex:
+					self._logger.info("Caught an exception trying take image: " + str(ex))
+
 			self._logger.debug("data so far: " + str(data))
 
 			if not image_data and with_image:
@@ -1020,10 +1136,28 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					raise NameError("ReqErr")
 				if 'message_id' in myJson['result']:
 					self.updateMessageID[chatID] = myJson['result']['message_id']
+
+			if with_gif : #giloser 05/05/19
+				try:
+					self._logger.info("Will try to create a gif ")
+					ret = self.create_gif()
+					if ret == 0:
+						self.send_file(chatID, self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
+					else:
+						self.send_msg(self.gEmo('warning') + gettext(" Error trying to create gif, please be sure you have install avconv with command : "),chatID=chat_id,inline=False,with_image=False)
+					#self.send_video(chatID, video)
+				except Exception as ex:
+					self._logger.info("Caught an exception trying send gif: " + str(ex))
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+
+
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
 	
 	def send_file(self,chat_id,path):
+		if not self.send_messages:
+			return
+			
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 			files = {'document': open(path, 'rb')} 
@@ -1032,11 +1166,17 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			pass
 
 	def send_video(self, message, video_file):
+		if not self.send_messages:
+			return
+			
 		files = {'video': open(video_file, 'rb')}
 		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
 		self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
 	
 	def get_file(self, file_id):
+		if not self.send_messages:
+			return
+			
 		self._logger.debug("Requesting file with id %s.", file_id)
 		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id})
 		# {"ok":true,"result":{"file_id":"BQADAgADCgADrWJxCW_eFdzxDPpQAg","file_size":26,"file_path":"document\/file_3.gcode"}}
@@ -1051,6 +1191,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return r.content
 
 	def get_usrPic(self,chat_id, file_id=""):
+		if not self.send_messages:
+			return
+			
 		self._logger.debug("Requesting Profile Photo for chat_id: " + str(chat_id))
 		try:
 			if file_id == "":
@@ -1078,6 +1221,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.error("Can't load UserImage: " + str(ex))
 	
 	def test_token(self, token=None):
+		if not self.send_messages:
+			return
+			
 		if token is None:
 			token = self._settings.get(["token"])
 		response = requests.get("https://api.telegram.org/bot" + token + "/getMe")
@@ -1140,21 +1286,98 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		flipH = self._settings.global_get(["webcam", "flipH"])
 		flipV = self._settings.global_get(["webcam", "flipV"])
 		rotate= self._settings.global_get(["webcam", "rotate90"])
-		
+		self._logger.debug("Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate)
 		if flipH or flipV or rotate:
 			image = Image.open(StringIO.StringIO(data))
-			if rotate:
-				image = image.transpose(Image.ROTATE_270)
 			if flipH:
 				image = image.transpose(Image.FLIP_LEFT_RIGHT)
 			if flipV:
 				image = image.transpose(Image.FLIP_TOP_BOTTOM)
+			if rotate:
+				image = image.transpose(Image.ROTATE_270)
 			output = StringIO.StringIO()
 			image.save(output, format="JPEG")
 			data = output.getvalue()
 			output.close()
 		return data
 		
+
+	def calculate_ETA(self,printTime = 0):
+		try:
+			strtime = ""
+			strdate = ""
+			currentData = self._printer.get_current_data()
+			current_time = datetime.datetime.today()
+			if not currentData["progress"]["printTimeLeft"]:
+				if not printTime == 0:
+					finish_time = current_time + datetime.timedelta(0,printTime)
+				else:
+					return ""
+			else:
+				finish_time = current_time + datetime.timedelta(0,currentData["progress"]["printTimeLeft"])
+			strtime = format_time(finish_time)
+			strdate = ""
+			if finish_time.day > current_time.day:
+				if finish_time.day == current_time.day + 1:
+					strdate = " Tomorrow"
+				else:
+					strtime = " " + format_date(finish_time,"EEE d")
+		except Exception as ex:
+			self._logger.info("An Exception in get final time : " + str(ex) )
+
+		return strtime + strdate
+
+	def create_gif(self,nbImg = 20):  #giloser 05/05/2019
+		i=0
+		ret = 0
+		try:
+			saveDir = os.getcwd()
+			os.chdir(self.get_plugin_data_folder()+"/tmpgif")
+			try:
+				#self._file_manager.remove_folder(self.get_plugin_data_folder() , "/tmpgif", recursive=True)
+				list_files = glob.glob('Gif_Telegram_*.jpg')
+				for filename in list_files:
+					os.remove(filename)
+				os.remove(self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
+			except Exception as ex:
+				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
+			self._logger.info("will try to save image in path " + os.getcwd())
+			#try:
+			#	self._file_manager.add_folder(self.get_plugin_data_folder() , "/tmpgif", ignore_existing=True)
+			#except Exception as ex:
+			#	self._logger.info("Caught an exception trying create tmpgif folder : " + str(ex))
+			while(i<nbImg):
+				data = self.take_image()
+				try:
+					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)
+					image = Image.open(StringIO.StringIO(data))
+					image.save('Gif_Telegram_%02d.jpg' % i, 'JPEG')
+				except Exception as ex:
+					self._logger.info("Caught an exception trying create gif() in loop as open of save image : " + str(ex))
+					ret = -2
+				time.sleep(.5) #giloser 19/05/2019 add sleep to better gif
+				i+=1
+			try:
+				subprocess.check_call(['ffmpeg', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
+				#subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf','scale=1280:720','timelapse.mp4'])
+				#subprocess.check_call(['avconv','-r', '3','-y', '-i' ,'Test_Telegram_%02d.jpg','-vcodec', 'libx264', '-vf', 'scale=1280:720','timelapse.mp4'])
+			except Exception as ex:
+				self._logger.info("Caught an exception trying create mp4 : " + str(ex))
+				try:
+#					subprocess.call(['avconv','-r 3','-y','-i','Test_Telegram_%02d.jpg','timelapse.mp4'])
+					subprocess.call(['ffmpeg','-r 10','-y','-i',self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%02d.jpg',self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
+				except Exception as ex:
+					self._logger.info("Caught an exception trying create mp4 2 : " + str(ex))
+					ret = -1
+		#subprocess.call(['avconv -r 3 -y -i Test_Telegram_%02d.jpg -r 3 -vcodec libx264 -vf  scale=1280:720 timelapse.mp4'])
+		#avconv -r 3 -y -i Test_Telegram_%02d.jpg -r 3 -vcodec libx264 -vf  scale=1280:720 timelapse.mp4
+		except Exception as ex:
+			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
+			ret = -3
+		os.chdir(saveDir)
+		return ret
+
+
 	def track_action(self, action):
 		if not self._settings.get_boolean(["tracking_activated"]):
 			return
@@ -1184,7 +1407,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			os.mkdir(self.get_plugin_data_folder()+"/img")
 		if not os.path.exists(self.get_plugin_data_folder()+"/img/user"):
 			os.mkdir(self.get_plugin_data_folder()+"/img/user")
-
+		if not os.path.exists(self.get_plugin_data_folder()+"/tmpgif"): #GWE 05/05/2019 add a folder temp to put image used in gif
+			os.mkdir(self.get_plugin_data_folder()+"/tmpgif")
+		if not os.path.exists(self.get_plugin_data_folder()+"/tmpzip"): #GWE 05/05/2019 add a folder temp to put image used in gif
+			os.mkdir(self.get_plugin_data_folder()+"/tmpzip")
 		return [
 				(r"/img/user/(.*)", LargeResponseHandler, dict(path=self.get_plugin_data_folder() + r"/img/user/", as_attachment=True,allow_client_caching =False)),
 				(r"/img/static/(.*)", LargeResponseHandler, dict(path=self._basefolder + "/static/img/", as_attachment=True,allow_client_caching =True))

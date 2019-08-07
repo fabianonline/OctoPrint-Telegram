@@ -119,6 +119,20 @@ $(function() {
                     hideMup = "";
                     hideComb = "display:none"
                 }
+                if(self.settings.settings.plugins.telegram.messages[keys[id]].gif()){
+                    imgGif = "camera";
+                    bGif = "success";
+                    txtGif = "Send Gif";
+                    hideMup = "";
+                    hideComb = "";
+                }
+                else{
+                    imgGif = "ban-circle";
+                    bGif = "warning";
+                    txtGif = "No Gif";
+                    hideMup = "";
+                    hideComb = ""
+                }
                 // TODO set to second message setting
                 if(self.settings.settings.plugins.telegram.messages[keys[id]].combined()){
                     img2 = "comment";
@@ -163,6 +177,12 @@ $(function() {
                 btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
                 btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label><br>';
 
+                var btnGif = '<span class="muted"><small>Send with gif?<br></small></span>';
+                btnGif += '<label id="chkGifBtn'+self.msgCnt+'" class="btn btn-'+bGif+' btn-mini" title="Toggle \'Send with gif\'">';
+                btnGif += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.gif, click: toggleGif(\''+self.msgCnt+'\')"/>';
+                btnGif += '<i id="chkGif'+self.msgCnt+'" class="icon-'+imgGif+'"></i> ';
+                btnGif += '<span id="chkGifTxt'+self.msgCnt+'">'+txtGif+'</span></label><br>';
+
                 var btnSecMsg = '<span id="combBut'+self.msgCnt+'" style="' + hideComb + '"> <span class="muted"><small>Combined message?<br></small></span>';
                 btnSecMsg += '<label id="chk2Btn'+self.msgCnt+'" class="btn btn-'+btn2+' btn-mini" title="Toggle \'Send image in a second message\'">';
                 btnSecMsg += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.combined, click: toggleImg2(\''+self.msgCnt+'\')"/>';
@@ -174,7 +194,7 @@ $(function() {
                     msgEdt += '<div class="controls " >';
                         msgEdt += '<div class="row">';
                             msgEdt += '<div class="span9"><textarea rows="4" style="margin-left:7px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea></div>';
-                            msgEdt += '<div class="span3" style="text-align:center;">' + btnImg + btnSecMsg +  btnGrp + '</div>';
+                            msgEdt += '<div class="span3" style="text-align:center;">' + btnImg + btnGif + btnSecMsg +  btnGrp + '</div>';
                         msgEdt += '</div></div></div>';
 
                 $('#telegram_msg_list').append(msgEdt);
@@ -183,9 +203,14 @@ $(function() {
             self.isloading(false);
             $('#chkImg0').removeClass("icon-camera");
             $('#chkImg0').removeClass("icon-ban-circle");
+            $('#chkGif0').removeClass("icon-camera");
+            $('#chkGif0').removeClass("icon-ban-circle");
             $('#chkBtn0').removeClass("btn-success");
             $('#chkBtn0').removeClass("btn-warning");
             $('#chkTxt0').text("");
+            $('#chkGifBtn0').removeClass("btn-success");
+            $('#chkGifBtn0').removeClass("btn-warning");
+            $('#chkGifTxt0').text("");
             if(self.settings.settings.plugins.telegram.image_not_connected()){
                 $('#chkImg0').addClass("icon-camera");
                 $('#chkBtn0').addClass("btn-success");
@@ -195,6 +220,16 @@ $(function() {
                 $('#chkImg0').addClass("icon-ban-circle");
                 $('#chkBtn0').addClass("btn-warning");
                 $('#chkTxt0').text("No Image");
+            }
+            if(self.settings.settings.plugins.telegram.gif_not_connected()){
+                $('#chkGif0').addClass("icon-camera");
+                $('#chkGifBtn0').addClass("btn-success");
+                $('#chkGifTxt0').text("Send Gif");
+            }
+            else{
+                $('#chkGif0').addClass("icon-ban-circle");
+                $('#chkGifBtn0').addClass("btn-warning");
+                $('#chkGifTxt0').text("No Gif");
             }
             self.onBindLoad = false;
         }
@@ -233,6 +268,19 @@ $(function() {
                     
                         $('#combBut'+data).show();
                     }
+                }
+            }
+        }
+
+        self.toggleGif = function(data){
+            if(!self.onBindLoad){
+                $('#chkGif'+data).toggleClass("icon-ban-circle icon-camera");
+                $('#chkGifBtn'+data).toggleClass("btn-success btn-warning");
+                if($('#chkGifTxt'+data).text()==="Send Gif"){
+                    $('#chkGifTxt'+data).text("No Gif");
+                }
+                else{
+                    $('#chkGifTxt'+data).text("Send Gif");
                 }
             }
         }
@@ -304,7 +352,7 @@ $(function() {
             for(var id in entries) {
                 var data = entries[id];
                 data['id'] = id;
-                data['image'] = data['image'] + "?" + $.now();
+                data['image'] = data['image'];
                 if(data['new']) {
                     data['newUsr'] = true;
                 } else {

@@ -1,6 +1,7 @@
 from __future__ import absolute_import
-import logging, sarge, hashlib, datetime,time,operator
+import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
+import requests
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
 
@@ -26,6 +27,8 @@ class TCMD():
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
 			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
 			'/status':  	{'cmd': self.cmdStatus},
+			'/gif':  		{'cmd': self.cmdGif}, #giloser 05/05/19 add gif command
+			'/supergif':  	{'cmd': self.cmdSuperGif}, #giloser 05/05/19 add gif command
 			'/settings':  	{'cmd': self.cmdSettings, 'param': True},
 			'/abort':  		{'cmd': self.cmdAbort, 'param': True},
 			'/togglepause':	{'cmd': self.cmdTogglePause},
@@ -34,6 +37,7 @@ class TCMD():
 			'/print':  		{'cmd': self.cmdPrint, 'param': True},
 			'/files':  		{'cmd': self.cmdFiles, 'param': True},
 			'/upload':  	{'cmd': self.cmdUpload},
+			'/filament':	{'cmd': self.cmdFilament, 'param': True},
 			'/sys': 		{'cmd': self.cmdSys, 'param': True},
 			'/ctrl': 		{'cmd': self.cmdCtrl, 'param': True},
 			'/con': 		{'cmd': self.cmdConnection, 'param': True},
@@ -58,11 +62,54 @@ class TCMD():
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
 		if not self.main._printer.is_operational():
 			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			with_gif = self.main._settings.get_boolean(["gif_not_connected"])
 			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 		elif self.main._printer.is_printing():
 			self.main.on_event("StatusPrinting", {},chatID=chat_id)
 		else:
 			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+############################################################################################
+	def cmdGif(self,chat_id,from_id,cmd,parameter): #GWE 05/05/2019 add command to get gif
+		if not self.main._printer.is_operational():
+			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
+		elif self.main._printer.is_printing():
+			try:
+				#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+				self._logger.info("Will try to create a gif")
+				ret = self.main.create_gif()
+				if ret == 0:
+					self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/tmpgif/gif.mp4")
+					#self.send_video(chatID, video)
+				else:
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+			except Exception as ex:
+				self._logger.error("Exception occured during creating of the gif: "+ traceback.format_exc() )
+				self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+		else:
+			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+############################################################################################
+	def cmdSuperGif(self,chat_id,from_id,cmd,parameter): #GWE 05/05/2019 add command to get gif
+		if not self.main._printer.is_operational():
+			with_image = self.main._settings.get_boolean(["image_not_connected"])
+			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
+		elif self.main._printer.is_printing():
+			try:
+				#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+				self._logger.info("Will try to create a super gif")
+				ret = self.main.create_gif(60)
+				if ret == 0:
+					self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/tmpgif/gif.mp4")
+				else:
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+			except Exception as ex:
+				self._logger.error("Exception occured during creating of the supergif: "+ traceback.format_exc() )
+				self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file, and make sure you have installed libav-tools with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+			#self.send_video(chatID, video)
+		else:
+			self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+
+
 ############################################################################################
 	def cmdSettings(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter != "back":
@@ -139,12 +186,16 @@ class TCMD():
 ############################################################################################							
 	def cmdShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id not in self.main.shut_up:
-			self.main.shut_up[chat_id] = True
+			self.main.shut_up[chat_id] = 0
+		self.main.shut_up[chat_id] += 1
+		if self.main.shut_up[chat_id] >= 5:
+			self._logger.warn("shut_up value is %d. Shutting down.", self.main.shut_up[chat_id])
+			self.main.shutdown()
 		self.main.send_msg(self.gEmo('noNotify') + gettext(" Okay, shutting up until the next print is finished." + self.gEmo('shutup')+" Use /dontshutup to let me talk again before that. "),chatID=chat_id,inline=False)
 ############################################################################################
 	def cmdNShutup(self,chat_id,from_id,cmd,parameter):
 		if chat_id in self.main.shut_up:
-			del self.main.shut_up[chat_id]
+			self.main.shut_up[chat_id] = 0
 		self.main.send_msg(self.gEmo('notify') + gettext(" Yay, I can talk again."),chatID=chat_id,inline=False)
 ############################################################################################
 	def cmdPrint(self,chat_id,from_id,cmd,parameter):
@@ -256,8 +307,8 @@ class TCMD():
 			command = next((d for d in actions if 'action' in d and self.hashMe(d['action']) == parameter) , False)
 			if command :
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-					return	
+					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
 				else:
 					async = command["async"] if "async" in command else False
 					self._logger.info("Performing command: %s" % command["command"])
@@ -281,7 +332,6 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning') + " Sorry, i don't know this System Command.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 		else:
-			message = self.gEmo('info') + " The following System Commands are known."
 			keys = []
 			tmpKeys = []
 			i = 1
@@ -294,8 +344,35 @@ class TCMD():
 					i += 1
 			if len(tmpKeys) > 0:
 				keys.append(tmpKeys)
-			keys.append([["Restart OctoPrint","/sys_sys_Restart OctoPrint"]])
-			keys.append([["Reboot System","/sys_sys_Reboot System"],["Shutdown System","/sys_sys_Shutdown System"]])
+			
+			tmpKeys = []
+			i = 1
+			serverCommands = { 'serverRestartCommand':   ["Restart OctoPrint", "/sys_sys_Restart OctoPrint"],
+							  'systemRestartCommand':   ["Reboot System", "/sys_sys_Reboot System"],
+						      'systemShutdownCommand':  ["Shutdown System","/sys_sys_Shutdown System"]
+			}
+			for index in serverCommands:
+				commandText = self.main._settings.global_get(['server', 'commands', index])
+				if commandText is not None:
+					tmpKeys.append(serverCommands[index])
+					if i % 2 == 0:
+						keys.append(tmpKeys)
+						tmpKeys = []
+					i += 1
+			if len(tmpKeys) > 0:
+				keys.append(tmpKeys)
+			
+			if len(keys) > 0 :
+				message_text = " The following System Commands are known."
+			else:
+				message_text = " No known System Commands."
+			try:
+				server_ip = [(s.connect((self.main._settings.global_get(["server","onlineCheck","host"]), self.main._settings.global_get(["server","onlineCheck","port"]))), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
+				message_text += "\n\nIP: " + server_ip
+			except Exception as ex: self._logger.error("Exception retrieving IP address: " + str(ex))
+			
+			message = self.gEmo('info') + message_text
+			
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
@@ -314,10 +391,15 @@ class TCMD():
 			command = next((d for d in actions if d['hash'] == parameter), False)
 			if command:
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + command['confirm']+"\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_"+parameter], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + str(command['name']) + "\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
-					if type(command['command']) is type([]):
+					if 'script' in command:
+						try:
+							self.main._printer.script(command["command"])
+						except UnknownScript:
+							self.main.send_msg(self.gEmo('warning') + " Unknown script: " + command['command'],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					elif type(command['command']) is type([]):
 						for key in command['command']:
 							self.main._printer.commands(key)
 					else:
@@ -348,9 +430,9 @@ class TCMD():
 	def cmdUser(self,chat_id,from_id,cmd,parameter):
 		msg = self.gEmo('info') + " *Your user settings:*\n\n"
 		msg += "*ID:* " + str(chat_id) + "\n"
-		msg += "*Name:* " + str(self.main.chats[chat_id]['title']) + "\n"
+		msg += "*Name:* " + self.main.chats[chat_id]['title'] + "\n"
 		if self.main.chats[chat_id]['private']:
-			msg += "*Type:* Priavte\n\n"
+			msg += "*Type:* Private\n\n"
 		else:
 			msg += "*Type:* Group\n"
 			if self.main.chats[chat_id]['accept_commands']:
@@ -417,10 +499,13 @@ class TCMD():
 			params = parameter.split('_')
 			if params[0] == "feed":
 				if len(params) > 1:
+					base = 1000
+					if params[1].endswith('*'):
+						base = 2500
 					if params[1].startswith('+'):
-						self.tuneTemp[0] += 100/(10**len(params[1]))
+						self.tuneTemp[0] += base/(10**len(params[1]))
 					elif params[1].startswith('-'):
-						self.tuneTemp[0] -= 100/(10**len(params[1]))
+						self.tuneTemp[0] -= base/(10**len(params[1]))
 					else:
 						self.main._printer.feed_rate(int(self.tuneTemp[0]))
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -431,16 +516,19 @@ class TCMD():
 						self.tuneTemp[0] = 200
 				msg = self.gEmo('black right-pointing double triangle') + gettext(" Set feedrate.\nCurrent:  *%(height)d%%*",height=self.tuneTemp[0])
 				keys = [
-						[["+10","/tune_feed_+"],["+1","/tune_feed_++"],["-1","/tune_feed_--"],["-10","/tune_feed_-"]],
+						[["+25","/tune_feed_+*"],["+10","/tune_feed_++"],["+1","/tune_feed_+++"],["-1","/tune_feed_---"],["-10","/tune_feed_--"],["-25","/tune_feed_-*"]],
 						[[self.main.emojis['check']+" Set","/tune_feed_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
 			elif params[0] == "flow":
 				if len(params) > 1:
+					base = 1000
+					if params[1].endswith('*'):
+						base = 2500
 					if params[1].startswith('+'):
-						self.tuneTemp[1] += 100/(10**len(params[1]))
+						self.tuneTemp[1] += base/(10**len(params[1]))
 					elif params[1].startswith('-'):
-						self.tuneTemp[1] -= 100/(10**len(params[1]))
+						self.tuneTemp[1] -= base/(10**len(params[1]))
 					else:
 						self.main._printer.flow_rate(int(self.tuneTemp[1]))
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -451,7 +539,7 @@ class TCMD():
 						self.tuneTemp[1] = 200
 				msg = self.gEmo('black down-pointing double triangle') + gettext(" Set flowrate.\nCurrent: *%(time)d%%*",time=self.tuneTemp[1])
 				keys = [
-						[["+10","/tune_flow_+"],["+1","/tune_flow_++"],["-1","/tune_flow_--"],["-10","/tune_flow_-"]],
+						[["+25","/tune_flow_+*"],["+10","/tune_flow_++"],["+1","/tune_flow_+++"],["-1","/tune_flow_---"],["-10","/tune_flow_--"],["-25","/tune_flow_-*"]],
 						[[self.main.emojis['check']+" Set","/tune_flow_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
@@ -459,10 +547,13 @@ class TCMD():
 				temps = self.main._printer.get_current_temperatures()
 				toolNo = int(params[1])
 				if len(params) > 2:
+					base = 1000
+					if params[2].endswith('*'):
+						base = 5000
 					if params[2].startswith('+'):
-						self.tempTemp[toolNo] += 1000/(10**len(params[2]))
+						self.tempTemp[toolNo] += base/(10**len(params[2]))
 					elif params[2].startswith('-'):
-						self.tempTemp[toolNo] -= 1000/(10**len(params[2]))
+						self.tempTemp[toolNo] -= base/(10**len(params[2]))
 					elif params[2].startswith('s'):
 						self.main._printer.set_temperature("tool"+str(toolNo),self.tempTemp[toolNo])
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -476,8 +567,8 @@ class TCMD():
 						self.tempTemp[toolNo] = 0
 				msg = self.gEmo('fire') + gettext(" Set temperature for tool "+params[1]+".\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["tool"+params[1]]['actual'],time=self.tempTemp[toolNo])
 				keys = [
-						[["+100","/tune_e_"+params[1]+"_+"],["+10","/tune_e_"+params[1]+"_++"],["+1","/tune_e_"+params[1]+"_+++"]],
-						[["-100","/tune_e_"+params[1]+"_-"],["-10","/tune_e_"+params[1]+"_--"],["-1","/tune_e_"+params[1]+"_---"]],
+						[["+100","/tune_e_"+params[1]+"_+"],["+50","/tune_e_"+params[1]+"_+*"],["+10","/tune_e_"+params[1]+"_++"],["+5","/tune_e_"+params[1]+"_++*"],["+1","/tune_e_"+params[1]+"_+++"]],
+						[["-100","/tune_e_"+params[1]+"_-"],["-50","/tune_e_"+params[1]+"_-*"],["-10","/tune_e_"+params[1]+"_--"],["-5","/tune_e_"+params[1]+"_--*"],["-1","/tune_e_"+params[1]+"_---"]],
 						[[self.main.emojis['check']+" Set","/tune_e_"+params[1]+"_s"],[self.main.emojis['snowflake']+" Off","/tune_e_"+params[1]+"_off"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
@@ -485,10 +576,13 @@ class TCMD():
 				temps = self.main._printer.get_current_temperatures()
 				toolNo = len(self.tempTemp)-1
 				if len(params) > 1:
+					base = 1000
+					if params[1].endswith('*'):
+						base = 5000
 					if params[1].startswith('+'):
-						self.tempTemp[toolNo] += 1000/(10**len(params[1]))
+						self.tempTemp[toolNo] += base/(10**len(params[1]))
 					elif params[1].startswith('-'):
-						self.tempTemp[toolNo] -= 1000/(10**len(params[1]))
+						self.tempTemp[toolNo] -= base/(10**len(params[1]))
 					elif params[1].startswith('s'):
 						self.main._printer.set_temperature("bed",self.tempTemp[toolNo])
 						self.cmdTune(chat_id,from_id,cmd,"back")
@@ -504,8 +598,8 @@ class TCMD():
 				self._logger.debug("BED self.TEMPS: "+str(self.tempTemp))
 				msg = self.gEmo('hot springs') + gettext(" Set temperature for bed.\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["bed"]['actual'],time=self.tempTemp[toolNo])
 				keys = [
-						[["+100","/tune_b_+"],["+10","/tune_b_++"],["+1","/tune_b_+++"]],
-						[["-100","/tune_b_-"],["-10","/tune_b_--"],["-1","/tune_b_---"]],
+						[["+100","/tune_b_+"],["+50","/tune_b_+*"],["+10","/tune_b_++"],["+5","/tune_b_++*"],["+1","/tune_b_+++"]],
+						[["-100","/tune_b_-"],["-50","/tune_b_-*"],["-10","/tune_b_--"],["-5","/tune_b_--*"],["-1","/tune_b_---"]],
 						[[self.main.emojis['check']+" Set","/tune_b_s"],[self.main.emojis['snowflake']+" Off","/tune_b_off"],[self.main.emojis['leftwards arrow with hook']+" Back","/tune_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
@@ -528,23 +622,119 @@ class TCMD():
 			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			self.main.send_msg(msg, responses=keys,chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
+	def cmdFilament(self,chat_id,from_id,cmd,parameter):
+		if parameter and parameter != "back":
+			self._logger.info("Parameter received for filament: %s" % parameter)
+			params = parameter.split('_')
+			apikey = self.main._settings.global_get(['api','key'])
+			errorText = ""
+			if params[0] == "spools":
+				try:
+					resp = requests.get("http://localhost/plugin/filamentmanager/spools?apikey="+apikey)
+					resp2 = requests.get("http://localhost/plugin/filamentmanager/selections?apikey="+apikey)
+					if (resp.status_code != 200):
+						errorText = resp.text
+					resp = resp.json()
+					resp2 = resp2.json()
+					self._logger.info("Spools: %s" % resp["spools"])
+					message = self.gEmo('info') + " Available filament spools are:\n"
+					for spool in resp["spools"]:
+						weight = spool["weight"]
+						used = spool["used"]
+						percent = int(100 - (used / weight * 100))
+						message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
+					for selection in resp2["selections"]:
+						if selection["tool"] == 0:
+							message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + str(selection["spool"]["profile"]["material"])
+					msg_id=self.main.getUpdateMsgId(chat_id)
+					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+				except ValueError:
+					message = self.gEmo('mistake')+" Error getting spools. Are you sure, you have installed the Filament Manager Plugin?"
+					if (errorText != ""):
+						message += "\nError text: " + str(errorText)
+					msg_id=self.main.getUpdateMsgId(chat_id)
+					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)	
+			if params[0] == "changeSpool":
+				self._logger.info("Command to change spool: %s" % params)
+				if len(params) > 1:
+					self._logger.info("Changing to spool: %s" % params[1])
+					try:
+						payload = {"selection": {"spool": {"id": params[1]},"tool": 0}}
+						self._logger.info("Payload: %s" % payload)
+						resp = requests.patch("http://localhost/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
+						if (resp.status_code != 200):
+							errorText = resp.text
+						self._logger.info("Response: %s" % resp)
+						resp = resp.json()
+						message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+					except ValueError:
+						message = self.gEmo('mistake')+" Error changing spool"
+						if (errorText != ""):
+							message += "\nError text: " + str(errorText)
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+				else:
+					self._logger.info("Asking for spool")
+					try:
+						resp = requests.get("http://localhost/plugin/filamentmanager/spools?apikey="+apikey)
+						if (resp.status_code != 200):
+							errorText = resp.text
+						resp = resp.json()
+						message = self.gEmo('question') + " which filament spool do you want to select?"
+						keys = []
+						tmpKeys = []
+						i = 1
+						for spool in resp["spools"]:
+							self._logger.info("Appending spool: %s" % spool)
+							tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
+							if i%2 == 0:
+								keys.append(tmpKeys)
+								tmpKeys = []
+							i += 1
+						if len(tmpKeys) > 0:
+							keys.append(tmpKeys)
+						keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self._logger.info("Sending message")
+						self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+					except ValueError:
+						message = self.gEmo('mistake')+" Error changing spool"
+						if (errorText != ""):
+							message += "\nError text: " + str(errorText)
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+		else:
+			message = self.gEmo('info') + " The following Filament Manager commands are known."
+			keys = []
+			keys.append([["Show spools","/filament_spools"]])
+			keys.append([["Change spool","/filament_changeSpool"]])
+			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+
+############################################################################################	
 	def cmdHelp(self,chat_id,from_id,cmd,parameter):
 		self.main.send_msg(self.gEmo('info') + gettext(" *The following commands are known:*\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
 		                           "/dontshutup - The opposite of /shutup - Makes the bot talk again.\n"
 		                           "/status - Sends the current status including a current photo.\n"
+								   "/gif - Sends a gif from the current video.\n"
+								   "/supergif - Sends a bigger gif from the current video.\n"
 		                           "/settings - Displays the current notification settings and allows you to change them.\n"
 		                           "/files - Lists all the files available for printing.\n"
+								   "/filament - Shows you your filament spools or lets you change it. Requires the Filament Manager Plugin.\n"
 		                           "/print - Lets you start a print. A confirmation is required.\n"
 		                           "/togglepause - Pause/Resume current Print.\n"
 		                           "/con - Connect/disconnect printer.\n"
 		                           "/upload - You can just send me a gcode file to save it to my library.\n"
-		                           "/sys - Execute Octoprint System Comamnds.\n"
+		                           "/sys - Execute Octoprint System Commands.\n"
 		                           "/ctrl - Use self defined controls from Octoprint.\n"
 		                           "/tune - Set feed- and flowrate. Control temperatures.\n"
-		                           "/user - get user info.\n"
-		                           "/help - show this help message."),chatID=chat_id,markup="Markdown")
+		                           "/user - Get user info.\n"
+		                           "/help - Show this help message."),chatID=chat_id,markup="Markdown")
 ############################################################################################
 # FILE HELPERS
 ############################################################################################
@@ -604,13 +794,17 @@ class TCMD():
 		self.tmpFileHash = ""
 		meta = self.main._file_manager.get_metadata(dest,path)
 		msg = self.gEmo("info") + " <b>File Informations</b>\n\n"
-		msg += "<b>Name:</b> " + path
-		msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
+		msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path  
+		try:
+			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+		except Exception, ex:
+			self._logger.info("An Exception in get upload time : " + str(ex) )
+		msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 		filaLen = 0
 		printTime = 0
 		if 'analysis' in meta:
 			if 'filament' in meta['analysis']:
-				msg += "\n<b>Filament:</b> "
+				msg += "\n<b>"+self.main.emojis['straight ruler']+"Filament:</b> "
 				filament = meta['analysis']['filament']
 				if len(filament) == 1 and 'length' in filament['tool0']:
 					msg += self.formatFilament(filament['tool0'])
@@ -621,20 +815,31 @@ class TCMD():
 							msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 							filaLen += float(filament[key]['length'])
 			if 'estimatedPrintTime' in meta['analysis']:
-				msg += "\n<b>Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
+				msg += "\n<b>"+self.main.emojis['hourglass with flowing sand']+"Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 				printTime = meta['analysis']['estimatedPrintTime']
+        # giloser 17/07/19''
+		try:
+			time_finish = self.main.calculate_ETA(printTime)
+			msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
+		except Exception, ex:
+			self._logger.info("An Exception in get final time : " + str(ex) )
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
-				cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-				cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
-				curr = self.main._settings.global_get(["plugins","cost","currency"])
 				try:
-					curr = curr.decode("utf-8")
+					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
+					curr = self.main._settings.global_get(["plugins","cost","currency"])
+					try:
+						curr = curr.decode("utf-8")
+						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+					except Exception, ex:
+						self._logger.error("An Exception the cost function in decode : " + str(ex) )
+						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 				except Exception, ex:
-					pass
-				msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+					self._logger.error("An Exception the cost function on get: " + str(ex) )
+					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			else:
-				msg += "\n<b>Cost:</b> -" 
+				msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -" 
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
 		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
@@ -669,14 +874,14 @@ class TCMD():
 			meta = self.main._file_manager.get_metadata(dest,path)
 		if opt.startswith("inf"):
 			msg = self.gEmo("info") + " <b>Detailed File Informations</b>\n\n"
-			msg += "<b>Name:</b> " + path
-			msg += "\n<b>Size:</b> " + self.formatSize(file['size'])
-			msg += "\n<b>Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
+			msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path
+			msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
+			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
 			filaLen = 0
 			printTime = 0
 			if 'analysis' in meta:
 				if 'filament' in meta['analysis']:
-					msg += "\n<b>Filament:</b> "
+					msg += "\n<b>"+self.main.emojis['straight ruler']+"Filament:</b> "
 					filament = meta['analysis']['filament']
 					if len(filament) == 1 and 'length' in filament['tool0']:
 						msg += self.formatFilament(filament['tool0'])
@@ -687,21 +892,32 @@ class TCMD():
 								msg +=  "\n      "+str(key)+": "+ self.formatFilament(filament[key])
 								filaLen += float(filament[key]['length'])
 				if 'estimatedPrintTime' in meta['analysis']:
-					msg += "\n<b>Estimated Print Time:</b> "+ self.formatDuration(meta['analysis']['estimatedPrintTime'])
+					msg += "\n<b>"+self.main.emojis['hourglass with flowing sand']+"Print Time:</b> "+ self.formatFuzzyPrintTime(meta['analysis']['estimatedPrintTime'])
 					printTime = float(meta['analysis']['estimatedPrintTime'])
+			# giloser 17/07/19 add ETA and try catch on cost plugin + emo
+			try:
+				time_finish = self.main.calculate_ETA(printTime)
+				msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
+			except Exception, ex:
+				self._logger.error("An Exception in get final time : " + str(ex) )
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
-					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_hour"])
-					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_meter"])
-					curr = self.main._settings.global_get(["plugins","cost","currency"])
 					try:
-						curr = curr.decode("utf-8")
+						cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
+						cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
+						curr = self.main._settings.global_get(["plugins","cost","currency"])
+						try:
+							curr = curr.decode("utf-8")
+							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+						except Exception, ex:
+							self._logger.error("An Exception the cost function in decode : " + str(ex) )
+							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
+						self._logger.debug("AF TRY")	
 					except Exception, ex:
-						pass
-					self._logger.debug("AF TRY")
-					msg += "\n<b>Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
+						self._logger.error("An Exception the cost function on get: " + str(ex) )
+						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 				else:
-					msg += "\n<b>Cost:</b> -"
+					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			if 'statistics' in meta:
 				if 'averagePrintTime' in meta['statistics']:
 					msg += "\n<b>Average Print Time:</b>"
@@ -917,16 +1133,20 @@ class TCMD():
 			tree = self.main._settings.global_get(['controls'])
 		for key in tree:
 			if type(key) is type({}):
+				keyName = key['name'] if 'name' in key else ""
 				if base == "":
-					first = " "+key['name']+" "
+					first = " "+keyName
 				if 'children' in key:
-					array.extend(self.get_controls_recursively(key['children'], base + " " + key['name'],first))
-				elif ('commands' in key or 'command' in key) and not 'regex' in key and not 'input' in key and not 'script' in key:
-					# rename 'commands' to 'command' so its easier to handle later on
+					array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
+				elif ('commands' in key or 'command' in key or 'script' in key) and not 'regex' in key and not 'input' in key:
 					newKey = {}
-					command = key['command'] if 'command' in key else key['commands']
-					newKey['name'] = base.replace(first,"") + " " + key['name']
-					newKey['hash'] = self.hashMe(base + " " + key['name'] + str(command), 6)
+					if 'script' in key:
+						newKey['script'] = True
+						command = key['script']
+					else:
+						command = key['command'] if 'command' in key else key['commands']
+					newKey['name'] = base.replace(first,"") + " " + keyName
+					newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
 					newKey['command'] = command
 					if 'confirm' in key:
 						newKey['confirm'] = key['confirm']
@@ -978,7 +1198,7 @@ class TCMD():
 			if len(tmpKeys) > 0 and len(tmpKeys) < 3:
 				keys.append(tmpKeys)
 			keys.append([[self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/con_"+parent]])
-			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+con['portPreference'],responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
+			self.main.send_msg(self.gEmo('question') + " Select default port.\nCurrent setting: "+(str(con['portPreference']) if con['portPreference'] else "AUTO"),responses=keys,chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def ConBaud(self,chat_id,parameter,parent):
 		if parameter:
@@ -1059,13 +1279,13 @@ class TCMD():
 			self.main._printer.connect(port=self.conSettingsTemp[0],baudrate=self.conSettingsTemp[1],profile=self.conSettingsTemp[2])
 			self.conSettingsTemp = []
 			con = self.main._printer.get_current_connection()
-			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port"]
+			waitStates=["Offline","Detecting baudrate","Connecting","Opening serial port","Detecting serial port"]
 			while any(s in con[0] for s in waitStates):
 				con = self.main._printer.get_current_connection()
 			self._logger.debug("EXIT WITH: "+str(con[0]))
 
 			if con[0] == "Operational":
-				self.main.send_msg(self.gEmo('info') + " Connection started.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self.main.send_msg(self.gEmo('check') + " Connection established.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 			else:
 				self.main.send_msg(self.gEmo('warning') + " Failed to start connection.\n\n"+con[0],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		else:

@@ -852,4 +852,5 @@ telegramEmojiDict = {
 'regional indicator symbol letter r + regional indicator symbol letter u': u'\U0001f1f7\U0001f1fa',
 'water buffalo': u'\U0001f403',
 'smiling cat face with open mouth': u'\U0001f63a',
+'shutdown' : u'\U0001F4A4',
 }

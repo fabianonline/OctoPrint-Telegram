@@ -1,11 +1,16 @@
+
 # OctoPrint-Telegram
 
+<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/logo/octoprint_telegram_logo.png" width="25%" align="left"> 
+ 
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages (settings, start a print and much more). Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized commands. You may also use this bot in groups.
 
 **Latest release: [1.4.2](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
+
 ## Contents
+
 * [Installation](#installation)
   * [Create Telegram Bot](#create-telegram-bot) 
   * [Plugin Setup](#plugin-setup)
@@ -18,13 +23,16 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 * [Info / Contact / Help](#info--contact--help)
 
 ## Screenshots
+
 ![Screenshot](https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/telegram_screen.png)
-<br><br><br>
+
 ## Installation
-To set Octoprint Telegram up, you have to do the following three parts.
+
+To set up Octoprint Telegram, you have to follow the following three steps.
+
 ### Create Telegram Bot
 
-To allow the plugin to send messages via telegram, you have to register a telegram bot. 
+To allow the plugin to send messages via telegram, you need to register a telegram bot. 
 
 If you already have a bot, you only need your bot token to proceed. GOTO `4.` (optional) or go dirctly over to [Plugin Setup](#plugin-setup).
 
@@ -37,6 +45,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 3. The botfather hands you a token. You need this to use your bot. Keep this token secret!
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_new.png" alt="Register new bot" width="35%" align="center"/>
+	
 #### OPTIONAL
 
 	While you're there, you could also do the following steps:
@@ -53,15 +62,18 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	status - Sends the current status including a current photo.
 	settings - Displays the current notification settings and allows you to change them.
 	files - Lists all the files available for printing.
+	filament - Shows you your filament spools or lets you change it.
 	print - Lets you start a print. A confirmation is required.
 	togglepause - Pause/Resume current Print.
 	con - Connect/disconnect printer.
 	upload - You can just send me a gcode file to save it to my library.
-	sys - Execute Octoprint System Comamnds.
+	sys - Execute Octoprint System Commands.
 	ctrl - Use self defined controls from Octoprint.
 	tune - Set feed- and flowrate. Control temperatures.
 	user - get user info.
 	help - show list of commands.
+	gif - send a gif create from 20 images
+	supergif - send a gif create from 60 images
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -81,7 +93,10 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 5. Hit "Save" at the bottom of the settings dialog.
 
-Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
+6. If you want to create gif and receive them as notification we use ffmpeg like timelapse (if problem please check timelapse is configured).
+
+Congratulations! Your printer is now connected to your Telegram bot.
+
 ### User setup
 
 1. Open your Octoprint settings and select *Telegram* on the left.
@@ -98,11 +113,12 @@ Congratulations! Your printer is now connected to your Telegram bot.<br><br><br>
 
 5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#users))
 
-<br>
 ## Configuration
+
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
 
 ### General
+
 **The paragraph numbers below correspond to the numbers in the picture!**
 
 1. Token: Enter your bot token here. You got this from @botfather, when you [created](#create-telegram-bot) your bot there. *(admin users only)*
@@ -125,6 +141,7 @@ Configuration is done via the Octoprint settings dialog. Note that only admin us
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_general.png" alt="General settings" width="70%" align="center"/><br><br><br>
 
 ### Users
+
 There are users (private chat with single user) or groups you will see in the list of known chats. These settings are only accessible by admin users.
 
 **The paragraph numbers below correspond to the numbers in the picture!**
@@ -161,6 +178,7 @@ There are users (private chat with single user) or groups you will see in the li
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_user.png" alt="User settings" width="70%" align="center"/><br><br><br>
 
 ### Notifications
+
 In this section you can configure the content of the notification messages.
 
 **The paragraph numbers below correspond to the numbers in the picture!**
@@ -176,10 +194,10 @@ In this section you can configure the content of the notification messages.
 5. This buttons sets the markup options for the message text. Only available when no image will be send or if image will be send in a separate message.
 
 6. You can use variables in the messages :
-   * `{file}` (only usable while printing) - The currently printing file.
+   * `{file}`, `{path}` (only usable while printing) - The currently printing file, with or without path information.
    * `{z}` (only for height change events) - The current z value.
    * `{percent}` (only useful for height change notifications) - The current percentage of the print progress.
-   * `{time_done}`, `{time_left}` (only useful for height change events) - Time done / left in the print.
+   * `{time_done}`, `{time_left}`, `{time_finish}` (only useful for height change events) - Time done / left in the print and ETA.
    * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
    * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
    * You are also able to access the current printer state data. See [here](./dev_utils/datastructures/octoprint/_printer.get_current_data.py) for datastructure of this data. The base variable is `{status}`.
@@ -190,6 +208,7 @@ In this section you can configure the content of the notification messages.
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/set_messages.png" alt="Optional bot settings" width="70%" align="center"/><br><br><br>
 
 ## Available Commands
+
 **`/abort`** - Aborts the currently running print. A confirmation is required.
 
 **`/shutup`** - Disables automatic notifications till the print ends.
@@ -201,6 +220,8 @@ In this section you can configure the content of the notification messages.
 **`/settings`** - Displays the current notification settings (time and height) and allows you to change them.
 
 **`/files`** - Lists all the files available for printing in upload folder and allows you download and delete them. You also can view detailed informations of the file like print history. If OctoPrint Version is >= 1.3.0, subdirectories are listed and you are able to move/copy files. 
+
+**`/filament`** - Shows your filament spools and the percentage of usage. In addition you can change the filament spool with this command. Requires the [Filament Manager Plugin](https://plugins.octoprint.org/plugins/filamentmanager/)
 
 **`/print`** - Will open a file dialog showing the files stored in octoprint. You can select a file to print it. 
 
@@ -220,11 +241,26 @@ In this section you can configure the content of the notification messages.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
+**`/gif`** - Send a gif create from 20 images.
+
+**`/supergif`** - Send a gif create from 60 images.
+
 #### Notes:
+
 * the `/help` command is always allowed
 
 
 * `/files` and `/print` will basically show the same file dialog. If `/print` is disabled, no print button will be shown. If `/files` is disabled, no download and delete buttons will be shown. If both commands are enabled, all buttons will be shown regardles wether the user entered the dialog by `/files` or `/print`.
+
+
+If you have trouble with the image (get message like ***) please check the following step
+
+The plugin can't resolve a simple "/webcam/[...]" URL. There has to be a full address.
+Set the snapshot URL to one of the following:
+
+    http://127.0.0.1:8080/?action=snapshot
+    http://127.0.0.1/webcam/?action=snapshot
+
 <br><br><br>
 
 ## Info / Contact / Help

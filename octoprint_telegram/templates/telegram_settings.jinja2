@@ -56,7 +56,7 @@
 				        	<i data-bind="css: {'icon-user': private, 'icon-group': !private}"></i>&nbsp;
 				        	<span data-bind="text: title"></span>
 				        	<span class="muted" data-bind="visible: true"><br />
-				        		<small>ID: <span data-bind="text: id"></span> | <span data-bind="text: private?'PRIVATE':'GROUP'">GROUP</span></small>
+				        		<small>ID: <span data-bind="text: id"></span> | <span data-bind="text: type">GROUP</span></small>
 				        	</span>
 			        	</div>
 			   		</td>
@@ -156,6 +156,17 @@
                 <i id="chkImg0" class=""></i> 
                <span id="chkTxt0"></span></label>
                <span class="help-block"><small>Send image with "Not connected" status message?</small></span>
+		</div>
+	</div>
+	 
+	<div class="control-group">
+		<label class="control-label">{{ _('"Not connected"-status') }}</label>
+		<div class="controls">
+                <label id="chkGifBtn0" class="btn btn-mini" title="Toggle 'Send with gif'">
+               	<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.gif_not_connected, click: toggleGif('0')"/>
+                <i id="chkGif0" class=""></i> 
+               <span id="chkGifTxt0"></span></label>
+               <span class="help-block"><small>Send Gif with "Not connected" status message?</small></span>
 		</div>
 	</div>
 	 
@@ -298,7 +309,7 @@
 			    </tr>
 			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{z}</td><td style="vertical-align: middle;">The current z value.</td></tr>
 			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{percent}</td><td style="vertical-align: middle;">The current percentage of the print progress.<span class="muted"><small>Only useful for height change notifications</small></span></td></tr>
-			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{time_done}<br>{time_left}</td><td style="vertical-align: middle;">Time done / left in the print.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
+			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{time_done}<br>{time_left}<br>{time_finish}</td><td style="vertical-align: middle;">Time done / left in the print / ETA.<span class="muted"><small>Only useful for height change events</small></span></td></tr>
 			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_temp},<br>{e1_temp},<br>{e2_temp}</td><td style="vertical-align: middle;">Temperatures of bed, extruder 1 and extruder 2.</td></tr>
 			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{bed_target},<br>{e1_target},<br>{e2_target}</td><td style="vertical-align: middle;">Target temperatures of bed, extruder 1 and extruder 2.</td></tr>
 			    <tr><td style="vertical-align: middle;border-right:1px dashed #ddd">{event}</td><td style="vertical-align: middle;">The name of the event which caused the notification.</td></tr>
