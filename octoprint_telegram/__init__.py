@@ -912,7 +912,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				current=self._plugin_version,
 				user="fabianonline",
 				repo="OctoPrint-Telegram",
-				pip="https://github.com/fabianonline/OctoPrint-Telegram/releases/{target_version}/download/release.zip"
+				pip="https://github.com/fabianonline/OctoPrint-Telegram/releases/download/{target_version}/release.zip"
 			)
 		)
 
