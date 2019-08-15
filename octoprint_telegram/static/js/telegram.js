@@ -90,6 +90,8 @@ $(function() {
             self.bind["notifications"] = response.bind_msg;
             self.bind['no_setting'] = response.no_setting;
             self.bind['bind_text'] = response.bind_text;
+            var ShowGifBtn = self.settings.settings.plugins.telegram.send_gif()
+            
             self.onBindLoad = true;
             $("#telegram_msg_list").empty();
             keys = self.bind["notifications"].sort();
@@ -132,6 +134,14 @@ $(function() {
                     txtGif = "No Gif";
                     hideMup = "";
                     hideComb = ""
+                }
+                if (ShowGifBtn)
+                {
+                    showGif = ""
+                }
+                else
+                {
+                    showGif = "display:none"
                 }
                 // TODO set to second message setting
                 if(self.settings.settings.plugins.telegram.messages[keys[id]].combined()){
@@ -177,11 +187,11 @@ $(function() {
                 btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
                 btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label><br>';
 
-                var btnGif = '<span class="muted"><small>Send with gif?<br></small></span>';
-                btnGif += '<label id="chkGifBtn'+self.msgCnt+'" class="btn btn-'+bGif+' btn-mini" title="Toggle \'Send with gif\'">';
+                var btnGif = '<span class="muted" id="chkGifLbl'+self.msgCnt+'" style="' + showGif + '" ><small>Send with gif?<br></small></span>';
+                btnGif += '<label id="chkGifBtn'+self.msgCnt+'"  style="' + showGif + '" class="btn btn-'+bGif+' btn-mini" title="Toggle \'Send with gif\'">';
                 btnGif += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.gif, click: toggleGif(\''+self.msgCnt+'\')"/>';
-                btnGif += '<i id="chkGif'+self.msgCnt+'" class="icon-'+imgGif+'"></i> ';
-                btnGif += '<span id="chkGifTxt'+self.msgCnt+'">'+txtGif+'</span></label><br>';
+                btnGif += '<i id="chkGif'+self.msgCnt+'"  style="' + showGif + '" class="icon-'+imgGif+'"></i> ';
+                btnGif += '<span id="chkGifTxt'+self.msgCnt+'"  style="' + showGif + '">'+txtGif+'</span></label><br>';
 
                 var btnSecMsg = '<span id="combBut'+self.msgCnt+'" style="' + hideComb + '"> <span class="muted"><small>Combined message?<br></small></span>';
                 btnSecMsg += '<label id="chk2Btn'+self.msgCnt+'" class="btn btn-'+btn2+' btn-mini" title="Toggle \'Send image in a second message\'">';
@@ -221,7 +231,7 @@ $(function() {
                 $('#chkBtn0').addClass("btn-warning");
                 $('#chkTxt0').text("No Image");
             }
-            if(self.settings.settings.plugins.telegram.gif_not_connected()){
+            /*if(self.settings.settings.plugins.telegram.gif_not_connected()){
                 $('#chkGif0').addClass("icon-camera");
                 $('#chkGifBtn0').addClass("btn-success");
                 $('#chkGifTxt0').text("Send Gif");
@@ -230,7 +240,8 @@ $(function() {
                 $('#chkGif0').addClass("icon-ban-circle");
                 $('#chkGifBtn0').addClass("btn-warning");
                 $('#chkGifTxt0').text("No Gif");
-            }
+            }*/
+            
             self.onBindLoad = false;
         }
 
@@ -276,12 +287,22 @@ $(function() {
             if(!self.onBindLoad){
                 $('#chkGif'+data).toggleClass("icon-ban-circle icon-camera");
                 $('#chkGifBtn'+data).toggleClass("btn-success btn-warning");
+                $('#lblGifwar'+data).toggle();
                 if($('#chkGifTxt'+data).text()==="Send Gif"){
                     $('#chkGifTxt'+data).text("No Gif");
                 }
                 else{
                     $('#chkGifTxt'+data).text("Send Gif");
+                    
                 }
+            }
+        }
+
+        self.toggleGifGen = function(){
+            if(!self.onBindLoad){
+                $('[id*="chkGifBtn"]').toggle();
+                $('[id*="chkGifTxt"]').toggle();
+                $('[id*="chkGifLbl"]').toggle();
             }
         }
 

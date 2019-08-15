@@ -159,7 +159,7 @@
 		</div>
 	</div>
 	 
-	<div class="control-group">
+	<!--div class="control-group">
 		<label class="control-label">{{ _('"Not connected"-status') }}</label>
 		<div class="controls">
                 <label id="chkGifBtn0" class="btn btn-mini" title="Toggle 'Send with gif'">
@@ -168,7 +168,7 @@
                <span id="chkGifTxt0"></span></label>
                <span class="help-block"><small>Send Gif with "Not connected" status message?</small></span>
 		</div>
-	</div>
+	</div-->
 	 
 	<div class="control-group">
 		<label class="control-label">{{ _('Send Emojis') }}</label>
@@ -177,6 +177,26 @@
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_icon" /> 
 			</label>
 			<span class="help-block"><small>Check to enable emojis in notifications and command dialogs.</small></span>
+		</div>
+	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('Send gif') }}</label>
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_gif ,click:toggleGifGen()"  /> 
+			</label>
+			<!--label class="checkbox">
+				<select class="form-control" id="sel1" data-bind="value: settings.settings.plugins.telegram.scale_gif">
+					<option value ="0" selected>No scale</option>
+					<option value="1920:1080">1920x1080</option>
+					<option value="1280:720">1280x720</option>
+					<option value="1280:1024">1280x1024</option>
+					<option value="1024:768">1024×768</option>
+					<option value="640:480">640×480</option>
+				</select>
+			</label-->
+			<span class="help-block"><small>Check to enable sending of gifs. <span class="text-warning">Warning, enabling this feature might affect your prints and make octoprint unresponsive: use at your own risk<span></small></span>
 		</div>
 	</div>
 	<br>
