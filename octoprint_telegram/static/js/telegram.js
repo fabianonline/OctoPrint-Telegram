@@ -92,6 +92,11 @@ $(function() {
             self.bind['bind_text'] = response.bind_text;
             var ShowGifBtn = self.settings.settings.plugins.telegram.send_gif()
             
+            if (ShowGifBtn)
+            {
+                $('.gif-options').toggle();
+            }
+
             self.onBindLoad = true;
             $("#telegram_msg_list").empty();
             keys = self.bind["notifications"].sort();
@@ -303,6 +308,7 @@ $(function() {
                 $('[id*="chkGifBtn"]').toggle();
                 $('[id*="chkGifTxt"]').toggle();
                 $('[id*="chkGifLbl"]').toggle();
+                $('.gif-options').toggle();
             }
         }
 

@@ -169,7 +169,12 @@ class TMSG():
 		event = kwargs['event']
 		kwargs['event'] = telegramMsgDict[event]['bind_msg'] if 'bind_msg' in telegramMsgDict[event] else event
 		kwargs['with_image'] = self.main._settings.get(['messages',str(kwargs['event']),'image'])
-		kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
+		self._logger.debug("send_gif = " + str(self.main._settings.get(["send_gif"])) + " and this message would send gif = " +str(self.main._settings.get(['messages',str(kwargs['event']),'gif'])))
+		if self.main._settings.get(["send_gif"]):
+			kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
+		else:
+			kwargs['with_gif'] = false
+		
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z
