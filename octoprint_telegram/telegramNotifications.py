@@ -173,7 +173,7 @@ class TMSG():
 		if self.main._settings.get(["send_gif"]):
 			kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
 		else:
-			kwargs['with_gif'] = false
+			kwargs['with_gif'] = 0
 		
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
