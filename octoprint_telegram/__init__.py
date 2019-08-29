@@ -605,7 +605,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					t.run()
 			except Exception:
 				pass
-	
+
+	def on_startup(self, host, port):
+		self.main.tcmd.port = port
+
 	def on_shutdown(self):
 		self.on_event("PrinterShutdown",{})
 		self.stop_listening()
