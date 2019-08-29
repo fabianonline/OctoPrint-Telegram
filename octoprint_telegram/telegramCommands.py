@@ -321,7 +321,7 @@ class TCMD():
 			command = next((d for d in actions if 'action' in d and self.hashMe(d['action']) == parameter) , False)
 			if command :
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check']+gettext(" Execute"),"/sys_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+ gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + unicode(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check'] + gettext(" Execute"),"/sys_do_" + unicode(parameter)], [self.main.emojis['leftwards arrow with hook'] + gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
 					async = command["async"] if "async" in command else False
@@ -351,7 +351,7 @@ class TCMD():
 			i = 1
 			for action in self.main._settings.global_get(['system','actions']):
 				if action['action'] != "divider":
-					tmpKeys.append([str(action['name']),"/sys_"+self.hashMe(action['action'])])
+					tmpKeys.append([unicode(action['name']),"/sys_"+self.hashMe(action['action'])])
 					if i%2 == 0:
 						keys.append(tmpKeys)
 						tmpKeys = []
@@ -405,7 +405,7 @@ class TCMD():
 			command = next((d for d in actions if d['hash'] == parameter), False)
 			if command:
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + str(command['name']) + "\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_"+str(parameter)], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + unicode(command['name']) + "\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_" + unicode(parameter)], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
 					if 'script' in command:
@@ -429,7 +429,7 @@ class TCMD():
 			i = 1
 			for action in self.get_controls_recursively():
 				empty=False
-				tmpKeys.append([str(action['name']),"/ctrl_"+str(action['hash'])])
+				tmpKeys.append([unicode(action['name']),"/ctrl_" + str(action['hash'])])
 				if i%2 == 0:
 					keys.append(tmpKeys)
 					tmpKeys = []
@@ -656,10 +656,10 @@ class TCMD():
 						weight = spool["weight"]
 						used = spool["used"]
 						percent = int(100 - (used / weight * 100))
-						message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
+						message += unicode(spool["profile"]["vendor"]) + " " + unicode(spool["name"]) + " " + unicode(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
 					for selection in resp2["selections"]:
 						if selection["tool"] == 0:
-							message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + str(selection["spool"]["profile"]["material"])
+							message += "\n\nCurrently selected: " + unicode(selection["spool"]["profile"]["vendor"]) + " " + unicode(selection["spool"]["name"]) + " " + unicode(selection["spool"]["profile"]["material"])
 					msg_id=self.main.getUpdateMsgId(chat_id)
 					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 				except ValueError:
@@ -680,7 +680,7 @@ class TCMD():
 							errorText = resp.text
 						self._logger.info("Response: %s" % resp)
 						resp = resp.json()
-						message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
+						message = self.gEmo('check') + " Selected spool is now: " + unicode(resp["selection"]["spool"]["profile"]["vendor"]) + " " + unicode(resp["selection"]["spool"]["name"]) + " " + unicode(resp["selection"]["spool"]["profile"]["material"])
 						msg_id=self.main.getUpdateMsgId(chat_id)
 						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 					except ValueError:
@@ -702,7 +702,7 @@ class TCMD():
 						i = 1
 						for spool in resp["spools"]:
 							self._logger.info("Appending spool: %s" % spool)
-							tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
+							tmpKeys.append([unicode(spool["profile"]["vendor"]) + " " + unicode(spool['name']) + " " + unicode(spool["profile"]["material"]) ,"/filament_changeSpool_" + unicode(spool['id'])])
 							if i%2 == 0:
 								keys.append(tmpKeys)
 								tmpKeys = []
