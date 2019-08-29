@@ -77,15 +77,12 @@ class TCMD():
 			elif self.main._printer.is_printing():
 				try:
 					self._logger.info("Will try to create a gif")	 
-					ret = self.main.create_gif(chat_id)
-					if ret == 0:
-						self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/tmpgif/gif.mp4")
-						#self.send_video(chatID, video)
-					else:
-						self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools or ffmpeg  with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+					ret = self.main.create_gif_new(chat_id,5)
+					if ret != "":
+						self.main.send_file(chat_id, ret)
 				except Exception as ex:
 					self._logger.error("Exception occured during creating of the gif: "+ str(ex) )
-					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools or ffmpeg  with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chat_id)
 			else:
 				self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 		else:
@@ -94,25 +91,20 @@ class TCMD():
 ############################################################################################
 	def cmdSuperGif(self,chat_id,from_id,cmd,parameter): #GWE 05/05/2019 add command to get gif
 		if self.main._settings.get(["send_gif"]):
-			#if not self.main._printer.is_operational():
-			#	with_image = self.main._settings.get_boolean(["image_not_connected"])
-			#	self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
-			#elif self.main._printer.is_printing():
+			if not self.main._printer.is_operational():
+				with_image = self.main._settings.get_boolean(["image_not_connected"])
+				self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
+			elif self.main._printer.is_printing():
 				try:
-					#self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 					self._logger.info("Will try to create a super gif")
-					#ret = self.main.create_gif(chat_id,60)
-					ret = self.main.create_gif(chat_id,60)
-					if ret == 0:
-						self.main.send_file(chat_id, self.main.get_plugin_data_folder()+"/tmpgif/gif.mp4")
-					else:
-						self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file, and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+					ret = self.main.create_gif_new(chat_id,10)
+					if ret != "":
+						self.main.send_file(chat_id, ret)
 				except Exception as ex:
 					self._logger.error("Exception occured during creating of the supergif: "+ str(ex) )
-					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file, and make sure you have installed libav-tools or ffmpeg  with command : `sudo apt-get install libav-tools`",chatID=chat_id)
-				#self.send_video(chatID, video)
-			#else:
-			#	self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file",chatID=chat_id)
+			else:
+				self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 		else:
 			self.main.send_msg(self.gEmo('dizzy face') + " Sending GIF is disabled in plugin settings.",chatID=chat_id)
 
@@ -160,13 +152,29 @@ class TCMD():
 						[[self.main.emojis['save']+" Save","/settings_t_s"],[self.main.emojis['leftwards arrow with hook']+" Back","/settings_back"]]
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
+			elif params[0] =="g":
+				if self.main._settings.get_boolean(["send_gif"]):
+					self.main._settings.set_int(['send_gif'], 0, force=True)
+				else:
+					self.main._settings.set_int(['send_gif'], 1, force=True)
+				self.main._settings.save()
+				self.cmdSettings(chat_id,from_id,cmd,"back")
+				return
 		else:
+			if self.main._settings.get_boolean(["send_gif"]):
+				gif_txt = "Desactivate gif"
+				gif_emo = self.gEmo('check')
+			else:
+				gif_txt = "Activate gif"
+				gif_emo = self.gEmo('error')
+
 			self.SettingsTemp = [self.main._settings.get_float(["notification_height"]),self.main._settings.get_float(["notification_time"])]
-			msg = self.gEmo('settings') + gettext(" *Current notification settings are:*\n\n"+self.gEmo('height')+" Height: %(height).2fmm\n\n"+self.gEmo('clock')+" Time: %(time)dmin",
+			msg = self.gEmo('settings') + gettext(" *Current notification settings are:*\n\n"+self.gEmo('height')+" Height: %(height).2fmm\n\n"+self.gEmo('clock')+" Time: %(time)dmin\n\n"+self.gEmo('movie camera')+" Gif is activate: "+gif_emo,
 				height=self.main._settings.get_float(["notification_height"]),
 				time=self.main._settings.get_int(["notification_time"]))
+			
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"]], [[self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
+			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"], [self.main.emojis['movie camera']+gettext(gif_txt),"/settings_g"]], [[self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
 	def cmdAbort(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter == "stop":

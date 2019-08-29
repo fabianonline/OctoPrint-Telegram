@@ -72,8 +72,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	tune - Set feed- and flowrate. Control temperatures.
 	user - get user info.
 	help - show list of commands.
-	gif - send a gif create from 20 images
-	supergif - send a gif create from 60 images
+	gif - send a gif of 5 seconds 
+	supergif - send a gif of 10 seconds 
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	

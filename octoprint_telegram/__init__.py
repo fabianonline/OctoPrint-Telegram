@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 from PIL import Image
-import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob #imageio
+from subprocess import Popen, PIPE
+import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource #imageio
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask.ext.babel import gettext
 from flask.ext.login import current_user
@@ -927,6 +928,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		
 	def on_event(self, event, payload, **kwargs):
 		try:
+			self._logger.debug("self.tmsg = " + str(self.tmsg))
 			# if we know the event, start handler
 			if event in self.tmsg.msgCmdDict:
 				self._logger.debug("Got an event: " + event + " Payload: " + str(payload))
@@ -1146,18 +1148,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				try:
 					self._logger.info("Will try to create a gif ")
 					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-					ret = self.create_gif(chatID)
-					if ret == 0:
-						self.send_file(chatID, self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
-					else:
-						self.send_msg(self.gEmo('warning') + gettext(" Error trying to create gif, please be sure you have install avconv with command : "),chatID=chat_id,inline=False,with_image=False)
-					
-					#self.send_video(chatID, video)
+					ret = self.create_gif_new(chatID,0)
+					if ret != "":
+						self.send_file(chatID, ret)
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
-					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
-
-
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chat_id)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+					
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
 	
@@ -1223,6 +1220,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				if int(chat_id) < 0:
 					self._logger.debug("Not able to load group photos. "+ str(chat_id)+" EXIT")
 					return
+				self._logger.debug("requests.get("+self.bot_url + "/getUserProfilePhotos")
 				r = requests.get(self.bot_url + "/getUserProfilePhotos", params = {'limit': 1, "user_id": chat_id})
 				r.raise_for_status()
 				data = r.json()
@@ -1352,86 +1350,122 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def create_gif_new(self,chatID,sec=7):
 		i=0
-		ret = 0
-		os.nice(20) # force this to use less CPU
+		ret = ""
+		
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 		#	saveDir = os.getcwd()
 		#	os.chdir(self.get_plugin_data_folder()+"/tmpgif")
-		#	try:
-		#		os.remove(self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
-		#	except Exception as ex:
-		#		self._logger.info("Caught an exception trying clean previous images : " + str(ex))
+			outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
+			try:
+				os.remove(outPath)
+			except Exception as ex:
+				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
 		#	self._logger.info("will try to save image in path " + os.getcwd())
 
-		#	outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
-		#	fps = 15
-		#	cap = cv2.VideoCapture(0)
-		#	currentFrame = 0
-		#	# Get current width of frame
-		#	width = 640#cap.get(cv2.CAP_PROP_FRAME_WIDTH)  # float
-		#	# Get current height of frame
-		#	height = 480#cap.get(cv2.CAP_PROP_FRAME_HEIGHT)  # float
-		#
-		#	# Define the codec and create VideoWriter object
-		#	fourcc = cv2.VideoWriter_fourcc(*"MJPG")
-		#	out = cv2.VideoWriter(outPath, fourcc, fps, (int(width), int(height)))
-		#	try:
-		#		t_end = time.time() + sec 
-		#		while (cap.isOpened()):
-		#	
-		#			# Capture frame-by-frame
-		#			ret, frame = cap.read()
+			params = []
+			self._logger.info("test if nice exist")
+			if self.TestProgram(['nice','--version']) > 0:
+				params = ['nice', '-n', '20']
 
-		#			if ret == True:
-		#				if mirror == True:
-		#					# Mirror the output video frame
-		#					frame = cv2.flip(frame, 1)
-		#				# Saves for video
-		#				out.write(frame)
-		#	
-		#				# Display the resulting frame
-		#				cv2.imshow('frame', frame)
-		#			else:
-		#				break
-		#	
-		#			if time.time() > t_end:  # if 'q' is pressed then quit
-		#				break
-		#			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-		#			# To stop duplicate images
-		#			currentFrame += 1
-		#	
-		#		# When everything done, release the capture
-		#		cap.release()
-		#		out.release()
-		#		cv2.destroyAllWindows()
-		#	except Exception as ex:
-		#		self._logger.info("Caught an exception trying  cv2.VideoWriter : " + str(ex))
-		#	try:
-		#		requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-		#		#subprocess.check_call(['nice','ffmpeg', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
-		#	except Exception as ex:
-		#		self._logger.info("Caught an exception trying create mp4 with ffmpeg : " + str(ex))
-		#		#try:
-		#		#	requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-		#		#	subprocess.check_call(['avconv', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
-		#		#except Exception as ex:
-		#		#	self._logger.info("Caught an exception trying create mp4 with ffmpeg : " + str(ex))
-		#		#	try:
-		#		#		requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-		#		#		subprocess.call(['ffmpeg','-r 10','-y','-i',self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%02d.jpg',self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
-		#		#	except Exception as ex:
-		#		#		self._logger.info("Caught an exception trying create mp4 2 : " + str(ex))
-		#		#		ret = -1
-		#subprocess.call(['avconv -r 3 -y -i Test_Telegram_%02d.jpg -r 3 -vcodec libx264 -vf  scale=1280:720 timelapse.mp4'])
-		#avconv -r 3 -y -i Test_Telegram_%02d.jpg -r 3 -vcodec libx264 -vf  scale=1280:720 timelapse.mp4
+			self._logger.info("test if cpulimit exist")
+			if self.TestProgram(['cpulimit','--help']) <= 0:
+				self._logger.info("cpulimit don't exist so send a message to install and exit")
+				self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed cpulimit with following command : `sudo apt-get install cpulimit`",chatID=chatID)
+				return ""
+
+			self._logger.info("test if ffmpeg exist")
+			if self.TestProgram(['ffmpeg','-h']) <= 0:
+				self._logger.info("ffmpeg don't exist so send a message to install and exit")
+				self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed ffmpeg with following command : `sudo apt-get install ffmpeg`",chatID=chatID)
+				return ""
+
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			os.nice(20) # force this to use less CPU
+
+			
+			fps = 15
+			stream_url = self._settings.global_get(["webcam", "stream"])
+			if "http" not in stream_url: 
+				stream_url = "http://localhost" +stream_url
+
+			if sec == 0:
+				sec = 5#int(self._settings.get(["number_img_gif"]))
+			if(sec > 60):
+				sec = 60
+
+			if(sec < 1):
+				sec = 1
+
+			self._logger.info("sec="+str(sec))
+			#timeSec = str(datetime.timedelta(seconds=sec))
+			#self._logger.info("timeSec="+timeSec)
+			timeSec = 0
+			timeSec="00:00:" + str(sec)
+			self._logger.info("timeSec="+timeSec)
+			#timout = 4*sec
+			#ffmpeg -i http://192.168.1.56/webcam/?action=stream -t 00:00:05 -vf scale=320x240 -y  -c:a copy out.mkv
+			#params = ['ffmpeg', '-y', '-i' ,stream_url, '-t', "00:00:05",'-c:v','copy', '-c:a' ,'copy']
+			params.append('cpulimit')
+			params.append( '-l')
+			params.append(  '65')
+			params.append(  '-f')
+			params.append(  '-z')
+			params.append(  '--')
+			params.append( 'ffmpeg')
+			params.append(  '-y' )
+			params.append( '-threads')
+			params.append( '1')
+			params.append(  '-i')
+			params.append( stream_url)
+			params.append(  '-t')
+			params.append(  timeSec)
+			params.append( '-c:v')
+			params.append( 'mpeg4')
+			params.append(  '-c:a' )
+			params.append( 'mpeg4')
+
+			#if (str(self._settings.get(["scale_gif"])) == "0"):#scale_gif
+			#	scale = ""
+			#	scale_opt =""
+			#else:
+			#	params.append( "-vf")
+			#	params.append("scale="+self._settings.get(["scale_gif"]))
+				
+			params.append( outPath)
+
+			self._logger.info("will now create the video  " + str(params).strip('[]') )
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+
+			myproc = Popen(params, shell=False, stdout=PIPE, stderr=PIPE)
+			while True:
+				if myproc.poll() is not None:
+					break
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				time.sleep(0.5)
+				
+			self._logger.info("Finish the video")
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			ret = outPath
 		except Exception as ex:
 			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
-			ret = -3
-		os.chdir(saveDir)
+			self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chatID)
+			ret = ""
+			
 		os.nice(0) # use CPU usage to default
 		return ret
 
+	def TestProgram(self,name):
+		try:
+			self._logger.info("test exist program "+str(name).strip('[]'))
+			# pipe output to /dev/null for silence
+			ret = subprocess.call(name) 
+			self._logger.info("ret = "+str(ret))
+			return ret >= 0
+
+		except OSError:
+			return -1
+		return 1
 
 	def create_gif(self,chatID,nbImg = 0):  #giloser 05/05/2019
 		i=0
@@ -1446,22 +1480,29 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			frame = self._settings.get(["frame_img_gif"]) #10
 				#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-			#os.nice(20) # force this to use less CPU
-			saveDir = os.getcwd()
-			os.chdir(self.get_plugin_data_folder()+"/tmpgif")
-			try:
-				#self._file_manager.remove_folder(self.get_plugin_data_folder() , "/tmpgif", recursive=True)
-				list_files = glob.glob('Gif_Telegram_*.jpg')
-				for filename in list_files:
-					os.remove(filename)
-				os.remove(self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
-			except Exception as ex:
-				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
-			self._logger.info("will try to save image in path " + os.getcwd())
+			os.nice(20) # force this to use less CPU
+			soft, hard = resource.getrlimit(resource.RLIMIT_CPU)
+			self._logger.info("RLIMIT_CPU soft " + str(soft)  + " | hard "+ str(hard))
+			soft, hard = resource.getrlimit(resource.RLIMIT_CORE)
+			self._logger.info("RLIMIT_CORE soft " + str(soft)  + " | hard "+ str(hard))
+			soft, hard = resource.getrlimit(resource.RLIMIT_DATA)
+			self._logger.info("RLIMIT_DATA soft " + str(soft)  + " | hard "+ str(hard))
+			#saveDir = os.getcwd()
+			#os.chdir(self.get_plugin_data_folder()+"/tmpgif")
+			#try:
+			#	#self._file_manager.remove_folder(self.get_plugin_data_folder() , "/tmpgif", recursive=True)
+			#	list_files = glob.glob('Gif_Telegram_*.jpg')
+			#	for filename in list_files:
+			#		os.remove(filename)
+			#	os.remove(self.get_plugin_data_folder()+"/tmpgif/gif.mp4")
+			#except Exception as ex:
+			#	self._logger.info("Caught an exception trying clean previous images : " + str(ex))
+			#self._logger.info("will try to save image in path " + os.getcwd())
 			#try:
 			#	self._file_manager.add_folder(self.get_plugin_data_folder() , "/tmpgif", ignore_existing=True)
 			#except Exception as ex:
 			#	self._logger.info("Caught an exception trying create tmpgif folder : " + str(ex))
+			frames = []
 			while(i<=nbImg):
 				self._logger.info("image number " + str(i)  + " of "+ str(nbImg))
 				data = self.take_image()
@@ -1469,7 +1510,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)
 					image = Image.open(StringIO.StringIO(data))
-					image.save('Gif_Telegram_%02d.jpg' % i, 'JPEG')
+					image.thumbnail((320, 240))
+					frames.append(image)
+					#image.save('Gif_Telegram_%02d.jpg' % i, 'JPEG')
 				except Exception as ex:
 					self._logger.info("Caught an exception trying create gif() in loop as open of save image : " + str(ex))
 					ret = -2
@@ -1477,26 +1520,30 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				time.sleep(float(wait_b_img)) #giloser 19/05/2019 add sleep to better gif
 				i+=1
 			try:
-				params = []
-				params = ['nice','-n','20','cpulimit','-l','50','-f','-z','--','ffmpeg', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15']
-				params.append('-r')
-				params.append(str(self._settings.get(["frame_img_gif"])))
 
-				if (str(self._settings.get(["scale_gif"])) == "0"):#scale_gif
-					scale = ""
-					scale_opt =""
-				else:
-					params.append( "-vf")
-					params.append("scale="+self._settings.get(["scale_gif"]))
+				frames[0].save(self.get_plugin_data_folder() + '/tmpgif/gif.gif', format='GIF', append_images=frames[1:], save_all=True, duration=100, loop=0)
+
+				#params = []
+				##ffmpeg -i http://192.168.1.56/webcam/?action=stream -t 00:00:05 -vf scale=320x240 -y  -c:a copy out.mkv
+#				#params = ['nice','-n','20','cpulimit','-l','50','-f','-z','--','ffmpeg', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15']
+				#params.append('-r')
+				#params.append(str(self._settings.get(["frame_img_gif"])))
+
+				#if (str(self._settings.get(["scale_gif"])) == "0"):#scale_gif
+				#	scale = ""
+				#	scale_opt =""
+				#else:
+				#	params.append( "-vf")
+				#	params.append("scale="+self._settings.get(["scale_gif"]))
 					
 				
-				params.append( self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
+				#params.append( self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
 
-				self._logger.info("finish the image will now create the video  " + str(params).strip('[]') )# 'nice -n 20 cpulimit -l 50 -f -z -- ffmpeg -r 10 -y -i' +self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg -crf 20 -g 15 ' +scale_opt+ ' ' +scale + ' ' + self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-				subprocess.check_call(params)
+				#self._logger.info("finish the image will now create the video  " + str(params).strip('[]') )# 'nice -n 20 cpulimit -l 50 -f -z -- ffmpeg -r 10 -y -i' +self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg -crf 20 -g 15 ' +scale_opt+ ' ' +scale + ' ' + self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
+				#requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				#subprocess.check_call(params)
 #				subprocess.check_call(['nice','-n','20','cpulimit','-l','50','-f','-z','--','ffmpeg', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
-				self._logger.info("video created ")
+				#self._logger.info("video created ")
 				
 			except Exception as ex:
 				self._logger.info("Caught an exception trying create mp4 with ffmpeg : " + str(ex))
@@ -1516,9 +1563,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
 			ret = -3
-		os.chdir(saveDir)
+		#os.chdir(saveDir)
 		self._logger.info("finish creating gif return = " + str(ret))
-		#os.nice(0) # use CPU usage to default
+		os.nice(0) # use CPU usage to default
 		return ret
 
 
