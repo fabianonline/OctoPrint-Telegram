@@ -22,7 +22,7 @@ class TCMD():
 		self.conSettingsTemp = []
 		self.dirHashDict = {}
 		self.tmpFileHash = ""
-		n = 80
+		self.port = 80
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
