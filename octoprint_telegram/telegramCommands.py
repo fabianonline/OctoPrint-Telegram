@@ -645,8 +645,8 @@ class TCMD():
 			errorText = ""
 			if params[0] == "spools":
 				try:
-					resp = requests.get("http://localhost:" +  str(self.port) + "/plugin/filamentmanager/spools?apikey="+apikey)
-					resp2 = requests.get("http://localhost:" +  str(self.port) + "/plugin/filamentmanager/selections?apikey="+apikey)
+					resp = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/spools?apikey="+apikey)
+					resp2 = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections?apikey="+apikey)
 					if (resp.status_code != 200):
 						errorText = resp.text
 					resp = resp.json()
@@ -676,7 +676,7 @@ class TCMD():
 					try:
 						payload = {"selection": {"spool": {"id": params[1]},"tool": 0}}
 						self._logger.info("Payload: %s" % payload)
-						resp = requests.patch("http://localhost:" +  str(self.port) + "/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
+						resp = requests.patch("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
 						if (resp.status_code != 200):
 							errorText = resp.text
 						self._logger.info("Response: %s" % resp)
