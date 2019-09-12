@@ -428,16 +428,22 @@ class TCMD():
 			keys = []
 			tmpKeys = []
 			i = 1
-			for action in self.get_controls_recursively():
-				empty=False
-				tmpKeys.append([unicode(action['name']),"/ctrl_" + str(action['hash'])])
-				if i%2 == 0:
+			try:
+				for action in self.get_controls_recursively():
+					empty=False
+					try:
+						tmpKeys.append([unicode(action['name']),"/ctrl_" + str(action['hash'])])
+						if i%2 == 0:
+							keys.append(tmpKeys)
+							tmpKeys = []
+						i += 1
+					except Exception, ex:
+						self._logger.info("An Exception in get action: " + str(ex) )
+				if len(tmpKeys) > 0:
 					keys.append(tmpKeys)
-					tmpKeys = []
-				i += 1
-			if len(tmpKeys) > 0:
-				keys.append(tmpKeys)
-			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+			except Exception, ex:
+				self._logger.info("An Exception in get list action: " + str(ex) )
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
@@ -1147,25 +1153,28 @@ class TCMD():
 		if tree == None:
 			tree = self.main._settings.global_get(['controls'])
 		for key in tree:
-			if type(key) is type({}):
-				keyName = key['name'] if 'name' in key else ""
-				if base == "":
-					first = " "+keyName
-				if 'children' in key:
-					array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
-				elif ('commands' in key or 'command' in key or 'script' in key) and not 'regex' in key and not 'input' in key:
-					newKey = {}
-					if 'script' in key:
-						newKey['script'] = True
-						command = key['script']
-					else:
-						command = key['command'] if 'command' in key else key['commands']
-					newKey['name'] = base.replace(first,"") + " " + keyName
-					newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
-					newKey['command'] = command
-					if 'confirm' in key:
-						newKey['confirm'] = key['confirm']
-					array.append(newKey)
+			try:
+				if type(key) is type({}):
+					keyName =  unicode(key['name']) if 'name' in key else ""
+					if base == "":
+						first = " "+keyName
+					if 'children' in key:
+						array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
+					elif ('commands' in key or 'command' in key or 'script' in key) and not 'regex' in key and not 'input' in key:
+						newKey = {}
+						if 'script' in key:
+							newKey['script'] = True
+							command =  unicode(key['script'])
+						else:
+							command =  unicode(key['command']) if 'command' in key else unicode(key['commands'])
+						newKey['name'] = base.replace(first,"") + " " + keyName
+						newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
+						newKey['command'] = command
+						if 'confirm' in key:
+							newKey['confirm'] = key['confirm']
+						array.append(newKey)
+			except Exception, ex:
+				self._logger.error("An Exception in get key from tree : " + str(ex) )
 		return array
 ############################################################################################
 	def hashMe(self, text, length = 32):
