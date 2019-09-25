@@ -5,7 +5,7 @@ from flask.ext.babel import gettext
 
 ###################################################################################################
 # Here you find the known notification messages and their handles.
-# The only way to start a messageHandle should be via on_event() in __init__.py 
+# The only way to start a messageHandle should be via on_event() in __init__.py
 # If you want to add/remove notifications read the following:
 # SEE DOCUMENTATION IN WIKI: https://github.com/fabianonline/OctoPrint-Telegram/wiki/Add%20commands%20and%20notifications
 #####################################################################################################################################################
@@ -78,6 +78,13 @@ telegramMsgDict = {
 			'StatusPrinting': {
 				'bind_msg': 'ZChange',
 				'no_setting': True
+			},
+			'plugin_pause_for_user_event_notify': {
+				'text': "{emo:warning} " + gettext("User interaction required.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
+				'image': True,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
 			}
 		}
 
@@ -100,7 +107,7 @@ class TMSG():
 		self.track = True
 		self.z = ""
 		self._logger = main._logger.getChild("TMSG")
-		
+
 		self.msgCmdDict = {
 			'PrinterStart': self.msgPrinterStart_Shutdown,
 			'PrinterShutdown': self.msgPrinterStart_Shutdown,
@@ -111,7 +118,8 @@ class TMSG():
 			'ZChange': self.msgZChange,
 			'PrintDone': self.msgPrintDone,
 			'StatusNotPrinting': self.msgStatusNotPrinting,
-			'StatusPrinting': self.msgStatusPrinting
+			'StatusPrinting': self.msgStatusPrinting,
+			'plugin_pause_for_user_event_notify': self.msgPauseForUserEventNotify
 		}
 
 	def startEvent(self, event, payload, **kwargs):
@@ -152,16 +160,21 @@ class TMSG():
 
 	def msgPaused(self, payload, **kwargs):
 		self._sendNotification(payload, **kwargs)
-		
+
 	def msgResumed(self, payload, **kwargs):
 		self._sendNotification(payload, **kwargs)
-		
+
 	def msgStatusPrinting(self, payload, **kwargs):
 		self.track = False
 		self._sendNotification(payload, **kwargs)
 
 	def msgStatusNotPrinting(self, payload, **kwargs):
 		self.track = False
+		self._sendNotification(payload, **kwargs)
+
+	def msgPauseForUserEventNotify(self, payload, **kwargs):
+		if payload is None:
+			payload = {}
 		self._sendNotification(payload, **kwargs)
 
 	def _sendNotification(self, payload, **kwargs):
@@ -174,14 +187,14 @@ class TMSG():
 			kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
 		else:
 			kwargs['with_gif'] = 0
-		
+
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z
 		temps = self.main._printer.get_current_temperatures()
 		self._logger.debug("TEMPS - " + str(temps))
 		bed_temp = temps['bed']['actual'] if 'bed' in temps else 0.0
-		bed_target = temps['bed']['target'] if 'bed' in temps else 0.0 
+		bed_target = temps['bed']['target'] if 'bed' in temps else 0.0
 		e1_temp = temps['tool0']['actual'] if 'tool0' in temps else 0.0
 		e1_target = temps['tool0']['target'] if 'tool0' in temps else 0.0
 		e2_temp = temps['tool1']['actual'] if 'tool1' in temps else 0.0
@@ -211,7 +224,7 @@ class TMSG():
 			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+event+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + event + "'."
 		self._logger.debug("Sending Notification: " + message)
 		# Do we want to send with Markup?
-		kwargs['markup'] = self.main._settings.get(["messages",kwargs['event'],"markup"]) 
+		kwargs['markup'] = self.main._settings.get(["messages",kwargs['event'],"markup"])
 		# finally send MSG
 		kwargs['inline']=False
 		self.main.send_msg(message, **kwargs)
