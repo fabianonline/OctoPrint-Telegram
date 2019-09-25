@@ -9,7 +9,7 @@ from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
 from .emojiDict import telegramEmojiDict # dict of known emojis
-from babel.dates import format_date, format_datetime, format_time                            
+from babel.dates import format_date, format_datetime, format_time
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -26,7 +26,7 @@ class TelegramListener(threading.Thread):
 		self.username = "UNKNOWN"
 		self._logger = main._logger.getChild("listener")
 		self.gEmo = self.main.gEmo
-		
+
 
 	def run(self):
 		self._logger.debug("Try first connect.")
@@ -42,7 +42,7 @@ class TelegramListener(threading.Thread):
 					pass
 		except Exception as ex:
 			self._logger.error("An Exception crashed the Listener: " + str(ex) + " Traceback: " + traceback.format_exc() )
-			
+
 		self._logger.debug("Listener exits NOW.")
 
 	# Try to get first contact. Repeat every 120sek if no success
@@ -57,12 +57,12 @@ class TelegramListener(threading.Thread):
 			except Exception as ex:
 				self.set_status(gettext("Got an exception while initially trying to connect to telegram (Listener not running: %(ex)s.  Waiting 2 minutes before trying again.)", ex=ex))
 				time.sleep(120)
-		
+
 	def loop(self):
 		chat_id = ""
 		json = self.getUpdates()
 		try:
-			# seems like we got a message, so lets process it. 
+			# seems like we got a message, so lets process it.
 			for message in json['result']:
 				self.processMessage(message)
 		except ExitThisLoopException as exit:
@@ -76,23 +76,23 @@ class TelegramListener(threading.Thread):
 		if self.first_contact:
 			self.first_contact = False
 			self.main.on_event("PrinterStart",{})
-	
+
 	def set_update_offset(self, new_value):
 		if new_value >= self.update_offset:
 			self._logger.debug("Updating update_offset from {} to {}".format(self.update_offset, 1 + new_value))
 			self.update_offset = 1 + new_value
 		else:
 			self._logger.debug("Not changing update_offset - otherwise would reduce it from {} to {}".format(self.update_offset, 1 + new_value))
-	
+
 	def processMessage(self, message):
 		self._logger.debug("MESSAGE: " + str(message))
 		# Get the update_id to only request newer Messages the next time
 		self.set_update_offset(message['update_id'])
 		# no message no cookies
 		if 'message' in message and message['message']['chat']:
-		
-			chat_id, from_id = self.parseUserData(message)	
-			
+
+			chat_id, from_id = self.parseUserData(message)
+
 			# if we come here without a continue (discard message)
 			# we have a message from a known and not new user
 			# so let's check what he send us
@@ -112,7 +112,7 @@ class TelegramListener(threading.Thread):
 			# so we do the same
 			elif "delete_chat_photo" in message['message']:
 				self.handleDeleteChatPhotoMessage(message, chat_id, from_id)
-			# a member was removed from a group, so lets check if it's our bot and 
+			# a member was removed from a group, so lets check if it's our bot and
 			# delete the group from our chats if it is our bot
 			elif "left_chat_member" in message['message']:
 				self.handleLeftChatMemberMessage(message, chat_id, from_id)
@@ -125,7 +125,7 @@ class TelegramListener(threading.Thread):
 			self._logger.warn("Response is missing .message or .message.chat or callback_query. Skipping it.")
 			raise ExitThisLoopException()
 
-	
+
 	def handleCallbackQuery(self, message):
 		message['callback_query']['message']['text'] = message['callback_query']['data']
 		chat_id, from_id = self.parseUserData(message['callback_query'])
@@ -137,7 +137,7 @@ class TelegramListener(threading.Thread):
 			del self.main.chats[str(message['message']['chat']['id'])]
 			# do a self._settings.save() ???
 			self._logger.debug("Chat deleted")
-			
+
 	def handleDeleteChatPhotoMessage(self, message, chat_id, from_id):
 		self._logger.debug("Message Del_Chat_Photo")
 		try:
@@ -145,7 +145,7 @@ class TelegramListener(threading.Thread):
 			self._logger.debug("File removed")
 		except OSError:
 			pass
-			
+
 	def handleNewChatPhotoMessage(self, message, chat_id, from_id):
 		self._logger.debug("Message New_Chat_Photo")
 		# only if we know the chat
@@ -155,7 +155,7 @@ class TelegramListener(threading.Thread):
 			t = threading.Thread(target=self.main.get_usrPic, kwargs=kwargs)
 			t.daemon = True
 			t.run()
-			
+
 	def handleDocumentMessage(self, message, chat_id, from_id):
 		# first we have to check if chat or group is allowed to upload
 		from_id = chat_id
@@ -199,7 +199,7 @@ class TelegramListener(threading.Thread):
 						#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 					except Exception as ex:
 						self._logger.info("Exception occured during save file : "+ traceback.format_exc() )
-				
+
 					self._logger.info('read archive '  + zip_filename)
 					try:
 						zf = zipfile.ZipFile(zip_filename, 'r')
@@ -240,7 +240,7 @@ class TelegramListener(threading.Thread):
 					else:
 						self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
-					
+
 					#self.main._file_manager.remove_file(zip_filename)
 					os.remove(zip_filename)
 				else:
@@ -256,7 +256,7 @@ class TelegramListener(threading.Thread):
 		else:
 			self._logger.warn("Previous file was from an unauthorized user.")
 			self.main.send_msg("Don't feed the octopuses! " + self.gEmo('octo'),chatID=chat_id)
-			
+
 	def handleTextMessage(self, message, chat_id, from_id):
 		# We got a chat message.
 		# handle special messages from groups (/commad@BotName)
@@ -276,7 +276,7 @@ class TelegramListener(threading.Thread):
 			parameter = '_'.join(command.split('_')[1:])
 			command = command.split('_')[0]
 		self._logger.info("Got a command: '" + str(command.encode('utf-8')) + "' with parameter: '" + str(parameter.encode('utf-8')) + "' in chat " + str(message['message']['chat']['id']))
-		# is command  known? 
+		# is command  known?
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message
 			self._logger.warn("Previous command was an unknown command.")
@@ -293,7 +293,7 @@ class TelegramListener(threading.Thread):
 			# user was not alloed to execute this command
 			self._logger.warn("Previous command was from an unauthorized user.")
 			self.main.send_msg("You are not allowed to do this! " + self.gEmo('notallowed'),chatID=chat_id)
-	
+
 	def parseUserData(self, message):
 		self.main.chats = self.main._settings.get(["chats"])
 		chat = message['message']['chat']
@@ -317,8 +317,8 @@ class TelegramListener(threading.Thread):
 			if "username" in chat:
 				data['title'] += "@" + chat['username']
 		from_id = chat_id
-		# if message is from a group, chat_id will be left as id of group 
-		# and from_id is set to id of user who send the message 
+		# if message is from a group, chat_id will be left as id of group
+		# and from_id is set to id of user who send the message
 		if not data['private']:
 			if 'from' in message:
 				from_id = str(message['from']['id'])
@@ -343,11 +343,11 @@ class TelegramListener(threading.Thread):
 			self._logger.debug("Got new User")
 			raise ExitThisLoopException()
 		return (chat_id, from_id)
-	
+
 	def getUpdates(self):
 		self._logger.debug("listener: sending request with offset " + str(self.update_offset) + "...")
 		req = None
-		
+
 		# try to check for incoming messages. wait 120sek and repeat on failure
 		try:
 			if self.update_offset == 0 and self.first_contact:
@@ -396,7 +396,7 @@ class TelegramListener(threading.Thread):
 	# stop the listener
 	def stop(self):
 		self.do_stop = True
-	
+
 	def set_status(self, status, ok=False):
 		if status != self.main.connection_state_str:
 			if self.do_stop:
@@ -483,8 +483,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'play': u'\U000025B6',
 			'stop': u'\U000025FC'
 		}
-		self.emojis.update(telegramEmojiDict) 
-	# all emojis will be get via this method to disable them globaly by the corrosponding setting	
+		self.emojis.update(telegramEmojiDict)
+	# all emojis will be get via this method to disable them globaly by the corrosponding setting
 	# so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]
 	def gEmo(self,key):
 		if self._settings.get(["send_icon"]) and key in self.emojis:
@@ -500,19 +500,19 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.thread = TelegramListener(self)
 			self.thread.daemon = True
 			self.thread.start()
-	
+
 	# stops the telegram listener thread
 	def stop_listening(self):
 		if self.thread is not None:
 			self._logger.debug("Stopping listener.")
 			self.thread.stop()
 			self.thread = None
-	
+
 	def shutdown(self):
 		self._logger.warn("shutdown() running!")
 		self.stop_listening()
 		self.send_messages = False
-	
+
 	def sending_okay(self):
 		# If the count ever goeas above 10, we stop doing everything else and just return False
 		# so if this is ever reached, it will stay this way.
@@ -520,13 +520,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.warn("Sent more than 10 messages in the last minute. Shutting down...")
 			self.shutdown()
 			return False
-		
+
 		if self.sending_okay_minute != datetime.datetime.now().minute:
 			self.sending_okay_minute = datetime.datetime.now().minute
 			self.sending_okay_count = 1
 		else:
 			self.sending_okay_count += 1
-			
+
 		return True
 
 ##########
@@ -566,19 +566,19 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def on_after_startup(self):
 		self.set_log_level()
 		self._logger.addFilter(TelegramPluginLoggingFilter())
-		self.tcmd = TCMD(self) 
+		self.tcmd = TCMD(self)
 		self.tmsg = TMSG(self) # Notification Message Handler class. called only by on_event()
 		# initial settings for new chat.
 		# !!! sync this dict with newUsrDict in on_settings_migrate() !!!
 		self.newChat = {
 			'private': True,
 			'title': "[UNKNOWN]",
-			'accept_commands' : False, 
-			'send_notifications' : False, 
-			'new': True, 
+			'accept_commands' : False,
+			'send_notifications' : False,
+			'new': True,
 			'type': '',
 			'allow_users': False,
-			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()}, 
+			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()},
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
 			}
 		self.chats = self._settings.get(["chats"])
@@ -618,7 +618,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_settings_version(self):
-		return 4
+		return 5
 		# Settings version numbers used in releases
 		# < 1.3.0: no settings versioning
 		# 1.3.0 : 1
@@ -629,6 +629,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		# 1.4.1 : 3
 		# 1.4.2 : 3
 		# 1.4.3 : 4
+		# 1.5.1 : 5 (PauseForUser)
 
 	def get_settings_defaults(self):
 		return dict(
@@ -644,7 +645,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			send_icon = True,
 			image_not_connected = True,
 			gif_not_connected = False, #GWE 05/05/19,
-			send_gif = False, #giloser 12/08/2019 
+			send_gif = False, #giloser 12/08/2019
 			scale_gif=0,
 			delay_img_gif=.5,
 			number_img_gif=20,
@@ -667,12 +668,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		newUsrDict = {
 			'private': True,
 			'title': "[UNKNOWN]",
-			'accept_commands' : False, 
-			'send_notifications' : False, 
-			'new': False, 
+			'accept_commands' : False,
+			'send_notifications' : False,
+			'new': False,
 			'type': '',
 			'allow_users': False,
-			'commands': {k: False for k,v in tcmd.commandDict.iteritems()}, 
+			'commands': {k: False for k,v in tcmd.commandDict.iteritems()},
 			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
 			}
 
@@ -683,8 +684,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.debug("LOADED CHATS: " + str(chats))
 		self._settings.set(['chats'], {})
 		if current is None or current < 1:
-			########## Update Chats 
-			# there shouldn't be any chats, but maybe somone had installed any test branch. 
+			########## Update Chats
+			# there shouldn't be any chats, but maybe somone had installed any test branch.
 			# Then we have to check if all needed settings are populated
 			for chat in chats:
 				for setting in newUsrDict:
@@ -733,7 +734,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				except Exception as ex:
 					self._logger.debug("ERROR migrating chat. Done with defaults private=true,title=[UNKNOWN] : " + str(ex))
 				# place the migrated chat in chats
-				chats.update({str(chat['id']): data}) 
+				chats.update({str(chat['id']): data})
 			self._logger.debug("MIGRATED Chats: " + str(chats))
 			########## Update messages. Old text will be taken to new structure
 			messages = self._settings.get(['messages'])
@@ -769,7 +770,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			# first we have to check if anything has changed in commandDict or telegramMsgDict
 			# then we have to update user comamnd or notification settings
 			if chats is not None and chats is not {}:
-				# this for loop updates commands and notifications settings items of chats 
+				# this for loop updates commands and notifications settings items of chats
 				# if there are changes in commandDict or telegramMsgDict
 				for chat in chats:
 					# handle renamed commands
@@ -845,7 +846,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			self._settings.save()
 		except Exception as ex:
-			self._logger.error("MIGRATED Save failed - " + str(ex)) 
+			self._logger.error("MIGRATED Save failed - " + str(ex))
 		self._logger.debug("MIGRATED Saved")
 
 
@@ -911,7 +912,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 ### Softwareupdate API
 ##########
-	
+
 	def get_update_information(self, *args, **kwargs):
 		return dict(
 			telegram=dict(
@@ -928,7 +929,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 ### EventHandler API
 ##########
-		
+
 	def on_event(self, event, payload, **kwargs):
 		try:
 			self._logger.debug("self.tmsg = " + str(self.tmsg))
@@ -972,7 +973,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
 				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
-		
+
 		retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
 		for chat in retChats:
 			if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
@@ -983,7 +984,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				retChats[chat]['image'] = "/plugin/telegram/img/static/default.jpg"
 
 		return json.dumps({'chats':retChats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
-	
+
 	def on_api_command(self, command, data):
 		if command=="testToken":
 			self._logger.debug("Testing token {}".format(data['token']))
@@ -997,11 +998,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return json.dumps({'ok': True, 'connection_state_str': gettext("Token valid for %(username)s.", username=self.thread.username), 'error_msg': None, 'username': self.thread.username})
 			except Exception as ex:
 				return json.dumps({'ok': False, 'connection_state_str': gettext("Error: %(error)s", error=ex), 'username': None, 'error_msg': str(ex)})
-		# delete a chat (will not be removed and show up again on octorint restart 
+		# delete a chat (will not be removed and show up again on octorint restart
 		# if save button is not pressed on settings dialog)
 		elif command=="delChat":
 			strId = str(data['ID'])
-			if strId in self.chats:	
+			if strId in self.chats:
 				del self.chats[strId]
 				# do self._settings.save() here???????
 			return json.dumps({'chats':{k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
@@ -1013,13 +1014,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def send_msg(self, message, **kwargs):
 		if not self.send_messages:
 			return
-			
+
 		kwargs['message'] = message
 		try:
 			# If it's a regular event notification
 			if 'chatID' not in kwargs and 'event' in kwargs:
 				self._logger.debug("Send_msg() found event: " + str(kwargs['event']))
-				for key in self.chats: 
+				for key in self.chats:
 					if key != 'zBOTTOMOFCHATS':
 						if self.chats[key]['notifications'][kwargs['event']] and (key not in self.shut_up or self.shut_up[key]==0) and self.chats[key]['send_notifications']:
 							kwargs['chatID'] = key
@@ -1041,12 +1042,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	# this method is used to update a message text of a sent message
 	# the sent message had to have no_markup = true when calling send_msg() (otherwise it would not work)
-	# by setting no_markup = true we got a messageg_id on sending the message which is saved in selfupdateMessageID 
+	# by setting no_markup = true we got a messageg_id on sending the message which is saved in selfupdateMessageID
 	# if this message_id is passed in msg_id to send_msg() then this method will be called
 	def _send_edit_msg(self,message="",msg_id="",chatID="", responses= None, inline=True, markup=None,delay=0, **kwargs):
 		if not self.send_messages:
 			return
-			
+
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1079,7 +1080,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
 		if not self.send_messages:
 			return
-			
+
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1100,7 +1101,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
-			data['disable_web_page_preview'] = not showWeb  
+			data['disable_web_page_preview'] = not showWeb
 			# Do we want the message to be parsed in any markup?
 			if markup is not None:
 				if "HTML" in markup  or "Markdown" in markup:
@@ -1111,7 +1112,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					myArr.append(map(lambda x: {"text":x[0],"callback_data":x[1]}, k))
 				keyboard = {'inline_keyboard':myArr}
 				data['reply_markup'] = json.dumps(keyboard)
-				
+
 			image_data = None
 			if with_image:
 				try:
@@ -1157,17 +1158,17 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chat_id)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
-					
+
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
-	
+
 	def send_file(self,chat_id,path):
 		if not self.send_messages:
 			return
-			
+
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-			files = {'document': open(path, 'rb')} 
+			files = {'document': open(path, 'rb')}
 			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id})
 		except Exception as ex:
 			pass
@@ -1177,11 +1178,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-			files = {'document': open(path, 'rb')} 
+			files = {'document': open(path, 'rb')}
 			r = requests.post(self.bot_url + "/editMessageMedia", files=files, data={'chat_id':chat_id,'message_id':message_id})
 		except Exception as ex:
 			pass
-	
+
 	def delete_msg(self,chat_id,message_id):
 		try:
 			r = requests.post(self.bot_url + "/deleteMessage", data={'chat_id':chat_id,'message_id':message_id})
@@ -1191,15 +1192,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def send_video(self, message, video_file):
 		if not self.send_messages:
 			return
-			
+
 		files = {'video': open(video_file, 'rb')}
 		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
 		self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
-	
+
 	def get_file(self, file_id):
 		if not self.send_messages:
 			return
-			
+
 		self._logger.debug("Requesting file with id %s.", file_id)
 		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id})
 		# {"ok":true,"result":{"file_id":"BQADAgADCgADrWJxCW_eFdzxDPpQAg","file_size":26,"file_path":"document\/file_3.gcode"}}
@@ -1216,7 +1217,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def get_usrPic(self,chat_id, file_id=""):
 		if not self.send_messages:
 			return
-			
+
 		self._logger.debug("Requesting Profile Photo for chat_id: " + str(chat_id))
 		try:
 			if file_id == "":
@@ -1243,11 +1244,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		except Exception as ex:
 			self._logger.error("Can't load UserImage: " + str(ex))
-	
+
 	def test_token(self, token=None):
 		if not self.send_messages:
 			return
-			
+
 		if token is None:
 			token = self._settings.get(["token"])
 		response = requests.get("https://api.telegram.org/bot" + token + "/getMe")
@@ -1324,7 +1325,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data = output.getvalue()
 			output.close()
 		return data
-		
+
 
 	def calculate_ETA(self,printTime = 0):
 		try:
@@ -1354,7 +1355,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	def create_gif_new(self,chatID,sec=7):
 		i=0
 		ret = ""
-		
+
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 		#	saveDir = os.getcwd()
@@ -1386,10 +1387,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 			os.nice(20) # force this to use less CPU
 
-			
+
 			fps = 15
 			stream_url = self._settings.global_get(["webcam", "stream"])
-			if "http" not in stream_url: 
+			if "http" not in stream_url:
 				stream_url = "http://localhost" +stream_url
 
 			if sec == 0:
@@ -1434,7 +1435,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			#else:
 			#	params.append( "-vf")
 			#	params.append("scale="+self._settings.get(["scale_gif"]))
-				
+
 			params.append( outPath)
 
 			self._logger.info("will now create the video  " + str(params).strip('[]') )
@@ -1446,7 +1447,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					break
 				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 				time.sleep(0.5)
-				
+
 			self._logger.info("Finish the video")
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 			ret = outPath
@@ -1454,7 +1455,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
 			self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chatID)
 			ret = ""
-			
+
 		os.nice(0) # use CPU usage to default
 		return ret
 
@@ -1462,7 +1463,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			self._logger.info("test exist program "+str(name).strip('[]'))
 			# pipe output to /dev/null for silence
-			ret = subprocess.call(name) 
+			ret = subprocess.call(name)
 			self._logger.info("ret = "+str(ret))
 			return ret >= 0
 
@@ -1474,7 +1475,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		i=0
 		ret = 0
 		try:
-			
+
 			if nbImg == 0:
 				nbImg = int(self._settings.get(["number_img_gif"]))
 
@@ -1538,8 +1539,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				#else:
 				#	params.append( "-vf")
 				#	params.append("scale="+self._settings.get(["scale_gif"]))
-					
-				
+
+
 				#params.append( self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
 
 				#self._logger.info("finish the image will now create the video  " + str(params).strip('[]') )# 'nice -n 20 cpulimit -l 50 -f -z -- ffmpeg -r 10 -y -i' +self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg -crf 20 -g 15 ' +scale_opt+ ' ' +scale + ' ' + self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
@@ -1547,7 +1548,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				#subprocess.check_call(params)
 #				subprocess.check_call(['nice','-n','20','cpulimit','-l','50','-f','-z','--','ffmpeg', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
 				#self._logger.info("video created ")
-				
+
 			except Exception as ex:
 				self._logger.info("Caught an exception trying create mp4 with ffmpeg : " + str(ex))
 				try:
@@ -1658,7 +1659,7 @@ def _get_octoprint_version():
 		octoprint_version = pkg_resources.parse_version(octoprint_version.base_version)
 
 	return octoprint_version
-# check if we have min version 1.3.0 
+# check if we have min version 1.3.0
 # this is important because of WizardPlugin mixin and folders in filebrowser
 def get_implementation_class():
 	if not _is_octoprint_compatible(["1.3.0"]):
@@ -1669,7 +1670,7 @@ def get_implementation_class():
 				super(self.__class__, self).__init__(version)
 		return NewTelegramPlugin(1.3)
 
-		
+
 __plugin_name__ = "Telegram Notifications"
 __plugin_implementation__ = get_implementation_class()
 __plugin_hooks__ = {
