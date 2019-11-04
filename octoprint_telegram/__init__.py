@@ -186,7 +186,7 @@ class TelegramListener(threading.Thread):
 					target_filename = "telegram_"+file_name
 				# for parameter no_markup see _send_edit_msg()
 				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id)
-				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+				requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 				data = self.main.get_file(message['message']['document']['file_id'])
 				#giloser 09/05/2019 try to zip the gcode file to lower the size
 				if isZipFile:
@@ -353,7 +353,7 @@ class TelegramListener(threading.Thread):
 			if self.update_offset == 0 and self.first_contact:
 				res = ["0","0"]
 				while len(res) > 0:
-					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10)
+					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10, proxies=self.getProxies())
 					json = req.json()
 					if not json['ok']:
 						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
@@ -367,7 +367,7 @@ class TelegramListener(threading.Thread):
 				if self.update_offset == 0:
 					self.set_update_offset(0)
 			else:
-				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40)
+				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40, proxies=self.getProxies())
 		except requests.exceptions.Timeout:
 			# Just start the next loop.
 			raise ExitThisLoopException()
@@ -409,6 +409,13 @@ class TelegramListener(threading.Thread):
 		self.connection_ok = ok
 		self.main.connection_state_str = status
 
+	def getProxies(self):
+		http_proxy = self.main._settings.get(["http_proxy"])
+		https_proxy = self.main._settings.get(["https_proxy"])
+		return {
+			'http': http_proxy,
+			'https': https_proxy
+			}
 
 class TelegramPluginLoggingFilter(logging.Filter):
 	def filter(self, record):
@@ -710,7 +717,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					message['text'] = "The OctoPrint Plugin " + self._plugin_name + " has been updated to new Version "+self._plugin_version+ ".\n\nPlease open your " + self._plugin_name + " settings in OctoPrint and set configurations for this chat. Until then you are not able to send or receive anything useful with this Bot.\n\nMore informations on: https://github.com/fabianonline/OctoPrint-Telegram"
 					message['chat_id'] = chat
 					message['disable_web_page_preview'] = True
-					r = requests.post("https://api.telegram.org/bot" + self._settings.get(['token']) + "/sendMessage", data =  message)
+					r = requests.post("https://api.telegram.org/bot" + self._settings.get(['token']) + "/sendMessage", data =  message, proxies=self.getProxies())
 					r.raise_for_status()
 					if r.headers['content-type'] != 'application/json':
 						raise Exception("invalid content-type")
@@ -1065,7 +1072,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				keyboard = {'inline_keyboard':myArr}
 				data['reply_markup'] = json.dumps(keyboard)
 			self._logger.debug("SENDING UPDATE: " + str(data))
-			req = requests.post(self.bot_url + "/editMessageText", data=data)
+			req = requests.post(self.bot_url + "/editMessageText", data=data, proxies=self.getProxies())
 			if req.headers['content-type'] != 'application/json':
 				self._logger.debug(gettext("Unexpected Content-Type. Expected: application/json. Was: %(type)s. Waiting 2 minutes before trying again.", type=req.headers['content-type']))
 				return
@@ -1131,12 +1138,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				files = {'photo':("image.jpg", image_data)}
 				if message is not "":
 					data['caption'] = message
-				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data, proxies=self.getProxies())
 				self._logger.debug("Sending finished. " + str(r.status_code))
 			else:
 				self._logger.debug("Sending without image.. " + str(chatID))
 				data['text'] = message
-				r =requests.post(self.bot_url + "/sendMessage", data=data)
+				r =requests.post(self.bot_url + "/sendMessage", data=data, proxies=self.getProxies())
 				self._logger.debug("Sending finished. " + str(r.status_code))
 
 			if r is not None and inline:
@@ -1150,7 +1157,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if with_gif : #giloser 05/05/19
 				try:
 					self._logger.info("Will try to create a gif ")
-					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 					ret = self.create_gif_new(chatID,0)
 					if ret != "":
 						self.send_file(chatID, ret)
@@ -1166,9 +1173,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 			
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 			files = {'document': open(path, 'rb')} 
-			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id})
+			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id}, proxies=self.getProxies())
 		except Exception as ex:
 			pass
 
@@ -1176,15 +1183,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if not self.send_messages:
 			return
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 			files = {'document': open(path, 'rb')} 
-			r = requests.post(self.bot_url + "/editMessageMedia", files=files, data={'chat_id':chat_id,'message_id':message_id})
+			r = requests.post(self.bot_url + "/editMessageMedia", files=files, data={'chat_id':chat_id,'message_id':message_id}, proxies=self.getProxies())
 		except Exception as ex:
 			pass
 	
 	def delete_msg(self,chat_id,message_id):
 		try:
-			r = requests.post(self.bot_url + "/deleteMessage", data={'chat_id':chat_id,'message_id':message_id})
+			r = requests.post(self.bot_url + "/deleteMessage", data={'chat_id':chat_id,'message_id':message_id}, proxies=self.getProxies())
 		except Exception as ex:
 			pass
 
@@ -1193,7 +1200,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 			
 		files = {'video': open(video_file, 'rb')}
-		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
+		#r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message}, proxies=self.getProxies())
 		self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
 	
 	def get_file(self, file_id):
@@ -1201,7 +1208,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 			
 		self._logger.debug("Requesting file with id %s.", file_id)
-		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id})
+		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id}, proxies=self.getProxies())
 		# {"ok":true,"result":{"file_id":"BQADAgADCgADrWJxCW_eFdzxDPpQAg","file_size":26,"file_path":"document\/file_3.gcode"}}
 		r.raise_for_status()
 		data = r.json()
@@ -1209,7 +1216,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			raise Exception(_("Telegram didn't respond well to getFile. The response was: %(response)s", response=r.text))
 		url = self.bot_file_url + "/" + data['result']['file_path']
 		self._logger.debug("Downloading file: %s", url)
-		r = requests.get(url)
+		r = requests.get(url, proxies=self.getProxies())
 		r.raise_for_status()
 		return r.content
 
@@ -1224,7 +1231,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.debug("Not able to load group photos. "+ str(chat_id)+" EXIT")
 					return
 				self._logger.debug("requests.get("+self.bot_url + "/getUserProfilePhotos")
-				r = requests.get(self.bot_url + "/getUserProfilePhotos", params = {'limit': 1, "user_id": chat_id})
+				r = requests.get(self.bot_url + "/getUserProfilePhotos", params = {'limit': 1, "user_id": chat_id}, proxies=self.getProxies())
 				r.raise_for_status()
 				data = r.json()
 				if not "ok" in data:
@@ -1250,7 +1257,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			
 		if token is None:
 			token = self._settings.get(["token"])
-		response = requests.get("https://api.telegram.org/bot" + token + "/getMe")
+		response = requests.get("https://api.telegram.org/bot" + token + "/getMe", proxies=self.getProxies())
 		self._logger.debug("getMe returned: " + str(response.json()))
 		self._logger.debug("getMe status code: " + str(response.status_code))
 		json = response.json()
@@ -1271,6 +1278,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def set_log_level(self):
 		self._logger.setLevel(logging.DEBUG if self._settings.get_boolean(["debug"]) else logging.NOTSET)
+
+	def getProxies(self):
+		http_proxy = self._settings.get(["http_proxy"])
+		https_proxy = self._settings.get(["https_proxy"])
+		return {
+			'http': http_proxy,
+			'https': https_proxy
+			}
 
 # checks if the received command is allowed to execute by the user
 	def isCommandAllowed(self, chat_id, from_id, command):
@@ -1356,7 +1371,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		ret = ""
 		
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 		#	saveDir = os.getcwd()
 		#	os.chdir(self.get_plugin_data_folder()+"/tmpgif")
 			outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
@@ -1383,7 +1398,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed ffmpeg with following command : `sudo apt-get install ffmpeg`",chatID=chatID)
 				return ""
 
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			os.nice(20) # force this to use less CPU
 
 			
@@ -1438,17 +1453,17 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( outPath)
 
 			self._logger.info("will now create the video  " + str(params).strip('[]') )
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 
 			myproc = Popen(params, shell=False, stdout=PIPE, stderr=PIPE)
 			while True:
 				if myproc.poll() is not None:
 					break
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 				time.sleep(0.5)
 				
 			self._logger.info("Finish the video")
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			ret = outPath
 		except Exception as ex:
 			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
@@ -1481,8 +1496,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			wait_b_img =  self._settings.get(["delay_img_gif"])
 
 			frame = self._settings.get(["frame_img_gif"]) #10
-				#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			os.nice(20) # force this to use less CPU
 			soft, hard = resource.getrlimit(resource.RLIMIT_CPU)
 			self._logger.info("RLIMIT_CPU soft " + str(soft)  + " | hard "+ str(hard))
@@ -1510,7 +1525,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self._logger.info("image number " + str(i)  + " of "+ str(nbImg))
 				data = self.take_image()
 				try:
-					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)
 					image = Image.open(StringIO.StringIO(data))
 					image.thumbnail((320, 240))
@@ -1543,7 +1558,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				#params.append( self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
 
 				#self._logger.info("finish the image will now create the video  " + str(params).strip('[]') )# 'nice -n 20 cpulimit -l 50 -f -z -- ffmpeg -r 10 -y -i' +self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg -crf 20 -g 15 ' +scale_opt+ ' ' +scale + ' ' + self.get_plugin_data_folder() + '/tmpgif/gif.mp4')
-				#requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				#requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 				#subprocess.check_call(params)
 #				subprocess.check_call(['nice','-n','20','cpulimit','-l','50','-f','-z','--','ffmpeg', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15', self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
 				#self._logger.info("video created ")
@@ -1551,12 +1566,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			except Exception as ex:
 				self._logger.info("Caught an exception trying create mp4 with ffmpeg : " + str(ex))
 				try:
-					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 					subprocess.check_call(['nice','-n','20','cpulimit','-l','50','-f','-z','--','avconv', '-r', '10', '-y', '-i' ,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%2d.jpg', '-crf', '20', '-g' ,'15',scale_opt,scale, self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
 				except Exception as ex:
 					self._logger.info("Caught an exception trying create mp4 with ffmpeg : " + str(ex))
 					try:
-						requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+						requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 						subprocess.call(['nice','-n','20','cpulimit','-l','50','-f','-z','--','ffmpeg','-r 10','-y','-i',scale_opt,scale,self.get_plugin_data_folder() + '/tmpgif/Gif_Telegram_%02d.jpg',self.get_plugin_data_folder() + '/tmpgif/gif.mp4'])
 					except Exception as ex:
 						self._logger.info("Caught an exception trying create mp4 2 : " + str(ex))
