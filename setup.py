@@ -33,7 +33,7 @@ plugin_url = "https://github.com/fabianonline/OctoPrint-Telegram"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["pillow"]
+plugin_requires = ["pillow", "requests[socks]"]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
