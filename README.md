@@ -113,6 +113,20 @@ Congratulations! Your printer is now connected to your Telegram bot.
 
 5. Now reopen octoprit settings and check/set the configurations for new users. (see [below](#users))
 
+### Proxy setup
+
+You can use HTTP or SOCKS5 proxies with this bot. In *config.yaml* file under the `telegram:` section add the following lines (NOTE: use your own `user`, `pass`, proxy url and port):
+
+Example 1: if you are using HTTP proxy:
+
+	'http_proxy: http://user:pass@proxy.com:3128'
+	'https_proxy: http://user:pass@proxy.com:3128'
+
+Example 2: if you are using SOCKS5 proxy:
+
+	'http_proxy: socks5://user:pass@proxy.com:3128'
+	'https_proxy: socks5://user:pass@proxy.com:3128'
+
 ## Configuration
 
 Configuration is done via the Octoprint settings dialog. Note that only admin users will be able to change user or token settings.
