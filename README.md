@@ -198,8 +198,8 @@ In this section you can configure the content of the notification messages.
    * `{z}` (only for height change events) - The current z value.
    * `{percent}` (only useful for height change notifications) - The current percentage of the print progress.
    * `{time_done}`, `{time_left}`, `{time_finish}` (only useful for height change events) - Time done / left in the print and ETA.
-   * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
-   * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
+   * `{bed_temp}`, `{e1_temp}`, `{e2_temp}`, `{chamber_temp}` - Temperatures of bed, extruder 1, extruder 2 and chamber.
+   * `{bed_target}`, `{e1_target}`, `{e2_target}`, `{chamber_target}` - Target temperatures of bed, extruder 1, extruder 2 and chamber.
    * You are also able to access the current printer state data. See [here](./dev_utils/datastructures/octoprint/_printer.get_current_data.py) for datastructure of this data. The base variable is `{status}`.
 	```
 	Example: {status[progress][filepos]} - will insert the actual position in the printed file.
