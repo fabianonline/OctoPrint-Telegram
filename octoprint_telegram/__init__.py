@@ -607,7 +607,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				pass
 
 	def on_startup(self, host, port):
-		self.main.tcmd.port = port
+		try:
+			self.tcmd.port = port
+			#self.main.tcmd.port = port
+		except Exception as ex:
+			self._logger.error("Exception on_startup: "+ str(ex) )
+		
 
 	def on_shutdown(self):
 		self.on_event("PrinterShutdown",{})
@@ -645,7 +650,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			send_icon = True,
 			image_not_connected = True,
 			gif_not_connected = False, #GWE 05/05/19,
-			send_gif = False, #giloser 12/08/2019
+			send_gif = False, #giloser 12/08/2019,
+			multicam = False,
 			scale_gif=0,
 			delay_img_gif=.5,
 			number_img_gif=20,
@@ -1097,7 +1103,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.debug("Sending text...")
 					t = threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
-
+			
 			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
@@ -1114,62 +1120,130 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				data['reply_markup'] = json.dumps(keyboard)
 
 			image_data = None
-			if with_image:
-				try:
-					image_data = self.take_image()
-				except Exception as ex:
-					self._logger.info("Caught an exception trying take image: " + str(ex))
-
-			self._logger.debug("data so far: " + str(data))
-
-			if not image_data and with_image:
-				message = "[ERR GET IMAGE]\n\n" + message
-
-			r = None
 			data['chat_id'] = chatID
-			if image_data:
-				self._logger.debug("Sending with image.. " + str(chatID))
-				files = {'photo':("image.jpg", image_data)}
-				if message is not "":
-					data['caption'] = message
-				r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-				self._logger.debug("Sending finished. " + str(r.status_code))
-			else:
-				self._logger.debug("Sending without image.. " + str(chatID))
-				data['text'] = message
-				r =requests.post(self.bot_url + "/sendMessage", data=data)
-				self._logger.debug("Sending finished. " + str(r.status_code))
-
-			if r is not None and inline:
-				r.raise_for_status()
-				myJson = r.json()
-				if not myJson['ok']:
-					raise NameError("ReqErr")
-				if 'message_id' in myJson['result']:
-					self.updateMessageID[chatID] = myJson['result']['message_id']
-
 			if with_gif : #giloser 05/05/19
 				try:
 					self._logger.info("Will try to create a gif ")
 					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-					ret = self.create_gif_new(chatID,0)
-					if ret != "":
-						self.send_file(chatID, ret)
+					if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
+						try:
+							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
+							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+							sendOneInLoop = False
+							for li in curr: 
+								try:
+									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+									url = li.get("URL")
+									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+									ret = self.create_gif_new(chatID,0,url)
+									if ret != "":
+										if not sendOneInLoop:
+											self.send_file(chatID, ret,message)
+										else:
+											self.send_file(chatID, ret,"")											
+										sendOneInLoop = True
+								except Exception as ex:
+									self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
+						except Exception as ex:
+							self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
+					else:
+						ret = self.create_gif_new(chatID,0,0)
+					
+					if ret == "":
+						ret = self.create_gif_new(chatID,0,0)
+
+					if ret != "" and not sendOneInLoop:
+						self.send_file(chatID, ret,message)
+					#ret = self.create_gif_new(chatID,0,0)
+					#if ret != "":
+					#	self.send_file(chatID, ret,message)
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
-					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chat_id)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chatID)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
+			else:
+				if with_image:
+					try:
+						image_data = self.take_image(self._settings.global_get(["webcam", "snapshot"]))
+					except Exception as ex:
+						self._logger.info("Caught an exception trying take image: " + str(ex))
 
+				self._logger.debug("data so far: " + str(data))
+
+				if not image_data and with_image:
+					message = "[ERR GET IMAGE]\n\n" + message
+
+				r = None
+				
+				if image_data:
+					self._logger.debug("Sending with image.. " + str(chatID))
+					files = {'photo':("image.jpg", image_data)}
+					self._logger.debug("files so far: " + str(files))
+					if message is not "":
+						data['caption'] = message
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					
+					self._logger.debug("Sending finished. " + str(r.status_code))
+				else:
+					self._logger.debug("Sending without image.. " + str(chatID))
+					data['text'] = message
+					r =requests.post(self.bot_url + "/sendMessage", data=data)
+					self._logger.debug("Sending finished. " + str(r.status_code))
+
+				if with_image:
+					try:
+						files={}
+						sendOneInLoop = False
+						if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
+							try:
+								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
+								self._logger.debug("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+								for li in curr: 
+									try:
+										self._logger.debug("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+										url = li.get("URL")
+										self._logger.debug("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+
+										if "stream" in url:
+											self._logger.debug("stream found so should be replaced " )
+											snapshot_url = url.replace("stream","snapshot")
+
+										self._logger.debug("Snapshot URL: " + str(snapshot_url))
+										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
+											image_data = self.take_image(snapshot_url)
+											if image_data != "":
+												self._logger.debug("Image for  " + str(li.get("name")))
+												files = {'photo':("image.jpg", image_data)}
+												data2 = data
+												data2['caption'] = ""
+												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
+												
+									except Exception as ex:
+										self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
+							except Exception as ex:
+								self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
+					except Exception as ex:
+						self._logger.error("Exception occured on getting multicam plugin: "+ str(ex) )
+
+				if r is not None and inline:
+					r.raise_for_status()
+					myJson = r.json()
+					if not myJson['ok']:
+						raise NameError("ReqErr")
+					if 'message_id' in myJson['result']:
+						self.updateMessageID[chatID] = myJson['result']['message_id']
+
+			
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_msg(): " + str(ex))
 
-	def send_file(self,chat_id,path):
+	def send_file(self,chat_id,path,text):
 		if not self.send_messages:
 			return
 
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 			files = {'document': open(path, 'rb')}
-			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id})
+			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id,'caption':text})
 		except Exception as ex:
 			pass
 
@@ -1298,20 +1372,25 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			del self.updateMessageID[id]
 		return uMsgID
 
-	def take_image(self):
-		snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+	def take_image(self,snapshot_url=""):
+		if snapshot_url == "":
+			snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+
 		self._logger.debug("Snapshot URL: " + str(snapshot_url))
 		data = None
 		if snapshot_url:
 			try:
-				r = requests.get(snapshot_url)
+				r = requests.get(snapshot_url,timeout=10)
 				data = r.content
 			except Exception as e:
+				self._logger.error("TimeOut Exception: " + str(e))
 				return None
 		flipH = self._settings.global_get(["webcam", "flipH"])
 		flipV = self._settings.global_get(["webcam", "flipV"])
 		rotate= self._settings.global_get(["webcam", "rotate90"])
 		self._logger.debug("Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate)
+		if data == None:
+			return None
 		if flipH or flipV or rotate:
 			image = Image.open(StringIO.StringIO(data))
 			if flipH:
@@ -1335,10 +1414,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			current_time = datetime.datetime.today()
 			if not currentData["progress"]["printTimeLeft"]:
 				if not printTime == 0:
+					self._logger.debug("will do timedelta on printTime: " + str(printTime) )
 					finish_time = current_time + datetime.timedelta(0,printTime)
 				else:
 					return ""
 			else:
+				self._logger.debug("will do timedelta on currentData['progress']['printTimeLeft']: " + str(currentData["progress"]["printTimeLeft"]) )				
 				finish_time = current_time + datetime.timedelta(0,currentData["progress"]["printTimeLeft"])
 			strtime = format_time(finish_time)
 			strdate = ""
@@ -1348,11 +1429,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				else:
 					strtime = " " + format_date(finish_time,"EEE d")
 		except Exception as ex:
-			self._logger.info("An Exception in get final time : " + str(ex) )
+			self._logger.error("An Exception in get final time : " + str(ex) )
 
 		return strtime + strdate
 
-	def create_gif_new(self,chatID,sec=7):
+	def create_gif_new(self,chatID,sec=7,stream_url=0):
 		i=0
 		ret = ""
 
@@ -1389,7 +1470,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 
 			fps = 15
-			stream_url = self._settings.global_get(["webcam", "stream"])
+			if stream_url == 0:
+				stream_url = self._settings.global_get(["webcam", "stream"])
 			if "http" not in stream_url:
 				stream_url = "http://localhost" +stream_url
 
@@ -1509,7 +1591,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			frames = []
 			while(i<=nbImg):
 				self._logger.info("image number " + str(i)  + " of "+ str(nbImg))
-				data = self.take_image()
+				data = self.take_image(self._settings.global_get(["webcam", "snapshot"]))
 				try:
 					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)

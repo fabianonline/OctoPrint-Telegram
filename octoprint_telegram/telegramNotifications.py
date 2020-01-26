@@ -175,6 +175,8 @@ class TMSG():
 	def msgPauseForUserEventNotify(self, payload, **kwargs):
 		if payload is None:
 			payload = {}
+		if not self.is_usernotification_necessary(): # 18/11/2019 try to not send this message too much
+			return
 		self._sendNotification(payload, **kwargs)
 
 	def _sendNotification(self, payload, **kwargs):
@@ -201,14 +203,16 @@ class TMSG():
 		e2_target = temps['tool1']['target'] if 'tool1' in temps else 0.0
 		percent = int(status['progress']['completion'] or 0)
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
-		time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
-		try:
-			time_finish = self.main.calculate_ETA(time_left)
-		except Exception, ex:
-			time_finish = str(ex)
-			self._logger.error("Exception on formatting message: " +str(ex))
 		if status['progress']['printTimeLeft'] == None:
 			time_left = gettext('[Unknown]')
+			time_finish = gettext('[Unknown]')
+		else:
+			time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
+			try:
+				time_finish = self.main.calculate_ETA(time_left)
+			except Exception, ex:
+				time_finish = str(ex)
+				self._logger.error("Exception on formatting message: " +str(ex))
 		file = status['job']['file']['name']
 		path = status['job']['file']['path']
 		if "file" in payload: file = payload["file"]
@@ -240,7 +244,7 @@ class TMSG():
 		if timediff and timediff > 0:
 			# check the timediff
 			if self.last_notification_time + timediff*60 <= time.time():
-				self.last_notification_time = time.time();
+				self.last_notification_time = time.time()
 				return True
 		zdiff = self.main._settings.get_float(['notification_height'])
 		if zdiff and zdiff > 0.0:
@@ -254,4 +258,12 @@ class TMSG():
 			if new_z >= self.last_z + zdiff or new_z < self.last_z:
 				self.last_z= new_z
 				return True
+		return False
+
+	def is_usernotification_necessary(self):
+		timediff = 30 # force to every 30 seconds
+		# check the timediff
+		if self.last_notification_time + timediff <= time.time():
+			self.last_notification_time = time.time()
+			return True
 		return False
