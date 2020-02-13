@@ -1124,17 +1124,17 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if with_gif : #giloser 05/05/19
 				try:
 					self._logger.info("Will try to create a gif ")
+					sendOneInLoop = False
 					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
 					if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
 						try:
 							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
-							sendOneInLoop = False
+							self._logger.error("multicam_profiles : "+ str(curr))
 							for li in curr: 
 								try:
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+									self._logger.error("multicam profile : "+ str(li))
 									url = li.get("URL")
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+									self._logger.error("multicam URL : "+ str(url))
 									ret = self.create_gif_new(chatID,0,url)
 									if ret != "":
 										if not sendOneInLoop:
@@ -1196,12 +1196,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
 							try:
 								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
-								self._logger.debug("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+								self._logger.debug("multicam_profiles : "+ str(curr))
 								for li in curr: 
 									try:
-										self._logger.debug("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+										self._logger.debug("multicam profile:  "+ str(li))
 										url = li.get("URL")
-										self._logger.debug("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+										self._logger.debug("multicam url :  "+ str(url))
 
 										if "stream" in url:
 											self._logger.debug("stream found so should be replaced " )
