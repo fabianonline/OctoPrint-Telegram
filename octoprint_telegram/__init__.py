@@ -1326,30 +1326,31 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return data
 		
 
-	def calculate_ETA(self,printTime = 0):
+	def calculate_ETA(self, printTime=0):
 		try:
-			strtime = ""
-			strdate = ""
 			currentData = self._printer.get_current_data()
 			current_time = datetime.datetime.today()
 			if not currentData["progress"]["printTimeLeft"]:
-				if not printTime == 0:
-					finish_time = current_time + datetime.timedelta(0,printTime)
-				else:
-					return ""
+				if printTime == 0:
+					return ""  # maybe put something like "nothing to print" in here
+				finish_time = current_time + datetime.timedelta(0, printTime)
 			else:
-				finish_time = current_time + datetime.timedelta(0,currentData["progress"]["printTimeLeft"])
-			strtime = format_time(finish_time)
-			strdate = ""
-			if finish_time.day > current_time.day:
-				if finish_time.day == current_time.day + 1:
-					strdate = " Tomorrow"
-				else:
-					strtime = " " + format_date(finish_time,"EEE d")
-		except Exception as ex:
-			self._logger.info("An Exception in get final time : " + str(ex) )
+				finish_time = current_time + datetime.timedelta(0, currentData["progress"]["printTimeLeft"])
 
-		return strtime + strdate
+			if finish_time.day > current_time.day and finish_time > current_time + datetime.timedelta(days=7):
+				# longer than a week ahead
+				format = "%d.%m.%Y %H:%M:%S"
+			elif finish_time.day > current_time.day:
+				# not today but within a week
+				format = "%a %H:%M:%S"
+			else:
+				# today
+				format = "%H:%M:%S"
+			return finish_time.strftime(format)
+
+		except Exception as ex:
+			self._logger.warning("An Exception in get final time : " + str(ex))
+			return "There was a problem calculating the finishing time. Check the logs for more detail."
 
 	def create_gif_new(self,chatID,sec=7):
 		i=0
