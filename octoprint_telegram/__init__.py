@@ -1203,12 +1203,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 								for li in curr: 
 									try:
 										self._logger.debug("multicam profile:  "+ str(li))
-										url = li.get("URL")
-										self._logger.debug("multicam url :  "+ str(url))
+										snapshot_url = li.get("URL")
+										self._logger.debug("multicam url :  "+ str(snapshot_url))
 
-										if "stream" in url:
+										if "stream" in snapshot_url:
 											self._logger.debug("stream found so should be replaced " )
-											snapshot_url = url.replace("stream","snapshot")
+											snapshot_url = snapshot_url.replace("stream","snapshot")
 
 										self._logger.debug("Snapshot URL: " + str(snapshot_url))
 										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
