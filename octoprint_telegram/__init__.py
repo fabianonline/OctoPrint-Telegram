@@ -1224,9 +1224,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 												data2['caption'] = ""
 												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
 											else:
-    											self._logger.debug("no image  " + str(li.get("name")))
+												self._logger.debug("no image  " + str(li.get("name")))
 										else:
-    										self._logger.debug("url is the same as the one from octoprint " )
+											self._logger.debug("url is the same as the one from octoprint " )
 												
 									except Exception as ex:
 										self._logger.error("Exception loop multicam URL to create image: "+ str(ex) )
