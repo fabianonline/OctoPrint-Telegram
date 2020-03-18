@@ -1206,9 +1206,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 										snapshot_url = li.get("URL")
 										self._logger.debug("multicam url :  "+ str(snapshot_url))
 
-										if "stream" in snapshot_url:
-											self._logger.debug("stream found so should be replaced " )
-											snapshot_url = snapshot_url.replace("stream","snapshot")
+										defsnap = self._settings.global_get(["webcam", "snapshot"])
+										defstream = self._settings.global_get(["webcam", "stream"])
+										streamname = defstream.rsplit('/', 1).pop()
+										snapname = defsnap.rsplit('/', 1).pop()
+										if streamname in snapshot_url:
+											self._logger.debug( str(streamname) + " found so should be replaced by " + str(snapname) )
+											snapshot_url = snapshot_url.replace(streamname,snapname)
 
 										self._logger.debug("Snapshot URL: " + str(snapshot_url))
 										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
@@ -1219,9 +1223,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 												data2 = data
 												data2['caption'] = ""
 												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
+											else:
+    											self._logger.debug("no image  " + str(li.get("name")))
+										else:
+    										self._logger.debug("url is the same as the one from octoprint " )
 												
 									except Exception as ex:
-										self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
+										self._logger.error("Exception loop multicam URL to create image: "+ str(ex) )
 							except Exception as ex:
 								self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
 					except Exception as ex:
