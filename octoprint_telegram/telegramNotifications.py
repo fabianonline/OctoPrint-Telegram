@@ -201,8 +201,6 @@ class TMSG():
 		e1_target = temps['tool0']['target'] if 'tool0' in temps else 0.0
 		e2_temp = temps['tool1']['actual'] if 'tool1' in temps else 0.0
 		e2_target = temps['tool1']['target'] if 'tool1' in temps else 0.0
-                chamber_temp = temps['chamber']['actual'] if 'chamber' in temps else 0.0
-                chamber_target = temps['chamber']['target'] if 'chamber' in temps else 0.0
 		percent = int(status['progress']['completion'] or 0)
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 		if status['progress']['printTimeLeft'] == None:
