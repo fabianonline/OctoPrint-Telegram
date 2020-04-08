@@ -91,6 +91,14 @@ $(function() {
             self.bind['no_setting'] = response.no_setting;
             self.bind['bind_text'] = response.bind_text;
             var ShowGifBtn = self.settings.settings.plugins.telegram.send_gif()
+            var ShowGifBtn = self.settings.settings.plugins.telegram.send_gif()
+
+            if (ShowGifBtn)
+            {
+                $('.gif-options').toggle();
+            }
+
+            
             
             if (ShowGifBtn)
             {
@@ -311,6 +319,7 @@ $(function() {
                 $('.gif-options').toggle();
             }
         }
+        
 
         self.toggleImg2 = function(data){
             if(!self.onBindLoad){

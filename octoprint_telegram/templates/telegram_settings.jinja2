@@ -189,51 +189,17 @@
 				<span class="help-block"><small>Check to enable sending of gifs. <span class="text-warning">Warning, enabling this feature might affect your prints and make octoprint unresponsive: use at your own risk<span></small></span>
 		</div>
 	</div>
-	<!--div class="control-group">
-		<label class="control-label   gif-options">{{ _('Scale  gif') }}</label>
-		<div class="controls  gif-options">
-			<select class="form-control" id="sel1" data-bind="value: settings.settings.plugins.telegram.scale_gif">
-				<option value ="0" selected>No scale</option>
-				<option value="1920:1080">1920x1080</option>
-				<option value="1280:720">1280x720</option>
-				<option value="1280:1024">1280x1024</option>
-				<option value="1024:768">1024×768</option>
-				<option value="640:480">640×480</option>
-				<option value="320:240">320×240</option>
-			</select>
-			<span  class="help-block"><small>Scale the created gif to the selected resolution.</small></span>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('Multi camera') }}</label>
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.multicam"  /> 
+			</label>
+				<span class="help-block"><small>Check to enable sending images from every camera define in the pugin mulicam. <span class="text-warning">Multicam plugin has to be installed and configured<span></small></span>
 		</div>
 	</div>
-	<div class="control-group">
-		<label class="control-label  gif-options">{{ _('Delay between images') }}</label>
-		<div class="controls  gif-options">
-			<div class="input-append">
-				<input type="number" step="0.1" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.delay_img_gif" />
-				<span class="add-on">s</span>
-			</div>
-			<span  class="help-block"><small>Wait this many seconds between the images to create the gif.</small></span>
-		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label  gif-options">{{ _('Number of images') }}</label>
-		<div class="controls  gif-options">
-			<div class="input-append">
-				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.number_img_gif" />
-				<span class="add-on">i</span>
-			</div>
-			<span  class="help-block"><small>Create this many images to create the gif.</small></span>
-		</div>
-	</div>
-	<div class="control-group">
-		<label class="control-label  gif-options">{{ _('Frame rate') }}</label>
-		<div class="controls  gif-options">
-			<div class="input-append">
-				<input type="number" step="any" min="0.0" class="input-mini text-right" data-bind="value: settings.settings.plugins.telegram.frame_img_gif" />
-				<span class="add-on">r</span>
-			</div>
-			<span  class="help-block"><small>Frame rate to create the gif.</small></span>
-		</div>
-	</div-->
+
 	<br>
 	<br>
 	<hr>
