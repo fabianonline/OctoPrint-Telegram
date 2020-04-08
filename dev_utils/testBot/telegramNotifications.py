@@ -28,13 +28,13 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'PrintPaused': {
-				'text': "Paused printing {file} at {percent}%%. {time_left} remaining.",
+				'text': "Paused printing {file} at {percent}%. {time_left} remaining.",
 				'image': True,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintResumed': {
-				'text': "Resumed printing {file} at {percent}%%. {time_left} remaining.",
+				'text': "Resumed printing {file} at {percent}%. {time_left} remaining.",
 				'image': True,
 				'combined' : True,
 				'markup': "off"
