@@ -853,4 +853,5 @@ telegramEmojiDict = {
 'water buffalo': u'\U0001f403',
 'smiling cat face with open mouth': u'\U0001f63a',
 'shutdown' : u'\U0001F4A4',
+'film frame' : u'\U0001F39E',
 }

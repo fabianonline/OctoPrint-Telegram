@@ -75,17 +75,42 @@ class TCMD():
 			if not self.main._printer.is_operational():
 				with_image = self.main._settings.get_boolean(["image_not_connected"])
 				self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
-			elif self.main._printer.is_printing():
+			else:
+			#elif self.main._printer.is_printing():
+				sendOneInLoop = False
 				try:
-					self._logger.info("Will try to create a gif")	 
-					ret = self.main.create_gif_new(chat_id,5)
-					if ret != "":
-						self.main.send_file(chat_id, ret)
+					self._logger.info("Will try to create a gif")
+					ret = ""	
+					if self.main._plugin_manager.get_plugin("multicam") and self.main._settings.get(["multicam"]):
+						try:
+							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
+							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+							for li in curr: 
+								try:
+									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+									url = li.get("URL")
+									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+									ret = self.main.create_gif_new(chat_id,5,url)
+									if ret != "":
+										self.main.send_file(chat_id, ret,"")
+										sendOneInLoop = True
+								except Exception as ex:
+									self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
+						except Exception as ex:
+							self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
+					else:
+						ret = self.main.create_gif_new(chat_id,5,0)
+					
+					if ret == "":
+						ret = self.main.create_gif_new(chat_id,5,0)
+
+					if ret != "" and not sendOneInLoop:
+						self.main.send_file(chat_id, ret,"")
 				except Exception as ex:
 					self._logger.error("Exception occured during creating of the gif: "+ str(ex) )
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chat_id)
-			else:
-				self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
+			#else:
+			#	self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 		else:
 			self.main.send_msg(self.gEmo('dizzy face') + " Sending GIF is disabled in plugin settings.",chatID=chat_id)
 
@@ -97,10 +122,33 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 			elif self.main._printer.is_printing():
 				try:
+					sendOneInLoop = False
 					self._logger.info("Will try to create a super gif")
-					ret = self.main.create_gif_new(chat_id,10)
-					if ret != "":
-						self.main.send_file(chat_id, ret)
+					if self.main._plugin_manager.get_plugin("multicam") and self.main._settings.get(["multicam"]):
+						try:
+							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
+							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+							for li in curr: 
+								try:
+									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+									url = li.get("URL")
+									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+									ret = self.main.create_gif_new(chat_id,10,url)
+									if ret != "":
+										self.main.send_file(chat_id, ret,"")
+										sendOneInLoop = True
+								except Exception as ex:
+									self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
+						except Exception as ex:
+							self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
+					else:
+						ret = self.main.create_gif_new(chat_id,10,0)
+					
+					if ret == "":
+						ret = self.main.create_gif_new(chat_id,10,0)
+
+					if ret != "" and not sendOneInLoop:
+						self.main.send_file(chat_id, ret,"")
 				except Exception as ex:
 					self._logger.error("Exception occured during creating of the supergif: "+ str(ex) )
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file",chatID=chat_id)
@@ -161,6 +209,14 @@ class TCMD():
 				self.main._settings.save()
 				self.cmdSettings(chat_id,from_id,cmd,"back")
 				return
+			elif params[0] == "m":
+				if self.main._settings.get_boolean(["multicam"]):
+					self.main._settings.set_int(['multicam'], 0, force=True)
+				else:
+					self.main._settings.set_int(['multicam'], 1, force=True)
+				self.main._settings.save()
+				self.cmdSettings(chat_id,from_id,cmd,"back")
+				return
 		else:
 			if self.main._settings.get_boolean(["send_gif"]):
 				gif_txt = "Desactivate gif"
@@ -169,13 +225,21 @@ class TCMD():
 				gif_txt = "Activate gif"
 				gif_emo = self.gEmo('error')
 
+			if self.main._settings.get_boolean(["multicam"]):
+				multicam_txt = "Desactivate management of multicam"
+				multicam_emo = self.gEmo('check')
+			else:
+				multicam_txt = "Activate mangement of multicam"
+				multicam_emo = self.gEmo('error')
+
+
 			self.SettingsTemp = [self.main._settings.get_float(["notification_height"]),self.main._settings.get_float(["notification_time"])]
-			msg = self.gEmo('settings') + gettext(" *Current notification settings are:*\n\n"+self.gEmo('height')+" Height: %(height).2fmm\n\n"+self.gEmo('clock')+" Time: %(time)dmin\n\n"+self.gEmo('movie camera')+" Gif is activate: "+gif_emo,
+			msg = self.gEmo('settings') + gettext(" *Current notification settings are:*\n\n"+self.gEmo('height')+" Height: %(height).2fmm\n\n"+self.gEmo('clock')+" Time: %(time)dmin\n\n"+self.gEmo('film frame')+" Gif is activate: "+gif_emo+"\n\n"+self.gEmo('video camera')+" Multicam is activate: "+multicam_emo,
 				height=self.main._settings.get_float(["notification_height"]),
 				time=self.main._settings.get_int(["notification_time"]))
 			
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"], [self.main.emojis['movie camera']+gettext(gif_txt),"/settings_g"]], [[self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
+			self.main.send_msg(msg, responses=[[[self.main.emojis['height']+gettext(" Set height"),"/settings_h"], [self.main.emojis['clock']+gettext(" Set time"),"/settings_t"], [self.main.emojis['film frame']+gettext(gif_txt),"/settings_g"], [self.main.emojis['video camera']+gettext(multicam_txt),"/settings_m"]], [[self.main.emojis['cross mark']+gettext(" Close"),"No"]]],chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
 	def cmdAbort(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter == "stop":
@@ -254,34 +318,38 @@ class TCMD():
 			self.cmdFiles(chat_id,from_id,cmd,parameter)
 ############################################################################################
 	def cmdFiles(self,chat_id,from_id,cmd,parameter):
-		if parameter:
-			par = 		parameter.split('|')
-			pathHash = 	par[0]
-			page = 		int(par[1])
-			fileHash = 	par[2] if len(par) > 2 else ""
-			opt = 		par[3] if len(par) > 3 else ""
-			if fileHash == "" and opt =="":
-				self.fileList(pathHash,page,cmd,chat_id)
-			elif opt == "":
-				self.fileDetails(pathHash,page,cmd,fileHash,chat_id,from_id)	
-			else:
-				if opt.startswith("dir"):
-					self.fileList(fileHash,0,cmd,chat_id)
+		try:
+			if parameter:
+				par = 		parameter.split('|')
+				pathHash = 	par[0]
+				page = 		int(par[1])
+				fileHash = 	par[2] if len(par) > 2 else ""
+				opt = 		par[3] if len(par) > 3 else ""
+				if fileHash == "" and opt =="":
+					self.fileList(pathHash,page,cmd,chat_id)
+				elif opt == "":
+					self.fileDetails(pathHash,page,cmd,fileHash,chat_id,from_id)	
 				else:
-					self.fileOption(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
-		else:
-			storages = self.main._file_manager.list_files(recursive=False)
-			if len(storages.keys()) < 2:
-				self.main.send_msg("Loading files...",chatID=chat_id)
-				self.generate_dir_hash_dict()
-				self.cmdFiles(chat_id,from_id,cmd,self.hashMe(str(storages.keys()[0]+"/"),8)+"|0")
+					if opt.startswith("dir"):
+						self.fileList(fileHash,0,cmd,chat_id)
+					else:
+						self.fileOption(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
 			else:
-				self.generate_dir_hash_dict()
-				keys=[]
-				keys.extend([([k,(cmd+"_"+self.hashMe(k,8)+"/|0")] for k in storages)])
-				keys.append([[self.main.emojis['cross mark']+" Close","No"]])
-				msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-				self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
+				storages = self.main._file_manager.list_files(recursive=False)
+				if len(storages.keys()) < 2:
+					self.main.send_msg("Loading files...",chatID=chat_id)
+					self.generate_dir_hash_dict()
+					self.cmdFiles(chat_id,from_id,cmd,self.hashMe(str(storages.keys()[0]+"/"),8)+"|0")
+				else:
+					self.generate_dir_hash_dict()
+					keys=[]
+					keys.extend([([k,(cmd+"_"+self.hashMe(k,8)+"/|0")] for k in storages)])
+					keys.append([[self.main.emojis['cross mark']+" Close","No"]])
+					msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+					self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
+		except Exception, e:
+			self._logger.warn("Command failed: %s" % e)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def cmdUpload(self,chat_id,from_id,cmd,parameter):
 		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.\nThe file will be stored in 'TelegramPlugin' folder.",chatID=chat_id)
@@ -428,16 +496,22 @@ class TCMD():
 			keys = []
 			tmpKeys = []
 			i = 1
-			for action in self.get_controls_recursively():
-				empty=False
-				tmpKeys.append([unicode(action['name']),"/ctrl_" + str(action['hash'])])
-				if i%2 == 0:
+			try:
+				for action in self.get_controls_recursively():
+					empty=False
+					try:
+						tmpKeys.append([unicode(action['name']),"/ctrl_" + str(action['hash'])])
+						if i%2 == 0:
+							keys.append(tmpKeys)
+							tmpKeys = []
+						i += 1
+					except Exception, ex:
+						self._logger.info("An Exception in get action: " + str(ex) )
+				if len(tmpKeys) > 0:
 					keys.append(tmpKeys)
-					tmpKeys = []
-				i += 1
-			if len(tmpKeys) > 0:
-				keys.append(tmpKeys)
-			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+			except Exception, ex:
+				self._logger.info("An Exception in get list action: " + str(ex) )
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
@@ -754,55 +828,78 @@ class TCMD():
 # FILE HELPERS
 ############################################################################################
 	def fileList(self,pathHash,page,cmd,chat_id,wait = 0):
-		fullPath = self.dirHashDict[pathHash]
-		storageKeys = self.main._file_manager.list_files(recursive=False).keys()
-		dest = fullPath.split("/")[0]
-		pathWoDest = "/".join(fullPath.split("/")[1:]) if len(fullPath.split("/")) > 1 else fullPath
-		path = "/".join(fullPath.split("/")[1:])
-		fileList = self.main._file_manager.list_files(path = path, destinations = dest, recursive=False)
-		files = fileList[dest]
-		arrayD = []
-		if self.main.version >= 1.3:
-			M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
-			for key in M:
-				arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
-		array = []
-		L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
-		for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
-			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ self.hashMe(pathWoDest + key + files[key]['hash'])])
-		arrayD = sorted(arrayD)
-		if not self.main._settings.get_boolean(["fileOrder"]):
-			arrayD.extend(sorted(array))
-		else:
-			arrayD.extend(array)
-		files = arrayD
-		pageDown = page-1 if page > 0 else 0
-		pageUp = page+1 if len(files)-(page+1)*10 > 0 else page
-		keys = []
-		tmpKeys = []
-		i = 1
-		for k in files[page*10:page*10+10]:
-			tmpKeys.append(k)
-			if not i%2:
+		try:
+			fullPath = self.dirHashDict[pathHash]
+			storageKeys = self.main._file_manager.list_files(recursive=False).keys()
+			dest = fullPath.split("/")[0]
+			pathWoDest = "/".join(fullPath.split("/")[1:]) if len(fullPath.split("/")) > 1 else fullPath
+			path = "/".join(fullPath.split("/")[1:])
+			self._logger.debug("fileList path : " + str(path) )
+			fileList = self.main._file_manager.list_files(path = path, destinations = dest, recursive=False)
+			files = fileList[dest]
+			arrayD = []
+			self._logger.debug("fileList before loop folder " )
+			if self.main.version >= 1.3:
+				M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
+				for key in M:
+					arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
+			array = []
+			self._logger.debug("fileList before loop files items")
+			L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
+			for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
+				try:
+					self._logger.debug("should get info on item " )
+					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
+					self._logger.debug("vfilename : " + unicode(vfilename) )
+					if "." in vfilename:
+						vfilename = self.main.emojis['page facing up']+" "+('.').join(vfilename.split('.')[:-1])
+						self._logger.debug("vfilename : " + unicode(vfilename) )
+					vhash = self.hashMe(pathWoDest + key + files[key]['hash'])
+					self._logger.debug("vhash : " + str(vhash) )
+					if vhash != "":
+						vcmd = cmd+"_" + pathHash + "|"+str(page)+"|"+ vhash
+						self._logger.debug("cmd : " + str(cmd) )
+						array.append([vfilename,vcmd])
+				except Exception, ex:
+					self._logger.error("An Exception in fileList loop file items : " + str(ex) )
+					self._logger.error("files[key]" + str(files[key]))
+			arrayD = sorted(arrayD)
+			if not self.main._settings.get_boolean(["fileOrder"]):
+				arrayD.extend(sorted(array))
+			else:
+				arrayD.extend(array)
+			files = arrayD
+			pageDown = page-1 if page > 0 else 0
+			pageUp = page+1 if len(files)-(page+1)*10 > 0 else page
+			keys = []
+			tmpKeys = []
+			i = 1
+			self._logger.debug("fileList before check nbpages " )
+			for k in files[page*10:page*10+10]:
+				tmpKeys.append(k)
+				if not i%2:
+					keys.append(tmpKeys)
+					tmpKeys = []
+				i += 1
+			if len(tmpKeys):
 				keys.append(tmpKeys)
-				tmpKeys = []
-			i += 1
-		if len(tmpKeys):
+			tmpKeys = []
+			backBut = [[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]]
+			if pageDown != pageUp:
+				if pageDown != page:
+					tmpKeys.append([self.main.emojis['black left-pointing triangle'],cmd+"_"+pathHash+"|"+ str(pageDown)])
+				if pageUp != page:
+					tmpKeys.append([self.main.emojis['black right-pointing triangle'],cmd+"_"+pathHash+"|"+str(pageUp)])
+				tmpKeys.extend(backBut)
+				
+			else:
+				tmpKeys.extend(backBut)
 			keys.append(tmpKeys)
-		tmpKeys = []
-		backBut = [[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]] if len(fullPath.split("/")) < 3 else [[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_"+self.hashMe("/".join(fullPath.split("/")[:-2])+"/",8)+"|0"],[self.main.emojis['settings'],cmd+"_" + pathHash + "|"+str(page)+"|0|s"],[self.main.emojis['cross mark']+" Close","No"]]
-		if pageDown != pageUp:
-			if pageDown != page:
-				tmpKeys.append([self.main.emojis['black left-pointing triangle'],cmd+"_"+pathHash+"|"+ str(pageDown)])
-			if pageUp != page:
-				tmpKeys.append([self.main.emojis['black right-pointing triangle'],cmd+"_"+pathHash+"|"+str(pageUp)])
-			tmpKeys.extend(backBut)
-			
-		else:
-			tmpKeys.extend(backBut)
-		keys.append(tmpKeys)
-		pageStr = str(page+1)+"/"+str(len(files)/10 + (1 if len(files)%10 > 0 else 0))
-		self.main.send_msg(self.gEmo('save') + " Files in */"+pathWoDest[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
+			pageStr = str(page+1)+"/"+str(len(files)/10 + (1 if len(files)%10 > 0 else 0))
+			self._logger.debug("fileList before send msg " )
+			self.main.send_msg(self.gEmo('save') + " Files in */"+pathWoDest[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
+		except Exception, ex:
+			self._logger.error("An Exception in fileList : " + str(ex) )
 ############################################################################################
 	def fileDetails(self,pathHash,page,cmd,fileHash,chat_id,from_id,wait=0):
 		dest, path, file = self.find_file_by_hash(fileHash)
@@ -968,7 +1065,7 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning')+path+" ist to big to download (>50MB)!",chatID=chat_id,msg_id=self.main.getUpdateMsgId(chat_id))
 				self.fileDetails(loc,page,cmd,hash,chat_id,from_id,wait=3)
 			else:
-				self.main.send_file(chat_id,self.main._file_manager.path_on_disk(dest,path))
+				self.main.send_file(chat_id,self.main._file_manager.path_on_disk(dest,path),"")
 		elif opt.startswith("m"):
 			msg_id = self.main.getUpdateMsgId(chat_id)
 			if opt == "m_m":
@@ -1106,38 +1203,50 @@ class TCMD():
 		return "GOOD"
 ############################################################################################
 	def generate_dir_hash_dict(self):
-		self.dirHashDict = {}
-		tree = self.main._file_manager.list_files(recursive=True)
-		for key in tree:
-			self.dirHashDict.update({str(self.hashMe(key+"/",8)):key+"/"})
-			self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key],key+"/"))
-		self._logger.debug(str(self.dirHashDict))
+		try:
+			self.dirHashDict = {}
+			tree = self.main._file_manager.list_files(recursive=True)
+			for key in tree:
+				self.dirHashDict.update({str(self.hashMe(key+"/",8)):key+"/"})
+				self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key],key+"/"))
+			self._logger.debug(str(self.dirHashDict))
+		except Exception, ex:
+			self._logger.error("An Exception in generate_dir_hash_dict : " + str(ex) )
 ############################################################################################
 	def generate_dir_hash_dict_recursively(self,tree,loc):
-		myDict = {}
-		for key in tree:
-			if tree[key]['type']=="folder":
-				myDict.update({self.hashMe(loc+key+"/",8):loc+key+"/"})
-				self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key]['children'],loc+key+"/"))
+		try:
+			myDict = {}
+			for key in tree:
+				if tree[key]['type']=="folder":
+					myDict.update({self.hashMe(loc+key+"/",8):loc+key+"/"})
+					self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key]['children'],loc+key+"/"))
+		except Exception, ex:
+			self._logger.error("An Exception in generate_dir_hash_dict_recursively : " + str(ex) )
 		return myDict
 ############################################################################################	
 	def find_file_by_hash(self, hash):
-		tree = self.main._file_manager.list_files(recursive=True)
-		for key in tree:
-			result,file = self.find_file_by_hash_recursively(tree[key], hash)
-			if result is not None:
-				return key, result, file
+		try:
+			tree = self.main._file_manager.list_files(recursive=True)
+			for key in tree:
+				result,file = self.find_file_by_hash_recursively(tree[key], hash)
+				if result is not None:
+					return key, result, file
+		except Exception, ex:
+			self._logger.error("An Exception in find_file_by_hash : " + str(ex) )
 		return None, None, None
 ############################################################################################	
 	def find_file_by_hash_recursively(self, tree, hash, base=""):
-		for key in tree:
-			if tree[key]['type']=="folder":
-				result, file = self.find_file_by_hash_recursively(tree[key]['children'], hash, base=base+key+"/")
-				if result is not None:
-					return result, file
-				continue
-			if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
-				return base+key, tree[key]
+		try:
+			for key in tree:
+				if tree[key]['type']=="folder":
+					result, file = self.find_file_by_hash_recursively(tree[key]['children'], hash, base=base+key+"/")
+					if result is not None:
+						return result, file
+					continue
+				if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
+					return base+key, tree[key]
+		except Exception, ex:
+			self._logger.error("An Exception in find_file_by_hash_recursively : " + str(ex) )
 		return None, None
 ############################################################################################
 # CONTROL HELPERS
@@ -1147,29 +1256,36 @@ class TCMD():
 		if tree == None:
 			tree = self.main._settings.global_get(['controls'])
 		for key in tree:
-			if type(key) is type({}):
-				keyName = key['name'] if 'name' in key else ""
-				if base == "":
-					first = " "+keyName
-				if 'children' in key:
-					array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
-				elif ('commands' in key or 'command' in key or 'script' in key) and not 'regex' in key and not 'input' in key:
-					newKey = {}
-					if 'script' in key:
-						newKey['script'] = True
-						command = key['script']
-					else:
-						command = key['command'] if 'command' in key else key['commands']
-					newKey['name'] = base.replace(first,"") + " " + keyName
-					newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
-					newKey['command'] = command
-					if 'confirm' in key:
-						newKey['confirm'] = key['confirm']
-					array.append(newKey)
+			try:
+				if type(key) is type({}):
+					keyName =  unicode(key['name']) if 'name' in key else ""
+					if base == "":
+						first = " "+keyName
+					if 'children' in key:
+						array.extend(self.get_controls_recursively(key['children'], base + " " + keyName,first))
+					elif ('commands' in key or 'command' in key or 'script' in key) and not 'regex' in key and not 'input' in key:
+						newKey = {}
+						if 'script' in key:
+							newKey['script'] = True
+							command =  key['script']
+						else:
+							command =  key['command'] if 'command' in key else key['commands']
+						newKey['name'] = base.replace(first,"") + " " + keyName
+						newKey['hash'] = self.hashMe(base + " " + keyName + str(command), 6)
+						newKey['command'] = command
+						if 'confirm' in key:
+							newKey['confirm'] = key['confirm']
+						array.append(newKey)
+			except Exception, ex:
+				self._logger.error("An Exception in get key from tree : " + str(ex) )
 		return array
 ############################################################################################
 	def hashMe(self, text, length = 32):
-		return hashlib.md5(text).hexdigest()[0:length]
+		try:
+			return hashlib.md5(text.encode()).hexdigest()[0:length]
+		except Exception, ex:
+			self._logger.error("An Exception in hashMe : " + str(ex) )
+			return ""
 ############################################################################################
 # CONNECTION HELPERS
 ############################################################################################
