@@ -769,7 +769,7 @@ class TCMD():
 		array = []
 		L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
 		for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
-			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ self.hashMe(pathWoDest + key + files[key]['hash'])])
+			array.append([self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1]),cmd+"_" + pathHash + "|"+str(page)+"|"+ self.hashMe(pathWoDest + key)])
 		arrayD = sorted(arrayD)
 		if not self.main._settings.get_boolean(["fileOrder"]):
 			arrayD.extend(sorted(array))
@@ -1136,7 +1136,7 @@ class TCMD():
 				if result is not None:
 					return result, file
 				continue
-			if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
+			if self.hashMe(base+tree[key]['name']).startswith(hash):
 				return base+key, tree[key]
 		return None, None
 ############################################################################################
@@ -1330,7 +1330,6 @@ class TCMD():
 			return "-"
 		result = "%.02f m" % (float(filament["length"])/1000)
 		if "volume" in filament and filament['volume']:
-			self._logger.debug("CHK 6")
 			result += " / " + "%.02f cm^3" % (float(filament["volume"]))
 		return result
 ############################################################################################
