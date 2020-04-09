@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 import time, datetime, logging
 import octoprint.util
-from flask.ext.babel import gettext
+from flask_babel import gettext
 
 ###################################################################################################
 # Here you find the known notification messages and their handles.

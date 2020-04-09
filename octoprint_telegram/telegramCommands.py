@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
-from flask.ext.babel import gettext
+from flask_babel import gettext
 from .telegramNotifications import telegramMsgDict
 
 ################################################################################################################
