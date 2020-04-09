@@ -840,13 +840,13 @@ class TCMD():
 			arrayD = []
 			self._logger.debug("fileList before loop folder " )
 			if self.main.version >= 1.3:
-				M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
+				M =  {k:v for k,v in files.items() if v['type'] == "folder"}		
 				for key in M:
 					arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
 			array = []
 			self._logger.debug("fileList before loop files items")
-			L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
-			for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
+			L = {k:v for k,v in files.items() if v['type']=="machinecode"}
+			for key,val in sorted(L.items(), key=lambda x: x[1]['date'] , reverse=True):
 				try:
 					self._logger.debug("should get info on item " )
 					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])

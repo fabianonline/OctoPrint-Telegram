@@ -276,7 +276,7 @@ class TelegramListener(threading.Thread):
 				#command = message['message']['text']
 				#parameter = message['message']['reply_to_message']['text']
 		# if command is with parameter, get the parameter
-		if any((k+"_") in command for k,v in self.main.tcmd.commandDict.iteritems() if 'param' in v):
+		if any((k+"_") in command for k,v in self.main.tcmd.commandDict.items() if 'param' in v):
 			parameter = '_'.join(command.split('_')[1:])
 			command = command.split('_')[0]
 		self._logger.info("Got a command: '" + str(command.encode('utf-8')) + "' with parameter: '" + str(parameter.encode('utf-8')) + "' in chat " + str(message['message']['chat']['id']))
@@ -582,8 +582,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'new': True,
 			'type': '',
 			'allow_users': False,
-			'commands': {k: False for k,v in self.tcmd.commandDict.iteritems()},
-			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
+			'commands': {k: False for k,v in self.tcmd.commandDict.items()},
+			'notifications': {k: False for k,v in telegramMsgDict.items()}
 			}
 		self.chats = self._settings.get(["chats"])
 		self.start_listening()
@@ -683,14 +683,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			'new': False,
 			'type': '',
 			'allow_users': False,
-			'commands': {k: False for k,v in tcmd.commandDict.iteritems()},
-			'notifications': {k: False for k,v in telegramMsgDict.iteritems()}
+			'commands': {k: False for k,v in tcmd.commandDict.items()},
+			'notifications': {k: False for k,v in telegramMsgDict.items()}
 			}
 
 		##########
 		### migrate from old plugin Versions < 1.3 (old versions had no settings version check)
 		##########
-		chats = {k: v for k, v in self._settings.get(['chats']).iteritems() if k != 'zBOTTOMOFCHATS'}
+		chats = {k: v for k, v in self._settings.get(['chats']).items() if k != 'zBOTTOMOFCHATS'}
 		self._logger.debug("LOADED CHATS: " + str(chats))
 		self._settings.set(['chats'], {})
 		if current is None or current < 1:
@@ -701,9 +701,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				for setting in newUsrDict:
 					if setting not in chats[chat]:
 						if setting == "commands":
-							chats[chat]['commands'] = {k: False for k,v in tcmd.commandDict.iteritems() if 'bind_none' not in v}
+							chats[chat]['commands'] = {k: False for k,v in tcmd.commandDict.items() if 'bind_none' not in v}
 						elif setting == "notifications":
-							chats[chat]['notifications'] = {k: False for k,v in telegramMsgDict.iteritems()}
+							chats[chat]['notifications'] = {k: False for k,v in telegramMsgDict.items()}
 						else:
 							chats[chat][setting] = False
 			########## Is there a chat from old single user plugin version?
@@ -973,18 +973,18 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Updated chat - " + str(request.args['id']))
 		elif 'bindings' in request.args:
 			bind_text = {}
-			for key in {k: v for k, v in telegramMsgDict.iteritems() if 'bind_msg' in v }:
+			for key in {k: v for k, v in telegramMsgDict.items() if 'bind_msg' in v }:
 				if telegramMsgDict[key]['bind_msg'] in bind_text:
 					bind_text[telegramMsgDict[key]['bind_msg']].append(key)
 				else:
 					bind_text[telegramMsgDict[key]['bind_msg']] = [key]
 			return json.dumps({
-				'bind_cmd':[k for k, v in self.tcmd.commandDict.iteritems() if 'bind_none' not in v ],
-				'bind_msg':[k for k, v in telegramMsgDict.iteritems() if 'bind_msg' not in v ],
+				'bind_cmd':[k for k, v in self.tcmd.commandDict.items() if 'bind_none' not in v ],
+				'bind_msg':[k for k, v in telegramMsgDict.items() if 'bind_msg' not in v ],
 				'bind_text':bind_text,
-				'no_setting':[k for k, v in telegramMsgDict.iteritems() if 'no_setting' in v ]})
+				'no_setting':[k for k, v in telegramMsgDict.items() if 'no_setting' in v ]})
 
-		retChats = {k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
+		retChats = {k: v for k, v in self.chats.items() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}
 		for chat in retChats:
 			if os.path.isfile(self.get_plugin_data_folder()+"/img/user/pic" +chat+".jpg"):
 				retChats[chat]['image'] = "/plugin/telegram/img/user/pic" +chat+".jpg"
@@ -1015,7 +1015,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if strId in self.chats:
 				del self.chats[strId]
 				# do self._settings.save() here???????
-			return json.dumps({'chats':{k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+			return json.dumps({'chats':{k: v for k, v in self.chats.items() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 
 ##########
 ### Telegram API-Functions
