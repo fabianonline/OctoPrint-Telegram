@@ -347,7 +347,7 @@ class TCMD():
 					keys.append([[self.main.emojis['cross mark']+" Close","No"]])
 					msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 					self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
-		except Exception, e:
+		except Exception as e:
 			self._logger.warn("Command failed: %s" % e)
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################
@@ -378,7 +378,7 @@ class TCMD():
 						self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 						return
 					self.main.send_msg(self.gEmo('check') + " System Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				except Exception, e:
+				except Exception as e:
 					self._logger.warn("Command failed: %s" % e)
 					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
@@ -408,7 +408,7 @@ class TCMD():
 								self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 								return
 						self.main.send_msg(self.gEmo('check') + " System Command " + command["name"] + " executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-					except Exception, e:
+					except Exception as e:
 						self._logger.warn("Command failed: %s" % e)
 						self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 			else:
@@ -505,12 +505,12 @@ class TCMD():
 							keys.append(tmpKeys)
 							tmpKeys = []
 						i += 1
-					except Exception, ex:
+					except Exception as ex:
 						self._logger.info("An Exception in get action: " + str(ex) )
 				if len(tmpKeys) > 0:
 					keys.append(tmpKeys)
 				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
-			except Exception, ex:
+			except Exception as ex:
 				self._logger.info("An Exception in get list action: " + str(ex) )
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
@@ -860,7 +860,7 @@ class TCMD():
 						vcmd = cmd+"_" + pathHash + "|"+str(page)+"|"+ vhash
 						self._logger.debug("cmd : " + str(cmd) )
 						array.append([vfilename,vcmd])
-				except Exception, ex:
+				except Exception as ex:
 					self._logger.error("An Exception in fileList loop file items : " + str(ex) )
 					self._logger.error("files[key]" + str(files[key]))
 			arrayD = sorted(arrayD)
@@ -898,7 +898,7 @@ class TCMD():
 			pageStr = str(page+1)+"/"+str(len(files)/10 + (1 if len(files)%10 > 0 else 0))
 			self._logger.debug("fileList before send msg " )
 			self.main.send_msg(self.gEmo('save') + " Files in */"+pathWoDest[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in fileList : " + str(ex) )
 ############################################################################################
 	def fileDetails(self,pathHash,page,cmd,fileHash,chat_id,from_id,wait=0):
@@ -909,7 +909,7 @@ class TCMD():
 		msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path  
 		try:
 			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.info("An Exception in get upload time : " + str(ex) )
 		msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 		filaLen = 0
@@ -933,7 +933,7 @@ class TCMD():
 		try:
 			time_finish = self.main.calculate_ETA(printTime)
 			msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.info("An Exception in get final time : " + str(ex) )
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
@@ -944,10 +944,10 @@ class TCMD():
 					try:
 						curr = curr.decode("utf-8")
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
-					except Exception, ex:
+					except Exception as ex:
 						self._logger.error("An Exception the cost function in decode : " + str(ex) )
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
-				except Exception, ex:
+				except Exception as ex:
 					self._logger.error("An Exception the cost function on get: " + str(ex) )
 					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			else:
@@ -1010,7 +1010,7 @@ class TCMD():
 			try:
 				time_finish = self.main.calculate_ETA(printTime)
 				msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
-			except Exception, ex:
+			except Exception as ex:
 				self._logger.error("An Exception in get final time : " + str(ex) )
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
@@ -1021,11 +1021,11 @@ class TCMD():
 						try:
 							curr = curr.decode("utf-8")
 							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
-						except Exception, ex:
+						except Exception as ex:
 							self._logger.error("An Exception the cost function in decode : " + str(ex) )
 							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 						self._logger.debug("AF TRY")	
-					except Exception, ex:
+					except Exception as ex:
 						self._logger.error("An Exception the cost function on get: " + str(ex) )
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 				else:
@@ -1210,7 +1210,7 @@ class TCMD():
 				self.dirHashDict.update({str(self.hashMe(key+"/",8)):key+"/"})
 				self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key],key+"/"))
 			self._logger.debug(str(self.dirHashDict))
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in generate_dir_hash_dict : " + str(ex) )
 ############################################################################################
 	def generate_dir_hash_dict_recursively(self,tree,loc):
@@ -1220,7 +1220,7 @@ class TCMD():
 				if tree[key]['type']=="folder":
 					myDict.update({self.hashMe(loc+key+"/",8):loc+key+"/"})
 					self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key]['children'],loc+key+"/"))
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in generate_dir_hash_dict_recursively : " + str(ex) )
 		return myDict
 ############################################################################################	
@@ -1231,7 +1231,7 @@ class TCMD():
 				result,file = self.find_file_by_hash_recursively(tree[key], hash)
 				if result is not None:
 					return key, result, file
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in find_file_by_hash : " + str(ex) )
 		return None, None, None
 ############################################################################################	
@@ -1245,7 +1245,7 @@ class TCMD():
 					continue
 				if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
 					return base+key, tree[key]
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in find_file_by_hash_recursively : " + str(ex) )
 		return None, None
 ############################################################################################
@@ -1276,14 +1276,14 @@ class TCMD():
 						if 'confirm' in key:
 							newKey['confirm'] = key['confirm']
 						array.append(newKey)
-			except Exception, ex:
+			except Exception as ex:
 				self._logger.error("An Exception in get key from tree : " + str(ex) )
 		return array
 ############################################################################################
 	def hashMe(self, text, length = 32):
 		try:
 			return hashlib.md5(text.encode()).hexdigest()[0:length]
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in hashMe : " + str(ex) )
 			return ""
 ############################################################################################
