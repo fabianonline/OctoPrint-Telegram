@@ -848,9 +848,6 @@ class TCMD():
 					self._logger.debug("should get info on item " )
 					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
 					self._logger.debug("vfilename : " + unicode(vfilename) )
-					if "." in vfilename:
-						vfilename = self.main.emojis['page facing up']+" "+('.').join(vfilename.split('.')[:-1])
-						self._logger.debug("vfilename : " + unicode(vfilename) )
 					vhash = self.hashMe(pathWoDest + key)
 					self._logger.debug("vhash : " + str(vhash) )
 					if vhash != "":
