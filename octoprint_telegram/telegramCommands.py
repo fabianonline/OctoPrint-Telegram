@@ -84,12 +84,9 @@ class TCMD():
 					if self.main._plugin_manager.get_plugin("multicam") and self.main._settings.get(["multicam"]):
 						try:
 							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
 							for li in curr: 
 								try:
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
 									url = li.get("URL")
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
 									ret = self.main.create_gif_new(chat_id,5,url)
 									if ret != "":
 										self.main.send_file(chat_id, ret,"")
