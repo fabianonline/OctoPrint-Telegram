@@ -1126,7 +1126,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.info("Will try to create a gif ")
 					sendOneInLoop = False
 					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-					if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
+					if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
 						try:
 							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
 							self._logger.error("multicam_profiles : "+ str(curr))
@@ -1196,7 +1196,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					try:
 						files={}
 						sendOneInLoop = False
-						if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
+						if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
 							try:
 								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
 								self._logger.debug("multicam_profiles : "+ str(curr))

@@ -81,15 +81,15 @@ class TCMD():
 				try:
 					self._logger.info("Will try to create a gif")
 					ret = ""	
-					if self.main._plugin_manager.get_plugin("multicam") and self.main._settings.get(["multicam"]):
+					if self.main._plugin_manager.get_plugin("multicam",True) and self.main._settings.get(["multicam"]):
 						try:
 							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+							self._logger.error("multicam_profiles :  "+ str(curr))
 							for li in curr: 
 								try:
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+									self._logger.error("multicam profile : "+ str(li))
 									url = li.get("URL")
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+									self._logger.error("multicam URL:  "+ str(url))
 									ret = self.main.create_gif_new(chat_id,5,url)
 									if ret != "":
 										self.main.send_file(chat_id, ret,"")
@@ -124,15 +124,15 @@ class TCMD():
 				try:
 					sendOneInLoop = False
 					self._logger.info("Will try to create a super gif")
-					if self.main._plugin_manager.get_plugin("multicam") and self.main._settings.get(["multicam"]):
+					if self.main._plugin_manager.get_plugin("multicam",True) and self.main._settings.get(["multicam"]):
 						try:
 							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
+							self._logger.error("multicam_profiles : "+ str(curr))
 							for li in curr: 
 								try:
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
+									self._logger.error("multicam profile : "+ str(li))
 									url = li.get("URL")
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
+									self._logger.error("multicam URL :  "+ str(url))
 									ret = self.main.create_gif_new(chat_id,10,url)
 									if ret != "":
 										self.main.send_file(chat_id, ret,"")
@@ -935,7 +935,7 @@ class TCMD():
 			msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
 		except Exception, ex:
 			self._logger.info("An Exception in get final time : " + str(ex) )
-		if self.main._plugin_manager.get_plugin("cost"):
+		if self.main._plugin_manager.get_plugin("cost",True):
 			if printTime != 0 and filaLen != 0:
 				try:
 					cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
@@ -1012,7 +1012,7 @@ class TCMD():
 				msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
 			except Exception, ex:
 				self._logger.error("An Exception in get final time : " + str(ex) )
-			if self.main._plugin_manager.get_plugin("cost"):
+			if self.main._plugin_manager.get_plugin("cost",True):
 				if printTime != 0 and filaLen != 0:
 					try:
 						cpH = self.main._settings.global_get_float(["plugins","cost","cost_per_time"])
