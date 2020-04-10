@@ -1440,7 +1440,6 @@ class TCMD():
 			return "-"
 		result = "%.02f m" % (float(filament["length"])/1000)
 		if "volume" in filament and filament['volume']:
-			self._logger.debug("CHK 6")
 			result += " / " + "%.02f cm^3" % (float(filament["volume"]))
 		return result
 ############################################################################################
