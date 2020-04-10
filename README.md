@@ -1,4 +1,4 @@
-
+<!-- omit in toc -->
 # OctoPrint-Telegram
 
 <img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/logo/octoprint_telegram_logo.png" width="25%" align="left"> 
@@ -8,19 +8,20 @@ Also, you can control Octoprint via messages (settings, start a print and much m
 
 **Latest release: [1.5.0](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
-
+<!-- omit in toc -->
 ## Contents
 
-* [Installation](#installation)
-  * [Create Telegram Bot](#create-telegram-bot) 
-  * [Plugin Setup](#plugin-setup)
-  * [User Setup](#user-setup)
-* [Configuration](#configuration)
-  * [General](#general)
-  * [Users](#users)
-  * [Notifications](#notifications)
-* [Available Commands](#available-commands)
-* [Info / Contact / Help](#info--contact--help)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+	- [Create Telegram Bot](#create-telegram-bot)
+	- [Plugin setup](#plugin-setup)
+	- [User setup](#user-setup)
+- [Configuration](#configuration)
+	- [General](#general)
+	- [Users](#users)
+	- [Notifications](#notifications)
+- [Available Commands](#available-commands)
+- [Info / Contact / Help](#info--contact--help)
 
 ## Screenshots
 
@@ -46,6 +47,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_new.png" alt="Register new bot" width="35%" align="center"/>
 	
+<!-- omit in toc -->
 #### OPTIONAL
 
 	While you're there, you could also do the following steps:
@@ -245,6 +247,7 @@ In this section you can configure the content of the notification messages.
 
 **`/supergif`** - Send a gif create from 60 images.
 
+<!-- omit in toc -->
 #### Notes:
 
 * the `/help` command is always allowed

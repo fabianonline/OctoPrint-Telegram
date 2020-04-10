@@ -851,10 +851,7 @@ class TCMD():
 					self._logger.debug("should get info on item " )
 					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
 					self._logger.debug("vfilename : " + unicode(vfilename) )
-					if "." in vfilename:
-						vfilename = self.main.emojis['page facing up']+" "+('.').join(vfilename.split('.')[:-1])
-						self._logger.debug("vfilename : " + unicode(vfilename) )
-					vhash = self.hashMe(pathWoDest + key + files[key]['hash'])
+					vhash = self.hashMe(pathWoDest + key)
 					self._logger.debug("vhash : " + str(vhash) )
 					if vhash != "":
 						vcmd = cmd+"_" + pathHash + "|"+str(page)+"|"+ vhash
@@ -1236,17 +1233,14 @@ class TCMD():
 		return None, None, None
 ############################################################################################	
 	def find_file_by_hash_recursively(self, tree, hash, base=""):
-		try:
-			for key in tree:
-				if tree[key]['type']=="folder":
-					result, file = self.find_file_by_hash_recursively(tree[key]['children'], hash, base=base+key+"/")
-					if result is not None:
-						return result, file
-					continue
-				if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
-					return base+key, tree[key]
-		except Exception, ex:
-			self._logger.error("An Exception in find_file_by_hash_recursively : " + str(ex) )
+		for key in tree:
+			if tree[key]['type']=="folder":
+				result, file = self.find_file_by_hash_recursively(tree[key]['children'], hash, base=base+key+"/")
+				if result is not None:
+					return result, file
+				continue
+			if self.hashMe(base+tree[key]['name']).startswith(hash):
+				return base+key, tree[key]
 		return None, None
 ############################################################################################
 # CONTROL HELPERS
