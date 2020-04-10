@@ -84,12 +84,9 @@ class TCMD():
 					if self.main._plugin_manager.get_plugin("multicam") and self.main._settings.get(["multicam"]):
 						try:
 							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(curr))
 							for li in curr: 
 								try:
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(li))
 									url = li.get("URL")
-									self._logger.error("MUUUUUUUUUUUUUUUUUULTICAM  "+ str(url))
 									ret = self.main.create_gif_new(chat_id,5,url)
 									if ret != "":
 										self.main.send_file(chat_id, ret,"")
@@ -851,10 +848,7 @@ class TCMD():
 					self._logger.debug("should get info on item " )
 					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
 					self._logger.debug("vfilename : " + unicode(vfilename) )
-					if "." in vfilename:
-						vfilename = self.main.emojis['page facing up']+" "+('.').join(vfilename.split('.')[:-1])
-						self._logger.debug("vfilename : " + unicode(vfilename) )
-					vhash = self.hashMe(pathWoDest + key + files[key]['hash'])
+					vhash = self.hashMe(pathWoDest + key)
 					self._logger.debug("vhash : " + str(vhash) )
 					if vhash != "":
 						vcmd = cmd+"_" + pathHash + "|"+str(page)+"|"+ vhash
@@ -1236,17 +1230,14 @@ class TCMD():
 		return None, None, None
 ############################################################################################	
 	def find_file_by_hash_recursively(self, tree, hash, base=""):
-		try:
-			for key in tree:
-				if tree[key]['type']=="folder":
-					result, file = self.find_file_by_hash_recursively(tree[key]['children'], hash, base=base+key+"/")
-					if result is not None:
-						return result, file
-					continue
-				if self.hashMe(base+tree[key]['name']+tree[key]['hash']).startswith(hash):
-					return base+key, tree[key]
-		except Exception, ex:
-			self._logger.error("An Exception in find_file_by_hash_recursively : " + str(ex) )
+		for key in tree:
+			if tree[key]['type']=="folder":
+				result, file = self.find_file_by_hash_recursively(tree[key]['children'], hash, base=base+key+"/")
+				if result is not None:
+					return result, file
+				continue
+			if self.hashMe(base+tree[key]['name']).startswith(hash):
+				return base+key, tree[key]
 		return None, None
 ############################################################################################
 # CONTROL HELPERS
@@ -1446,7 +1437,6 @@ class TCMD():
 			return "-"
 		result = "%.02f m" % (float(filament["length"])/1000)
 		if "volume" in filament and filament['volume']:
-			self._logger.debug("CHK 6")
 			result += " / " + "%.02f cm^3" % (float(filament["volume"]))
 		return result
 ############################################################################################
