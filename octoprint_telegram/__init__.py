@@ -31,7 +31,7 @@ class TelegramListener(threading.Thread):
 	def run(self):
 		self._logger.debug("Try first connect.")
 		self.tryFirstContact()
-		# repeat fetching and processing messages unitil thread stopped
+		# repeat fetching and processing messages until thread stopped
 		self._logger.debug("Listener is running.")
 		try:
 			while not self.do_stop:
@@ -1261,6 +1261,41 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				raise(Exception(gettext("Telegram returned an unspecified error.")))
 		else:
 			return "@" + json['result']['username']
+
+	# sets bot own list of commands
+	def setMyCommands(self, force=False):
+		if not self.send_messages:
+			return
+		try:
+			shallRun=force
+			if not force:
+				resp = requests.get(self.bot_url + "/getMyCommands").json()
+				self._logger.debug("getMyCommands returned " + str(resp))
+				shallRun=(len(resp['result']) == 0)
+			if shallRun:
+				commands = []
+				commands.append({"command":"status","description":"Displays the current status including a capture from the camera"})
+				commands.append({"command":"togglepause","description":"Pauses/Resumes current print"})
+				commands.append({"command":"print","description":"Lets you start a print (confirmation required)"})
+				commands.append({"command":"tune","description":"Sets feed and flow rate, control temperatures"})
+				commands.append({"command":"ctrl","description":"Activates self defined controls from Octoprint"})
+				commands.append({"command":"con","description":"Connects or disconnects the printer"})
+				commands.append({"command":"sys","description":"Executes Octoprint system commands"})
+				commands.append({"command":"abort","description":"Aborts the currently running print (confirmation required)"})
+				commands.append({"command":"settings","description":"Displays notification settings and lets change them"})
+				commands.append({"command":"files","description":"Lists all the files available for printing"})
+				commands.append({"command":"upload","description":"Stores a file into the Octoprint library"})
+				commands.append({"command":"filament","description":"Shows filament spools and lets you change it (requires Filament Manager Plugin)"})
+				commands.append({"command":"user","description":"Gets user info"})
+				commands.append({"command":"gif","description":"Sends a gif from the current video"})
+				commands.append({"command":"supergif","description":"Sends a bigger gif from the current video"})
+				commands.append({"command":"shutup","description":"Disables automatic notifications until the next print ends"})
+				commands.append({"command":"dontshutup","description":"Makes the bot talk again (opposite of `/shutup`)"})
+				commands.append({"command":"help","description":"Shows this help message"})
+				resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}).json()
+				self._logger.debug("setMyCommands returned " + str(resp))
+		except Exception as ex:
+			pass
 
 ##########
 ### Helper methods
