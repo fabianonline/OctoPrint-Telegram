@@ -1269,6 +1269,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			shallRun=force
 			if not force:
+				# check if a list of commands was already set
 				resp = requests.get(self.bot_url + "/getMyCommands").json()
 				self._logger.debug("getMyCommands returned " + str(resp))
 				shallRun=(len(resp['result']) == 0)
