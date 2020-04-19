@@ -15,6 +15,7 @@ telegramMsgDict = {
 				'text': "{emo:rocket} " + gettext("Hello. I'm online and ready to receive your commands."),
 				'image': False,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -22,6 +23,7 @@ telegramMsgDict = {
 				'text': "{emo:octopus} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -29,6 +31,7 @@ telegramMsgDict = {
 				'text': gettext("Started printing {file}."),
 				'image': True,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -36,6 +39,7 @@ telegramMsgDict = {
 				'text': gettext("Paused printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -43,6 +47,7 @@ telegramMsgDict = {
 				'text': gettext("Resumed printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -50,6 +55,7 @@ telegramMsgDict = {
 				'text': gettext("Printing {file} failed."),
 				'image': True,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -57,6 +63,7 @@ telegramMsgDict = {
 				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining.\nCompleted time {time_finish}."),
 				'image': True,
 				'gif': True,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -64,6 +71,7 @@ telegramMsgDict = {
 				'text': gettext("Finished printing {file}."),
 				'image': True,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off"
 			},
@@ -71,6 +79,7 @@ telegramMsgDict = {
 				'text': gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
 				'gif': False,
+				'silent': False,
 				'combined' : True,
 				'markup': "off",
 				'no_setting': True
@@ -170,6 +179,7 @@ class TMSG():
 		kwargs['event'] = telegramMsgDict[event]['bind_msg'] if 'bind_msg' in telegramMsgDict[event] else event
 		kwargs['with_image'] = self.main._settings.get(['messages',str(kwargs['event']),'image'])
 		kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
+		kwargs['silent'] = self.main._settings.get(['messages',str(kwargs['event']),'silent']) #babs
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting
 		z = self.z

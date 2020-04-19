@@ -1066,10 +1066,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
-	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
+	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, silent=False, **kwargs):
 		if not self.send_messages:
 			return
-			
+
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1090,7 +1090,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
-			data['disable_web_page_preview'] = not showWeb  
+			data['disable_web_page_preview'] = not showWeb
+			data['silent'] = silent
 			# Do we want the message to be parsed in any markup?
 			if markup is not None:
 				if "HTML" in markup  or "Markdown" in markup:
