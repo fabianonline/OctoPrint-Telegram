@@ -948,9 +948,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_api_commands(self):
+		self._logger.debug("Start get_api_commands")
 		return dict(
 			testToken=["token"],
-			delChat=["ID"]
+			delChat=["ID"],
+			setCommandList=["force"]
 		)
 
 	def on_api_get(self, request):
@@ -985,6 +987,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return json.dumps({'chats':retChats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 	
 	def on_api_command(self, command, data):
+		self._logger.debug("Start on_api_command")
 		if command=="testToken":
 			self._logger.debug("Testing token {}".format(data['token']))
 			try:
@@ -1005,6 +1008,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				del self.chats[strId]
 				# do self._settings.save() here???????
 			return json.dumps({'chats':{k: v for k, v in self.chats.iteritems() if 'delMe' not in v and k != 'zBOTTOMOFCHATS'}, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
+		elif command=="setCommandList":
+			self._logger.debug("Set default command for bot")
+			try:
+				self.setMyCommands(True)
+				self._logger.debug("Set default command for bot done will return ok")
+				return json.dumps({'ok': True, 'setMyCommands_state_str': gettext("SetMyCommands done",), 'error_msg': None})
+			except Exception as ex:
+				return json.dumps({'ok': False, 'setMyCommands_state_str': gettext("Error: %(error)s", error=ex), 'error_msg': str(ex)})
+		
 
 ##########
 ### Telegram API-Functions
@@ -1264,39 +1276,46 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	# sets bot own list of commands
 	def setMyCommands(self, force=False):
+		self._logger.debug("setMyCommands force=" + str(force))
 		if not self.send_messages:
+			self._logger.debug("not self.send_messages => return ")
 			return
-		try:
-			shallRun=force
-			if not force:
-				# check if a list of commands was already set
-				resp = requests.get(self.bot_url + "/getMyCommands").json()
-				self._logger.debug("getMyCommands returned " + str(resp))
-				shallRun=(len(resp['result']) == 0)
-			if shallRun:
-				commands = []
-				commands.append({"command":"status","description":"Displays the current status including a capture from the camera"})
-				commands.append({"command":"togglepause","description":"Pauses/Resumes current print"})
-				commands.append({"command":"print","description":"Lets you start a print (confirmation required)"})
-				commands.append({"command":"tune","description":"Sets feed and flow rate, control temperatures"})
-				commands.append({"command":"ctrl","description":"Activates self defined controls from Octoprint"})
-				commands.append({"command":"con","description":"Connects or disconnects the printer"})
-				commands.append({"command":"sys","description":"Executes Octoprint system commands"})
-				commands.append({"command":"abort","description":"Aborts the currently running print (confirmation required)"})
-				commands.append({"command":"settings","description":"Displays notification settings and lets change them"})
-				commands.append({"command":"files","description":"Lists all the files available for printing"})
-				commands.append({"command":"upload","description":"Stores a file into the Octoprint library"})
-				commands.append({"command":"filament","description":"Shows filament spools and lets you change it (requires Filament Manager Plugin)"})
-				commands.append({"command":"user","description":"Gets user info"})
-				commands.append({"command":"gif","description":"Sends a gif from the current video"})
-				commands.append({"command":"supergif","description":"Sends a bigger gif from the current video"})
-				commands.append({"command":"shutup","description":"Disables automatic notifications until the next print ends"})
-				commands.append({"command":"dontshutup","description":"Makes the bot talk again (opposite of `/shutup`)"})
-				commands.append({"command":"help","description":"Shows this help message"})
-				resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}).json()
-				self._logger.debug("setMyCommands returned " + str(resp))
-		except Exception as ex:
-			pass
+
+		shallRun=force
+		if not force:
+			# check if a list of commands was already set
+			resp = requests.get(self.bot_url + "/getMyCommands").json()
+			self._logger.debug("getMyCommands returned " + str(resp))
+			shallRun=(len(resp['result']) == 0)
+		if shallRun:
+			commands = []
+			commands.append({"command":"status","description":"Displays the current status including a capture from the camera"})
+			commands.append({"command":"togglepause","description":"Pauses/Resumes current print"})
+			commands.append({"command":"print","description":"Lets you start a print (confirmation required)"})
+			commands.append({"command":"tune","description":"Sets feed and flow rate, control temperatures"})
+			commands.append({"command":"ctrl","description":"Activates self defined controls from Octoprint"})
+			commands.append({"command":"con","description":"Connects or disconnects the printer"})
+			commands.append({"command":"sys","description":"Executes Octoprint system commands"})
+			commands.append({"command":"abort","description":"Aborts the currently running print (confirmation required)"})
+			commands.append({"command":"settings","description":"Displays notification settings and lets change them"})
+			commands.append({"command":"files","description":"Lists all the files available for printing"})
+			commands.append({"command":"upload","description":"Stores a file into the Octoprint library"})
+			commands.append({"command":"filament","description":"Shows filament spools and lets you change it (requires Filament Manager Plugin)"})
+			commands.append({"command":"user","description":"Gets user info"})
+			commands.append({"command":"gif","description":"Sends a gif from the current video"})
+			commands.append({"command":"supergif","description":"Sends a bigger gif from the current video"})
+			commands.append({"command":"shutup","description":"Disables automatic notifications until the next print ends"})
+			commands.append({"command":"dontshutup","description":"Makes the bot talk again (opposite of `/shutup`)"})
+			commands.append({"command":"help","description":"Shows this help message"})
+			resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}).json()
+			self._logger.debug("setMyCommands returned " + str(resp))
+			if not 'ok' in str(resp) or not resp['ok']:
+				if resp['description']:
+					raise(Exception(gettext("Telegram returned error code %(error)s: %(message)s", error=str(resp['error_code']), message=str(resp['description']))))
+				else:
+					raise(Exception(gettext("Telegram returned an unspecified error.")))
+			else:
+				return "@" + str(resp['result'])
 
 ##########
 ### Helper methods

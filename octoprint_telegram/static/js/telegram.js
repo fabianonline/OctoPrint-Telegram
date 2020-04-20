@@ -40,6 +40,7 @@ $(function() {
         self.isloading = ko.observable(false);
         self.errored = ko.observable(false);
         self.token_state_str = ko.observable("Unknown");
+        self.setCommandList_state_str = ko.observable("");
     	self.editChatDialog = undefined;  
         self.varInfoDialog = undefined;      
         self.emoInfoDialog = undefined;
@@ -363,6 +364,20 @@ $(function() {
             }
 
         }
+
+        self.setCommandResponse = function(response) {
+            self.setCommandList_state_str(response.setMyCommands_state_str);
+            self.errored(!response.ok);
+            if(!response.ok){
+                $('#CmdteleErrored').removeClass("text-warning");
+                $('#CmdteleErrored').addClass("text-error");
+            }
+            else{
+                $('#CmdteleErrored').removeClass("text-warning");
+                $('#CmdteleErrored').addClass("text-success");
+            }
+
+        }
         
         self.fromResponse = function(response) {
             if(response === undefined) return;
@@ -478,6 +493,41 @@ $(function() {
             });
   
         }
+
+        self.testToken = function(data, event) {
+            self.isloading(true);
+            console.log("Testing token " + $('#settings_plugin_telegram_token').val());
+            $.ajax({
+                url: API_BASEURL + "plugin/telegram",
+                type: "POST",
+                dataType: "json",
+                data: JSON.stringify({ "command": "testToken", "token": $('#settings_plugin_telegram_token').val()}),
+                contentType: "application/json",
+                success: self.testResponse
+            });
+        }
+
+        self.setCommandList = function(data, event) {
+            console.log("StartSetCommandList");
+            $('#CmdteleErrored').addClass("text-warning"); 
+            $('#CmdteleErrored').removeClass("text-danger"); 
+            $('#CmdteleErrored').removeClass("text-sucess"); 
+            self.setCommandList_state_str("Please wait ...")
+            var callback = function() {
+                $.ajax({ 
+                    url: API_BASEURL + "plugin/telegram",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify({ "command": "setCommandList", "force": 'True'}),
+                    contentType: "application/json",
+                    success: self.setCommandResponse
+                });
+            };
+            showConfirmationDialog('Do you really want to set default commands ', function (e) {
+                callback();
+            });
+        }
+
 
         self.onSettingsHidden = function() {
             clearTimeout(self.reloadPending);
