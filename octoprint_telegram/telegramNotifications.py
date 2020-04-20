@@ -14,6 +14,7 @@ telegramMsgDict = {
 			'PrinterStart': {
 				'text': "{emo:rocket} " + gettext("Hello. I'm online and ready to receive your commands."),
 				'image': False,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -21,6 +22,7 @@ telegramMsgDict = {
 			'PrinterShutdown': {
 				'text': "{emo:octopus} {emo:shutdown} " + gettext("Shutting down. Goodbye."),
 				'image': False,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -28,6 +30,7 @@ telegramMsgDict = {
 			'PrintStarted': {
 				'text': gettext("Started printing {file}."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -35,6 +38,7 @@ telegramMsgDict = {
 			'PrintPaused': {
 				'text': gettext("Paused printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -42,6 +46,7 @@ telegramMsgDict = {
 			'PrintResumed': {
 				'text': gettext("Resumed printing {file} at {percent}%%. {time_left} remaining."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -49,6 +54,7 @@ telegramMsgDict = {
 			'PrintFailed': {
 				'text': gettext("Printing {file} failed."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -56,6 +62,7 @@ telegramMsgDict = {
 			'ZChange': {
 				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining.\nCompleted time {time_finish}."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -63,6 +70,7 @@ telegramMsgDict = {
 			'PrintDone': {
 				'text': gettext("Finished printing {file}."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
@@ -70,6 +78,7 @@ telegramMsgDict = {
 			'StatusNotPrinting': {
 				'text': gettext("Not printing.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined' : True,
 				'markup': "off",
@@ -82,6 +91,7 @@ telegramMsgDict = {
 			'plugin_pause_for_user_event_notify': {
 				'text': "{emo:warning} " + gettext("User interaction required.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
+				'silent': False,
 				'gif': False,
 				'combined': True,
 				'markup': "off"
@@ -189,6 +199,7 @@ class TMSG():
 			kwargs['with_gif'] = self.main._settings.get(['messages',str(kwargs['event']),'gif']) #giloser 05/05/19
 		else:
 			kwargs['with_gif'] = 0
+		kwargs['silent'] = self.main._settings.get(['messages',str(kwargs['event']),'silent']) #babs
 
 		self._logger.debug("Printer Status" + str(status))
 		# define locals for string formatting

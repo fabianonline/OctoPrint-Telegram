@@ -158,6 +158,17 @@
                <span class="help-block"><small>Send image with "Not connected" status message?</small></span>
 		</div>
 	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('"Not connected"-status') }}</label>
+		<div class="controls">
+                <label id="chkSilentBtn0" class="btn btn-mini" title="Toggle 'Silence'">
+                <input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.image_not_connected, click: toggleSilent('0')"/>
+                <i id="chkSilentImg0" class=""></i>
+               <span id="chkSilentTxt0"></span></label>
+               <span class="help-block"><small>Notification</small></span>
+		</div>
+	</div>
 	 
 	<!--div class="control-group">
 		<label class="control-label">{{ _('"Not connected"-status') }}</label>
