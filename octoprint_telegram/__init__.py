@@ -1091,7 +1091,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data = {}
 			# Do we want to show web link previews?
 			data['disable_web_page_preview'] = not showWeb
-			data['silent'] = silent
+			data['disable_notification'] = silent
 			# Do we want the message to be parsed in any markup?
 			if markup is not None:
 				if "HTML" in markup  or "Markdown" in markup:
