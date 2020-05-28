@@ -96,7 +96,7 @@ class EmojiFormatter():
 	def __format__(self,format):
 		self.main._logger.debug("Formatting emoticon: `" + format +"`")
 		if format in self.main.emojis:
-			return self.main.gEmo(format).encode("utf-8")
+			return self.main.gEmo(format)
 		return ""
 
 class TMSG():
