@@ -260,7 +260,7 @@ class TelegramListener(threading.Thread):
 	def handleTextMessage(self, message, chat_id, from_id):
 		# We got a chat message.
 		# handle special messages from groups (/commad@BotName)
-		command = str(message['message']['text'].split('@')[0].encode('utf-8'))
+		command = str(message['message']['text'].split('@')[0])
 		parameter = ""
 		# TODO: Do we need this anymore?
 		# reply_to_messages will be send on value inputs (eg notification height)
@@ -268,14 +268,14 @@ class TelegramListener(threading.Thread):
 		#if "reply_to_message" in message['message'] and "text" in message['message']['reply_to_message']:
 			#command = message['message']['reply_to_message']['text']
 			#parameter = message['message']['text']
-			#if command.encode('utf-8') not in [str(k.encode('utf-8')) for k in self.main.tcmd.commandDict.keys()]:
+			#if command not in [str(k) for k in self.main.tcmd.commandDict.keys()]:
 				#command = message['message']['text']
 				#parameter = message['message']['reply_to_message']['text']
 		# if command is with parameter, get the parameter
 		if any((k+"_") in command for k,v in self.main.tcmd.commandDict.items() if 'param' in v):
 			parameter = '_'.join(command.split('_')[1:])
 			command = command.split('_')[0]
-		self._logger.info("Got a command: '" + str(command.encode('utf-8')) + "' with parameter: '" + str(parameter.encode('utf-8')) + "' in chat " + str(message['message']['chat']['id']))
+		self._logger.info("Got a command: '" + str(command) + "' with parameter: '" + str(parameter) + "' in chat " + str(message['message']['chat']['id']))
 		# is command  known?
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message

@@ -939,7 +939,7 @@ class TCMD():
 					cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
 					curr = self.main._settings.global_get(["plugins","cost","currency"])
 					try:
-						curr = curr.decode("utf-8")
+						curr = curr
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
 					except Exception as ex:
 						self._logger.error("An Exception the cost function in decode : " + str(ex) )
@@ -1016,7 +1016,7 @@ class TCMD():
 						cpM = self.main._settings.global_get_float(["plugins","cost","cost_per_length"])
 						curr = self.main._settings.global_get(["plugins","cost","currency"])
 						try:
-							curr = curr.decode("utf-8")
+							curr = curr
 							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
 						except Exception as ex:
 							self._logger.error("An Exception the cost function in decode : " + str(ex) )
