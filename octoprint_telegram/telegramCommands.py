@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
@@ -333,10 +333,10 @@ class TCMD():
 						self.fileOption(pathHash,page,cmd,fileHash,opt,chat_id,from_id)
 			else:
 				storages = self.main._file_manager.list_files(recursive=False)
-				if len(storages.keys()) < 2:
+				if len(list(storages.keys())) < 2:
 					self.main.send_msg("Loading files...",chatID=chat_id)
 					self.generate_dir_hash_dict()
-					self.cmdFiles(chat_id,from_id,cmd,self.hashMe(str(storages.keys()[0]+"/"),8)+"|0")
+					self.cmdFiles(chat_id,from_id,cmd,self.hashMe(str(list(storages.keys())[0]+"/"),8)+"|0")
 				else:
 					self.generate_dir_hash_dict()
 					keys=[]
@@ -344,7 +344,7 @@ class TCMD():
 					keys.append([[self.main.emojis['cross mark']+" Close","No"]])
 					msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 					self.main.send_msg(self.gEmo('save') + " *Select Storage*",chatID=chat_id,markup="Markdown",responses=keys,msg_id=msg_id)
-		except Exception, e:
+		except Exception as e:
 			self._logger.warn("Command failed: %s" % e)
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################
@@ -375,7 +375,7 @@ class TCMD():
 						self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 						return
 					self.main.send_msg(self.gEmo('check') + " System Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-				except Exception, e:
+				except Exception as e:
 					self._logger.warn("Command failed: %s" % e)
 					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
@@ -387,7 +387,7 @@ class TCMD():
 			command = next((d for d in actions if 'action' in d and self.hashMe(d['action']) == parameter) , False)
 			if command :
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + unicode(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check'] + gettext(" Execute"),"/sys_do_" + unicode(parameter)], [self.main.emojis['leftwards arrow with hook'] + gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check'] + gettext(" Execute"),"/sys_do_" + str(parameter)], [self.main.emojis['leftwards arrow with hook'] + gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
 					async = command["async"] if "async" in command else False
@@ -405,7 +405,7 @@ class TCMD():
 								self.main.send_msg(self.gEmo('warning') + " Command failed with return code %i: %s" % (returncode, stderr_text),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 								return
 						self.main.send_msg(self.gEmo('check') + " System Command " + command["name"] + " executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-					except Exception, e:
+					except Exception as e:
 						self._logger.warn("Command failed: %s" % e)
 						self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 			else:
@@ -417,7 +417,7 @@ class TCMD():
 			i = 1
 			for action in self.main._settings.global_get(['system','actions']):
 				if action['action'] != "divider":
-					tmpKeys.append([unicode(action['name']),"/sys_"+self.hashMe(action['action'])])
+					tmpKeys.append([str(action['name']),"/sys_"+self.hashMe(action['action'])])
 					if i%2 == 0:
 						keys.append(tmpKeys)
 						tmpKeys = []
@@ -471,7 +471,7 @@ class TCMD():
 			command = next((d for d in actions if d['hash'] == parameter), False)
 			if command:
 				if 'confirm' in command and params[0] != "do":
-					self.main.send_msg(self.gEmo('question') + unicode(command['name']) + "\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_" + unicode(parameter)], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					self.main.send_msg(self.gEmo('question') + str(command['name']) + "\nExecute control command?",responses=[[[self.main.emojis['check']+gettext("Execute"),"/ctrl_do_" + str(parameter)], [self.main.emojis['leftwards arrow with hook']+gettext(" Back"),"/ctrl_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
 					if 'script' in command:
@@ -497,17 +497,17 @@ class TCMD():
 				for action in self.get_controls_recursively():
 					empty=False
 					try:
-						tmpKeys.append([unicode(action['name']),"/ctrl_" + str(action['hash'])])
+						tmpKeys.append([str(action['name']),"/ctrl_" + str(action['hash'])])
 						if i%2 == 0:
 							keys.append(tmpKeys)
 							tmpKeys = []
 						i += 1
-					except Exception, ex:
+					except Exception as ex:
 						self._logger.info("An Exception in get action: " + str(ex) )
 				if len(tmpKeys) > 0:
 					keys.append(tmpKeys)
 				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
-			except Exception, ex:
+			except Exception as ex:
 				self._logger.info("An Exception in get list action: " + str(ex) )
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
@@ -651,7 +651,7 @@ class TCMD():
 						return
 					if self.tempTemp[toolNo] < 0:
 						self.tempTemp[toolNo] = 0
-				msg = self.gEmo('fire') + gettext(" Set temperature for tool "+params[1]+".\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["tool"+params[1]]['actual'],time=self.tempTemp[toolNo])
+				msg = self.gEmo('fire') + gettext(" Set temperature for tool "+params[1]+".\nCurrent: %(temp).02f/*%(time)d"+'\u00b0'+"C*",temp=temps["tool"+params[1]]['actual'],time=self.tempTemp[toolNo])
 				keys = [
 						[["+100","/tune_e_"+params[1]+"_+"],["+50","/tune_e_"+params[1]+"_+*"],["+10","/tune_e_"+params[1]+"_++"],["+5","/tune_e_"+params[1]+"_++*"],["+1","/tune_e_"+params[1]+"_+++"]],
 						[["-100","/tune_e_"+params[1]+"_-"],["-50","/tune_e_"+params[1]+"_-*"],["-10","/tune_e_"+params[1]+"_--"],["-5","/tune_e_"+params[1]+"_--*"],["-1","/tune_e_"+params[1]+"_---"]],
@@ -682,7 +682,7 @@ class TCMD():
 						self.tempTemp[toolNo] = 0
 				self._logger.debug("BED TEMPS: "+str(temps))
 				self._logger.debug("BED self.TEMPS: "+str(self.tempTemp))
-				msg = self.gEmo('hot springs') + gettext(" Set temperature for bed.\nCurrent: %(temp).02f/*%(time)d"+u'\u00b0'+"C*",temp=temps["bed"]['actual'],time=self.tempTemp[toolNo])
+				msg = self.gEmo('hot springs') + gettext(" Set temperature for bed.\nCurrent: %(temp).02f/*%(time)d"+'\u00b0'+"C*",temp=temps["bed"]['actual'],time=self.tempTemp[toolNo])
 				keys = [
 						[["+100","/tune_b_+"],["+50","/tune_b_+*"],["+10","/tune_b_++"],["+5","/tune_b_++*"],["+1","/tune_b_+++"]],
 						[["-100","/tune_b_-"],["-50","/tune_b_-*"],["-10","/tune_b_--"],["-5","/tune_b_--*"],["-1","/tune_b_---"]],
@@ -698,7 +698,7 @@ class TCMD():
 			keys = [[[self.main.emojis['black right-pointing double triangle']+gettext(" Feedrate"),"/tune_feed"], [self.main.emojis['black down-pointing double triangle']+gettext(" Flowrate"),"/tune_flow"]]]
 			if self.main._printer.is_operational():
 				tmpKeys=[]
-				for i in xrange(0,profile["extruder"]["count"]):
+				for i in range(0,profile["extruder"]["count"]):
 					tmpKeys.append([self.main.emojis['wrench']+" Tool "+str(i),"/tune_e_"+str(i)])
 					self.tempTemp.append(int(temps["tool"+str(i)]['target']))
 				if profile["heatedBed"]:
@@ -728,10 +728,10 @@ class TCMD():
 						weight = spool["weight"]
 						used = spool["used"]
 						percent = int(100 - (used / weight * 100))
-						message += unicode(spool["profile"]["vendor"]) + " " + unicode(spool["name"]) + " " + unicode(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
+						message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
 					for selection in resp2["selections"]:
 						if selection["tool"] == 0:
-							message += "\n\nCurrently selected: " + unicode(selection["spool"]["profile"]["vendor"]) + " " + unicode(selection["spool"]["name"]) + " " + unicode(selection["spool"]["profile"]["material"])
+							message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + " " + str(selection["spool"]["profile"]["material"])
 					msg_id=self.main.getUpdateMsgId(chat_id)
 					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 				except ValueError:
@@ -752,7 +752,7 @@ class TCMD():
 							errorText = resp.text
 						self._logger.info("Response: %s" % resp)
 						resp = resp.json()
-						message = self.gEmo('check') + " Selected spool is now: " + unicode(resp["selection"]["spool"]["profile"]["vendor"]) + " " + unicode(resp["selection"]["spool"]["name"]) + " " + unicode(resp["selection"]["spool"]["profile"]["material"])
+						message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
 						msg_id=self.main.getUpdateMsgId(chat_id)
 						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 					except ValueError:
@@ -774,7 +774,7 @@ class TCMD():
 						i = 1
 						for spool in resp["spools"]:
 							self._logger.info("Appending spool: %s" % spool)
-							tmpKeys.append([unicode(spool["profile"]["vendor"]) + " " + unicode(spool['name']) + " " + unicode(spool["profile"]["material"]) ,"/filament_changeSpool_" + unicode(spool['id'])])
+							tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
 							if i%2 == 0:
 								keys.append(tmpKeys)
 								tmpKeys = []
@@ -827,7 +827,7 @@ class TCMD():
 	def fileList(self,pathHash,page,cmd,chat_id,wait = 0):
 		try:
 			fullPath = self.dirHashDict[pathHash]
-			storageKeys = self.main._file_manager.list_files(recursive=False).keys()
+			storageKeys = list(self.main._file_manager.list_files(recursive=False).keys())
 			dest = fullPath.split("/")[0]
 			pathWoDest = "/".join(fullPath.split("/")[1:]) if len(fullPath.split("/")) > 1 else fullPath
 			path = "/".join(fullPath.split("/")[1:])
@@ -837,24 +837,24 @@ class TCMD():
 			arrayD = []
 			self._logger.debug("fileList before loop folder " )
 			if self.main.version >= 1.3:
-				M =  {k:v for k,v in files.iteritems() if v['type'] == "folder"}		
+				M =  {k:v for k,v in files.items() if v['type'] == "folder"}		
 				for key in M:
 					arrayD.append([self.main.emojis['open file folder']+" "+key,cmd+"_"+pathHash+"|0|"+self.hashMe(fullPath+key+"/",8)+"|dir"])
 			array = []
 			self._logger.debug("fileList before loop files items")
-			L = {k:v for k,v in files.iteritems() if v['type']=="machinecode"}
-			for key,val in sorted(L.iteritems(), key=lambda x: x[1]['date'] , reverse=True):
+			L = {k:v for k,v in files.items() if v['type']=="machinecode"}
+			for key,val in sorted(iter(L.items()), key=lambda x: x[1]['date'] , reverse=True):
 				try:
 					self._logger.debug("should get info on item " )
 					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
-					self._logger.debug("vfilename : " + unicode(vfilename) )
+					self._logger.debug("vfilename : " + str(vfilename) )
 					vhash = self.hashMe(pathWoDest + key)
 					self._logger.debug("vhash : " + str(vhash) )
 					if vhash != "":
 						vcmd = cmd+"_" + pathHash + "|"+str(page)+"|"+ vhash
 						self._logger.debug("cmd : " + str(cmd) )
 						array.append([vfilename,vcmd])
-				except Exception, ex:
+				except Exception as ex:
 					self._logger.error("An Exception in fileList loop file items : " + str(ex) )
 					self._logger.error("files[key]" + str(files[key]))
 			arrayD = sorted(arrayD)
@@ -892,7 +892,7 @@ class TCMD():
 			pageStr = str(page+1)+"/"+str(len(files)/10 + (1 if len(files)%10 > 0 else 0))
 			self._logger.debug("fileList before send msg " )
 			self.main.send_msg(self.gEmo('save') + " Files in */"+pathWoDest[:-1]+"*    \["+pageStr+"]",chatID=chat_id,markup="Markdown",responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),delay=wait)
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in fileList : " + str(ex) )
 ############################################################################################
 	def fileDetails(self,pathHash,page,cmd,fileHash,chat_id,from_id,wait=0):
@@ -903,7 +903,7 @@ class TCMD():
 		msg += "<b>"+self.main.emojis['name badge']+"Name:</b> " + path  
 		try:
 			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.info("An Exception in get upload time : " + str(ex) )
 		msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 		filaLen = 0
@@ -927,7 +927,7 @@ class TCMD():
 		try:
 			time_finish = self.main.calculate_ETA(printTime)
 			msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.info("An Exception in get final time : " + str(ex) )
 		if self.main._plugin_manager.get_plugin("cost"):
 			if printTime != 0 and filaLen != 0:
@@ -938,10 +938,10 @@ class TCMD():
 					try:
 						curr = curr.decode("utf-8")
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
-					except Exception, ex:
+					except Exception as ex:
 						self._logger.error("An Exception the cost function in decode : " + str(ex) )
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
-				except Exception, ex:
+				except Exception as ex:
 					self._logger.error("An Exception the cost function on get: " + str(ex) )
 					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			else:
@@ -1004,7 +1004,7 @@ class TCMD():
 			try:
 				time_finish = self.main.calculate_ETA(printTime)
 				msg += "\n<b>"+self.main.emojis['chequered flag']+"Completed Time:</b> "+ time_finish
-			except Exception, ex:
+			except Exception as ex:
 				self._logger.error("An Exception in get final time : " + str(ex) )
 			if self.main._plugin_manager.get_plugin("cost"):
 				if printTime != 0 and filaLen != 0:
@@ -1015,11 +1015,11 @@ class TCMD():
 						try:
 							curr = curr.decode("utf-8")
 							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> "+curr+"%.02f " % ((filaLen/1000) * cpM + (printTime/3600) * cpH)
-						except Exception, ex:
+						except Exception as ex:
 							self._logger.error("An Exception the cost function in decode : " + str(ex) )
 							msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 						self._logger.debug("AF TRY")	
-					except Exception, ex:
+					except Exception as ex:
 						self._logger.error("An Exception the cost function on get: " + str(ex) )
 						msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 				else:
@@ -1076,7 +1076,7 @@ class TCMD():
 			else:
 				keys = [[[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.tmpFileHash = hash
-				for key,val in sorted(self.dirHashDict.items(), key = operator.itemgetter(1)):
+				for key,val in sorted(list(self.dirHashDict.items()), key = operator.itemgetter(1)):
 					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|m_m"]])
 				self.main.send_msg(self.gEmo('question') + " *Choose destination to move file*",chatID=chat_id,responses=keys,msg_id=msg_id,markup="Markdown")
 
@@ -1095,7 +1095,7 @@ class TCMD():
 			else:
 				keys = [[[self.main.emojis['leftwards arrow with hook']+" Back",cmd+"_" + loc + "|"+str(page)+"|"+ hash]]]
 				self.tmpFileHash = hash
-				for key,val in sorted(self.dirHashDict.items(), key = operator.itemgetter(1)):
+				for key,val in sorted(list(self.dirHashDict.items()), key = operator.itemgetter(1)):
 					keys.append([[self.main.emojis['open file folder']+" "+self.dirHashDict[key],cmd+"_" + loc + "|"+str(page)+"|"+ key + "|c_c"]])
 				self.main.send_msg(self.gEmo('question') + " *Choose destination to copy file*",chatID=chat_id,responses=keys,msg_id=msg_id,markup="Markdown")
 
@@ -1204,7 +1204,7 @@ class TCMD():
 				self.dirHashDict.update({str(self.hashMe(key+"/",8)):key+"/"})
 				self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key],key+"/"))
 			self._logger.debug(str(self.dirHashDict))
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in generate_dir_hash_dict : " + str(ex) )
 ############################################################################################
 	def generate_dir_hash_dict_recursively(self,tree,loc):
@@ -1214,7 +1214,7 @@ class TCMD():
 				if tree[key]['type']=="folder":
 					myDict.update({self.hashMe(loc+key+"/",8):loc+key+"/"})
 					self.dirHashDict.update(self.generate_dir_hash_dict_recursively(tree[key]['children'],loc+key+"/"))
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in generate_dir_hash_dict_recursively : " + str(ex) )
 		return myDict
 ############################################################################################	
@@ -1225,7 +1225,7 @@ class TCMD():
 				result,file = self.find_file_by_hash_recursively(tree[key], hash)
 				if result is not None:
 					return key, result, file
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in find_file_by_hash : " + str(ex) )
 		return None, None, None
 ############################################################################################	
@@ -1249,7 +1249,7 @@ class TCMD():
 		for key in tree:
 			try:
 				if type(key) is type({}):
-					keyName =  unicode(key['name']) if 'name' in key else ""
+					keyName =  str(key['name']) if 'name' in key else ""
 					if base == "":
 						first = " "+keyName
 					if 'children' in key:
@@ -1267,14 +1267,14 @@ class TCMD():
 						if 'confirm' in key:
 							newKey['confirm'] = key['confirm']
 						array.append(newKey)
-			except Exception, ex:
+			except Exception as ex:
 				self._logger.error("An Exception in get key from tree : " + str(ex) )
 		return array
 ############################################################################################
 	def hashMe(self, text, length = 32):
 		try:
 			return hashlib.md5(text.encode()).hexdigest()[0:length]
-		except Exception, ex:
+		except Exception as ex:
 			self._logger.error("An Exception in hashMe : " + str(ex) )
 			return ""
 ############################################################################################
@@ -1425,7 +1425,7 @@ class TCMD():
 		if not bytes:
 			return "-"
 		units = ["bytes", "KB", "MB", "GB"]
-		for i in xrange(0, len(units)):
+		for i in range(0, len(units)):
 			if bytes < 1024:
 				return "%3.1f %s" % (bytes, units[i])
 			bytes = float(bytes) / 1024

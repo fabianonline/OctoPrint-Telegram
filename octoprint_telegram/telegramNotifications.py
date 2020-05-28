@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 import time, datetime, logging
 import octoprint.util
 from flask_babel import gettext
@@ -210,7 +210,7 @@ class TMSG():
 			time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
 			try:
 				time_finish = self.main.calculate_ETA(time_left)
-			except Exception, ex:
+			except Exception as ex:
 				time_finish = str(ex)
 				self._logger.error("Exception on formatting message: " +str(ex))
 		file = status['job']['file']['name']
