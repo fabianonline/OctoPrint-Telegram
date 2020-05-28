@@ -1323,7 +1323,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			else:
 				r = self.get_file(file_id)
 			file_name = self.get_plugin_data_folder() + "/img/user/pic" + str(chat_id) + ".jpg"
-			img = Image.open(io.StringIO(r))
+			img = Image.open(io.BytesIO(r))
 			img = img.resize((40, 40), PIL.Image.ANTIALIAS)
 			img.save(file_name, format="JPEG")
 			self._logger.debug("Saved Photo "+ str(chat_id))
@@ -1404,14 +1404,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if data == None:
 			return None
 		if flipH or flipV or rotate:
-			image = Image.open(io.StringIO(data))
+			image = Image.open(io.BytesIO(data))
 			if flipH:
 				image = image.transpose(Image.FLIP_LEFT_RIGHT)
 			if flipV:
 				image = image.transpose(Image.FLIP_TOP_BOTTOM)
 			if rotate:
 				image = image.transpose(Image.ROTATE_270)
-			output = io.StringIO()
+			output = io.BytesIO()
 			image.save(output, format="JPEG")
 			data = output.getvalue()
 			output.close()
@@ -1607,7 +1607,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				try:
 					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)
-					image = Image.open(io.StringIO(data))
+					image = Image.open(io.BytesIO(data))
 					image.thumbnail((320, 240))
 					frames.append(image)
 					#image.save('Gif_Telegram_%02d.jpg' % i, 'JPEG')
