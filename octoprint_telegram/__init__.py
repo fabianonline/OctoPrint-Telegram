@@ -1171,7 +1171,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				if with_image:
 					self._logger.debug("image data so far: " + str(image_data))
 
-				if (not image_data or 'html' in image_data) and with_image:
+				if (not image_data or 'html' in str(image_data)) and with_image:
 					message = "[ERR GET IMAGE]\n\n" + message
 					image_data = None
 
