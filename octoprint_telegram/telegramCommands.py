@@ -5,6 +5,9 @@ import requests
 from flask.ext.babel import gettext
 from .telegramNotifications import telegramMsgDict
 
+class CommandNotFoundException(Exception):
+	pass
+
 ################################################################################################################
 # This class handles received commands/messages (commands in the following). commandDict{} holds the commands and their behavior.
 # Each command has its own handler. If you want to add/del commands, read the following:
@@ -1541,3 +1544,10 @@ class TCMD():
 	        else:
 	            text = "less than a minute"
 	    return text % replacements
+
+	def getCommandObject(self, command):
+		if command in self.commandDict:
+			return self.commandDict[command]
+		else:
+			raise CommandNotFoundException()
+			
