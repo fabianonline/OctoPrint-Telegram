@@ -166,10 +166,20 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 ### Startup/Shutdown API
 ##########
+	
+	
 
 	def on_after_startup(self):
 		self.set_log_level()
 		self._logger.addFilter(TelegramPluginLoggingFilter())
+		
+		helpers = self._plugin_manager.get_helpers("multicam", "get_webcams")
+		if helpers is not None and "get_webcams" in helpers:
+			self.multicam_get_webcams = helpers["get_webcams"]
+			self._logger.info("Found Multicam plugin. Will use webcams defined there.")
+		else:
+			self.multicam_get_webcams = None
+		
 		self.tcmd = TCMD(self)
 		self.tmsg = TMSG(self) # Notification Message Handler class. called only by on_event()
 		# initial settings for new chat.
@@ -729,117 +739,54 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if with_gif : #giloser 05/05/19
 				try:
 					self._logger.info("Will try to create a gif ")
-					sendOneInLoop = False
-					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-					if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
-						try:
-							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("multicam_profiles : "+ str(curr))
-							for li in curr: 
-								try:
-									self._logger.error("multicam profile : "+ str(li))
-									url = li.get("URL")
-									self._logger.error("multicam URL : "+ str(url))
-									ret = self.create_gif_new(chatID,0,url)
-									if ret != "":
-										if not sendOneInLoop:
-											self.send_file(chatID, ret,message)
-										else:
-											self.send_file(chatID, ret,"")											
-										sendOneInLoop = True
-								except Exception as ex:
-									self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
-						except Exception as ex:
-							self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
-					else:
-						ret = self.create_gif_new(chatID,0,0)
-					
-					if ret == "":
-						ret = self.create_gif_new(chatID,0,0)
-
-					if ret != "" and not sendOneInLoop:
-						self.send_file(chatID, ret,message)
-					#ret = self.create_gif_new(chatID,0,0)
-					#if ret != "":
-					#	self.send_file(chatID, ret,message)
+					stream_urls = get_webcam_stream_urls()
+					for stream_url in stream_urls:
+						gif = self.create_gif_new(chatID, 0, stream_url)
+						self.send_file(chatID, ret, message)
+						message = ""
+						
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chatID)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
 			else:
-				if with_image:
-					try:
-						image_data = self.take_image(self._settings.global_get(["webcam", "snapshot"]))
-					except Exception as ex:
-						self._logger.info("Caught an exception trying take image: " + str(ex))
-
-				self._logger.debug("data so far: " + str(data))
-				if with_image:
-					self._logger.debug("image data so far: " + str(image_data))
-
-				if (not image_data or 'html' in image_data) and with_image:
-					message = "[ERR GET IMAGE]\n\n" + message
-					image_data = None
-
 				r = None
-				
-				if image_data:
-					self._logger.debug("Sending with image.. " + str(chatID))
-					files = {'photo':("image.jpg", image_data)}
-					self._logger.debug("files so far: " + str(files))
-					if message is not "":
-						data['caption'] = message
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-					
-					self._logger.debug("Sending finished. " + str(r.status_code))
-				else:
-					self._logger.debug("Sending without image.. " + str(chatID))
-					data['text'] = message
-					r =requests.post(self.bot_url + "/sendMessage", data=data)
-					self._logger.debug("Sending finished. " + str(r.status_code))
+				files = {}
 
 				if with_image:
-					try:
-						files={}
-						sendOneInLoop = False
-						if self._plugin_manager.get_plugin("multicam") and self._settings.get(["multicam"]):
-							try:
-								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
-								self._logger.debug("multicam_profiles : "+ str(curr))
-								for li in curr: 
-									try:
-										self._logger.debug("multicam profile:  "+ str(li))
-										snapshot_url = li.get("URL")
-										self._logger.debug("multicam url :  "+ str(snapshot_url))
-
-										defsnap = self._settings.global_get(["webcam", "snapshot"])
-										defstream = self._settings.global_get(["webcam", "stream"])
-										streamname = defstream.rsplit('/', 1).pop()
-										snapname = defsnap.rsplit('/', 1).pop()
-										if streamname in snapshot_url:
-											self._logger.debug( str(streamname) + " found so should be replaced by " + str(snapname) )
-											snapshot_url = snapshot_url.replace(streamname,snapname)
-
-										self._logger.debug("Snapshot URL: " + str(snapshot_url))
-										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
-											image_data = self.take_image(snapshot_url)
-											if image_data != "":
-												self._logger.debug("Image for  " + str(li.get("name")))
-												files = {'photo':("image.jpg", image_data)}
-												data2 = data
-												data2['caption'] = ""
-												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
-											else:
-												self._logger.debug("no image  " + str(li.get("name")))
-										else:
-											self._logger.debug("url is the same as the one from octoprint " )
-												
-									except Exception as ex:
-										self._logger.error("Exception loop multicam URL to create image: "+ str(ex) )
-							except Exception as ex:
-								self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
-					except Exception as ex:
-						self._logger.error("Exception occured on getting multicam plugin: "+ str(ex) )
-
+					snapshot_urls = self.get_webcam_snapshot_urls()
+					for snapshot_url in snapshot_urls:
+						try:
+							image_data = self.take_image(snapshot_url)
+							if not image_data or 'html' in image_data:
+								self._logger.error("Got an error trying to get snapshot from %s" % snapshot_url)
+							else:
+								rnd = str(random.randrange(1000000))
+								files["photo_" + rnd] = ("photo_" + rnf + ".jpg", image_data)
+						except Exception as ex:
+							self._logger.info("Caught an exception trying take image: " + str(ex))
+					
+					if len(files)<len(snapshot_urls):
+						message = "[ERROR GETTING IMAGE(S)]\n\n" + message
+						
+				if len(files)==0:
+					if message is "":
+						self._logger.error("Neither image nor message to send. So... doing nothing.")
+						return
+					else:
+						data["text"] = message
+						r = requests.post(self.bot_url + "/sendMessage", data=data)
+				elif len(files)==1:
+					if message is not "":
+						data["caption"] = message
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+				elif len(files)>1:
+					if message is not "":
+						data["caption"] = message
+					data["media"] = [{"type":"photo", "media": "attach://" + k} for k in files]
+					r = requests.post(self.bot_url + "/sendMediaGroup", files=files, data=data)
+				
+				self._logger.debug("Sending finished. " + str(r.status_code))
+				
 				if r is not None and inline:
 					r.raise_for_status()
 					myJson = r.json()
@@ -956,6 +903,20 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 ### Helper methods
 ##########
+
+	def get_webcam_snapshot_urls(self):
+		if self.multicam_get_webcams is not None:
+			result = self.multicam_get_webcams()
+			return [ d["snapshot_url"] for d in result if d["snapshot_url"] and d["snapshot_url"] is not ""]
+		else:
+			return [ self._settings.global_get(["webcam", "snapshot"]) ]
+	
+	def get_webcam_stream_urls(self):
+		if self.multicam_get_webcams is not None:
+			result = self.multicam_get_webcams()
+			return [ d["stream_url"] for d in result if d["stream_url"] and d["stream_url"] is not ""]
+		else:
+			return [ self._settings.global_get(["webcam", "stream"]) ]
 
 	def str2bool(self,v):
 		return v.lower() in ("yes", "true", "t", "1")
