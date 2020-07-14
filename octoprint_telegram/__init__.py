@@ -3,8 +3,8 @@ from PIL import Image
 from subprocess import Popen, PIPE
 import threading, requests, re, time, datetime, StringIO, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob #,resource
 import octoprint.plugin, octoprint.util, octoprint.filemanager
-from flask.ext.babel import gettext
-from flask.ext.login import current_user
+from flask_babel import gettext
+from flask_login import current_user
 from .telegramCommands import TCMD # telegramCommands.
 from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
