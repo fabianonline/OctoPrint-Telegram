@@ -54,7 +54,7 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'ZChange': {
-				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining.\nCompleted time {time_finish}."),
+				'text': gettext("Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}% done, {time_left} remaining.\nCompleted time {time_finish}."),
 				'image': True,
 				'gif': True,
 				'combined' : True,
