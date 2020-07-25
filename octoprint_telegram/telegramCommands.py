@@ -366,7 +366,7 @@ class TCMD():
 					elif params[2] == "Shutdown System":
 						myCmd = self.main._settings.global_get(['server','commands','systemShutdownCommand'])
 
-					p = sarge.run(myCmd, stderr=sarge.Capture(), shell=True, async=False)
+					p = sarge.run(myCmd, stderr=sarge.Capture(), shell=True, async_=False)
 
 					if p.returncode != 0:
 						returncode = p.returncode
@@ -390,14 +390,14 @@ class TCMD():
 					self.main.send_msg(self.gEmo('question') + str(command['name'])+"\nExecute system command?",responses=[[[self.main.emojis['check'] + gettext(" Execute"),"/sys_do_" + str(parameter)], [self.main.emojis['leftwards arrow with hook'] + gettext(" Back"),"/sys_back"]]],chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 					return
 				else:
-					async = command["async"] if "async" in command else False
+					async_ = command["async"] if "async" in command else False
 					self._logger.info("Performing command: %s" % command["command"])
 					try:
 						# we run this with shell=True since we have to trust whatever
 						# our admin configured as command and since we want to allow
 						# shell-alike handling here...
-						p = sarge.run(command["command"], stderr=sarge.Capture(), shell=True, async=async)
-						if not async:
+						p = sarge.run(command["command"], stderr=sarge.Capture(), shell=True, async_=async_)
+						if not async_:
 							if p.returncode != 0:
 								returncode = p.returncode
 								stderr_text = p.stderr.text
