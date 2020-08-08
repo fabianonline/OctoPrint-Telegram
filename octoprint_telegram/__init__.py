@@ -356,7 +356,7 @@ class TelegramListener(threading.Thread):
 					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10)
 					json = req.json()
 					if not json['ok']:
-						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
+						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", response=json))
 						time.sleep(120)
 						raise ExitThisLoopException()
 					if len(json['result']) > 0 and 'update_id' in json['result'][0]:
@@ -385,7 +385,7 @@ class TelegramListener(threading.Thread):
 			raise ExitThisLoopException()
 		json = req.json()
 		if not json['ok']:
-			self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", json))
+			self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", response=json))
 			time.sleep(120)
 			raise ExitThisLoopException()
 		if "result" in json and len(json['result']) > 0:
