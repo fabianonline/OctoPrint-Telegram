@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from octoprint.printer import UnknownScript
 import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
@@ -1189,7 +1190,7 @@ class TCMD():
 				return "Trying to delete a folder that contains a file that is currently in use"
 
 			# deselect the file if it's currently selected
-			if currentFilename is not None and self._file_manager.file_in_path(target, folderpath, currentFilename):
+			if currentFilename is not None and self.main._file_manager.file_in_path(target, folderpath, currentFilename):
 				self.main._printer.unselect_file()
 
 			# delete it
@@ -1452,92 +1453,92 @@ class TCMD():
 
 ############################################################################################
 	def formatFuzzyPrintTime(self,totalSeconds):
-    ##
-     # from octoprint/static/js/app/helpers.js transfered to python
-     #
-     # Formats a print time estimate in a very fuzzy way.
-     #
-     # Accuracy decreases the higher the estimation is:
-     #
-     #   # less than 30s: "a couple of seconds"
-     #   # 30s to a minute: "less than a minute"
-     #   # 1 to 30min: rounded to full minutes, above 30s is minute + 1 ("27 minutes", "2 minutes")
-     #   # 30min to 40min: "40 minutes"
-     #   # 40min to 50min: "50 minutes"
-     #   # 50min to 1h: "1 hour"
-     #   # 1 to 12h: rounded to half hours, 15min to 45min is ".5", above that hour + 1 ("4 hours", "2.5 hours")
-     #   # 12 to 24h: rounded to full hours, above 30min is hour + 1, over 23.5h is "1 day"
-     #   # Over a day: rounded to half days, 8h to 16h is ".5", above that days + 1 ("1 day", "4 days", "2.5 days")
-     #/
+	##
+	# from octoprint/static/js/app/helpers.js transfered to python
+	#
+	# Formats a print time estimate in a very fuzzy way.
+	#
+	# Accuracy decreases the higher the estimation is:
+	#
+	#   # less than 30s: "a couple of seconds"
+	#   # 30s to a minute: "less than a minute"
+	#   # 1 to 30min: rounded to full minutes, above 30s is minute + 1 ("27 minutes", "2 minutes")
+	#   # 30min to 40min: "40 minutes"
+	#   # 40min to 50min: "50 minutes"
+	#   # 50min to 1h: "1 hour"
+	#   # 1 to 12h: rounded to half hours, 15min to 45min is ".5", above that hour + 1 ("4 hours", "2.5 hours")
+	#   # 12 to 24h: rounded to full hours, above 30min is hour + 1, over 23.5h is "1 day"
+	#   # Over a day: rounded to half days, 8h to 16h is ".5", above that days + 1 ("1 day", "4 days", "2.5 days")
+	#/
 
-	    if not totalSeconds or totalSeconds < 1:
-	    	return "-";
-	    replacements = {
-	        'days': int(totalSeconds)/86400,
-	        'hours': int(totalSeconds)/3600,
-	        'minutes': int(totalSeconds)/60,
-	        'seconds': int(totalSeconds),
-	        'totalSeconds': totalSeconds
-	    }
-	    text = "-";
-	    if replacements['days'] >= 1:
-	        # days
-	        if replacements["hours"] >= 16:
-	            replacements['days'] += 1
-	            text = "%(days)d days"
-	        elif replacements["hours"] >= 8 and replacements["hours"] < 16:
-	            text = "%(days)d.5 days"
-	        else:
-	            if days == 1:
-	                text = "%(days)d day"
-	            else:
-	                text = "%(days)d days"
-	    elif replacements['hours'] >= 1:
-	        # only hours
-	        if replacements["hours"] < 12:
-	            if replacements['minutes'] < 15:
-	                # less than .15 => .0
-	                if replacements["hours"] == 1:
-	                    text = "%(hours)d hour"
-	                else:
-	                    text = "%(hours)d hours"
-	            elif replacements['minutes'] >= 15 and replacements['minutes'] < 45:
-	                # between .25 and .75 => .5
-	                text = "%(hours)d.5 hours"
-	            else:
-	                # over .75 => hours + 1
-	                replacements["hours"] += 1
-	                text = "%(hours)d hours"
-	        else:
-	            if replacements["hours"] == 23 and replacements['minutes'] > 30:
-	                # over 23.5 hours => 1 day
-	                text = "1 day"
-	            else:
-	                if replacements['minutes'] > 30:
-	                    # over .5 => hours + 1
-	                    replacements["hours"] += 1
-	                text = "%(hours)d hours"
-	    elif replacements['minutes'] >= 1:
-	        # only minutes
-	        if replacements['minutes'] < 2:
-	            if replacements['seconds'] < 30:
-	                text = "a minute"
-	            else:
-	                text = "2 minutes"
-	        elif replacements['minutes'] < 30:
-	            if replacements['seconds'] > 30:
-	                replacements["minutes"] += 1;
-	            text = "%(minutes)d minutes"
-	        elif replacements['minutes'] <= 40:
-	            text = "40 minutes"
-	        elif replacements['minutes'] <= 50:
-	            text = "50 minutes"
-	        else:
-	            text = "1 hour"
-	    else:
-	        # only seconds
-	        if seconds < 30:
-	            text = "a couple of seconds"
-	        else:
-	            text = "less than a minute"
-	    return text % replacements
+		if not totalSeconds or totalSeconds < 1:
+			return "-"
+		replacements = {
+			'days': int(totalSeconds)/86400,
+			'hours': int(totalSeconds)/3600,
+			'minutes': int(totalSeconds)/60,
+			'seconds': int(totalSeconds),
+			'totalSeconds': totalSeconds
+		}
+		text = "-"
+		if replacements['days'] >= 1:
+			# days
+			if replacements["hours"] >= 16:
+				replacements['days'] += 1
+				text = "%(days)d days"
+			elif replacements["hours"] >= 8 and replacements["hours"] < 16:
+				text = "%(days)d.5 days"
+			else:
+				if replacements['days'] == 1:
+					text = "%(days)d day"
+				else:
+					text = "%(days)d days"
+		elif replacements['hours'] >= 1:
+			# only hours
+			if replacements["hours"] < 12:
+				if replacements['minutes'] < 15:
+					# less than .15 => .0
+					if replacements["hours"] == 1:
+						text = "%(hours)d hour"
+					else:
+						text = "%(hours)d hours"
+				elif replacements['minutes'] >= 15 and replacements['minutes'] < 45:
+					# between .25 and .75 => .5
+					text = "%(hours)d.5 hours"
+				else:
+					# over .75 => hours + 1
+					replacements["hours"] += 1
+					text = "%(hours)d hours"
+			else:
+				if replacements["hours"] == 23 and replacements['minutes'] > 30:
+					# over 23.5 hours => 1 day
+					text = "1 day"
+				else:
+					if replacements['minutes'] > 30:
+						# over .5 => hours + 1
+						replacements["hours"] += 1
+					text = "%(hours)d hours"
+		elif replacements['minutes'] >= 1:
+			# only minutes
+			if replacements['minutes'] < 2:
+				if replacements['seconds'] < 30:
+					text = "a minute"
+				else:
+					text = "2 minutes"
+			elif replacements['minutes'] < 30:
+				if replacements['seconds'] > 30:
+					replacements["minutes"] += 1
+				text = "%(minutes)d minutes"
+			elif replacements['minutes'] <= 40:
+				text = "40 minutes"
+			elif replacements['minutes'] <= 50:
+				text = "50 minutes"
+			else:
+				text = "1 hour"
+		else:
+			# only seconds
+			if replacements['seconds'] < 30:
+				text = "a couple of seconds"
+			else:
+				text = "less than a minute"
+		return text % replacements
