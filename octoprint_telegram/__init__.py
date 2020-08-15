@@ -1083,7 +1083,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
-	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, **kwargs):
+	def _send_msg(self, message="", with_image=False,with_gif=False,responses=None, delay=0, inline = True, chatID = "", markup=None, showWeb=False, silent=False, **kwargs):
 		if not self.send_messages:
 			return
 
@@ -1121,6 +1121,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			image_data = None
 			data['chat_id'] = chatID
+			data['disable_notification'] = silent
 			if with_gif : #giloser 05/05/19
 				try:
 					self._logger.info("Will try to create a gif ")
