@@ -220,14 +220,14 @@ class TCMD():
 				return
 		else:
 			if self.main._settings.get_boolean(["send_gif"]):
-				gif_txt = "Desactivate gif"
+				gif_txt = "Deactivate gif"
 				gif_emo = self.gEmo('check')
 			else:
 				gif_txt = "Activate gif"
 				gif_emo = self.gEmo('error')
 
 			if self.main._settings.get_boolean(["multicam"]):
-				multicam_txt = "Desactivate management of multicam"
+				multicam_txt = "Deactivate management of multicam"
 				multicam_emo = self.gEmo('check')
 			else:
 				multicam_txt = "Activate mangement of multicam"
