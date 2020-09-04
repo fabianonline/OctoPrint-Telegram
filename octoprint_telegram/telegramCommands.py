@@ -230,7 +230,7 @@ class TCMD():
 				multicam_txt = "Deactivate management of multicam"
 				multicam_emo = self.gEmo('check')
 			else:
-				multicam_txt = "Activate mangement of multicam"
+				multicam_txt = "Activate management of multicam"
 				multicam_emo = self.gEmo('error')
 
 
