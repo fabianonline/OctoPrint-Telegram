@@ -1,7 +1,8 @@
 
+from __future__ import unicode_literals
 from PIL import Image
 from subprocess import Popen, PIPE
-import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource
+import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource,sys
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask_babel import gettext
 from flask_login import current_user
@@ -10,6 +11,19 @@ from .telegramNotifications import TMSG # telegramNotifications
 from .telegramNotifications import telegramMsgDict # dict of known notification messages
 from .emojiDict import telegramEmojiDict # dict of known emojis
 from babel.dates import format_date, format_datetime, format_time
+
+bytes_reader_class = io.BytesIO
+
+
+def is_in_python_2():
+	if sys.version[0] == "2":
+		return True
+	return False
+
+if is_in_python_2():
+	import StringIO
+	bytes_reader_class = StringIO.StringIO
+
 ####################################################
 #        TelegramListener Thread Class
 # Connects to Telegram and will listen for messages.
@@ -191,7 +205,7 @@ class TelegramListener(threading.Thread):
 				#giloser 09/05/2019 try to zip the gcode file to lower the size
 				if isZipFile:
 					try:
-						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, io.BytesIO(data))
+						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, bytes_reader_class(data))
 						#self.main._file_manager.add_folder(self.get_plugin_data_folder() , "tmpzip", ignore_existing=True)
 						zip_filename = self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
 						with open(zip_filename, 'w') as f:
@@ -210,7 +224,7 @@ class TelegramListener(threading.Thread):
 							if octoprint.filemanager.valid_file_type(filename, "machinecode"):
 								try:
 									data = zf.read(filename)
-									stream = octoprint.filemanager.util.StreamWrapper(filename, io.BytesIO(data))
+									stream = octoprint.filemanager.util.StreamWrapper(filename, bytes_reader_class(data))
 									if self.main.version >= 1.3:
 										target_filename = "TelegramPlugin/"+filename
 										from octoprint.server.api.files import _verifyFolderExists
@@ -244,7 +258,7 @@ class TelegramListener(threading.Thread):
 					#self.main._file_manager.remove_file(zip_filename)
 					os.remove(zip_filename)
 				else:
-					stream = octoprint.filemanager.util.StreamWrapper(file_name, io.BytesIO(data))
+					stream = octoprint.filemanager.util.StreamWrapper(file_name, bytes_reader_class(data))
 					self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 					# for parameter msg_id see _send_edit_msg()
 					self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
@@ -455,33 +469,33 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.newChat = {}
 		# use of emojis see below at method gEmo()
 		self.emojis = {
-			'octo': 	'\U0001F419', #octopus
-			'mistake': 	'\U0001F616',
-			'notify': '\U0001F514',
-			'shutdown' : '\U0001F4A4',
-			'shutup':	 '\U0001F64A',
-			'noNotify': '\U0001F515',
-			'notallowed': '\U0001F62C',
-			'rocket': '\U0001F680',
-			'save': '\U0001F4BE',
-			'heart': '\U00002764',
-			'info': '\U00002139',
-			'settings': '\U0001F4DD',
-			'clock': '\U000023F0',
-			'height': '\U00002B06',
-			'question': '\U00002753',
-			'warning': '\U000026A0',
-			'enter': '\U0000270F',
-			'upload': '\U0001F4E5',
-			'check': '\U00002705',
-			'lamp': '\U0001F4A1',
-			'movie': '\U0001F3AC',
-			'finish': '\U0001F3C1',
-			'cam': '\U0001F3A6',
-			'hooray': '\U0001F389',
-			'error': '\U000026D4',
-			'play': '\U000025B6',
-			'stop': '\U000025FC'
+			'octo': 	u'\U0001F419', #octopus
+			'mistake': 	u'\U0001F616',
+			'notify': u'\U0001F514',
+			'shutdown' : u'\U0001F4A4',
+			'shutup':	 u'\U0001F64A',
+			'noNotify': u'\U0001F515',
+			'notallowed': u'\U0001F62C',
+			'rocket': u'\U0001F680',
+			'save': u'\U0001F4BE',
+			'heart': u'\U00002764',
+			'info': u'\U00002139',
+			'settings': u'\U0001F4DD',
+			'clock': u'\U000023F0',
+			'height': u'\U00002B06',
+			'question': u'\U00002753',
+			'warning': u'\U000026A0',
+			'enter': u'\U0000270F',
+			'upload': u'\U0001F4E5',
+			'check': u'\U00002705',
+			'lamp': u'\U0001F4A1',
+			'movie': u'\U0001F3AC',
+			'finish': u'\U0001F3C1',
+			'cam': u'\U0001F3A6',
+			'hooray': u'\U0001F389',
+			'error': u'\U000026D4',
+			'play': u'\U000025B6',
+			'stop': u'\U000025FC'
 		}
 		self.emojis.update(telegramEmojiDict)
 	# all emojis will be get via this method to disable them globaly by the corrosponding setting
@@ -1122,7 +1136,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			image_data = None
 			data['chat_id'] = chatID
 			data['disable_notification'] = silent
-			if with_gif : #giloser 05/05/19
+			if with_gif: #giloser 05/05/19
 				try:
 					self._logger.info("Will try to create a gif ")
 					sendOneInLoop = False
@@ -1162,19 +1176,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
 					self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chatID)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
 			else:
+				self._logger.debug("data so far: " + str(data))
+
 				if with_image:
 					try:
 						image_data = self.take_image(self._settings.global_get(["webcam", "snapshot"]))
 					except Exception as ex:
 						self._logger.info("Caught an exception trying take image: " + str(ex))
 
-				self._logger.debug("data so far: " + str(data))
-				if with_image:
-					self._logger.debug("image data so far: " + str(image_data))
+					printable_data = None
+					if is_in_python_2():
+						printable_image_data = image_data.decode('utf8', errors='ignore')
+					else:
+						printable_image_data = str(image_data)
+					self._logger.debug("image data so far: {}".format(printable_image_data))
 
-				if (not image_data or 'html' in str(image_data)) and with_image:
-					message = "[ERR GET IMAGE]\n\n" + message
-					image_data = None
+					if not image_data or 'html' in printable_image_data:
+						message = "[ERR GET IMAGE]\n\n" + message
+						image_data = None
 
 				r = None
 
@@ -1323,7 +1342,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			else:
 				r = self.get_file(file_id)
 			file_name = self.get_plugin_data_folder() + "/img/user/pic" + str(chat_id) + ".jpg"
-			img = Image.open(io.BytesIO(r))
+			img = Image.open(bytes_reader_class(r))
 			img = img.resize((40, 40), PIL.Image.ANTIALIAS)
 			img.save(file_name, format="JPEG")
 			self._logger.debug("Saved Photo "+ str(chat_id))
@@ -1404,14 +1423,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if data == None:
 			return None
 		if flipH or flipV or rotate:
-			image = Image.open(io.BytesIO(data))
+			image = Image.open(bytes_reader_class(data))
 			if flipH:
 				image = image.transpose(Image.FLIP_LEFT_RIGHT)
 			if flipV:
 				image = image.transpose(Image.FLIP_TOP_BOTTOM)
 			if rotate:
 				image = image.transpose(Image.ROTATE_270)
-			output = io.BytesIO()
+			output = bytes_reader_class()
 			image.save(output, format="JPEG")
 			data = output.getvalue()
 			output.close()
@@ -1607,7 +1626,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				try:
 					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 					#self._file_manager.add_file(self.get_plugin_data_folder() + "/tmpgif",'Test_Telegram_%02d.jpg' % i,data,allow_overwrite=True)
-					image = Image.open(io.BytesIO(data))
+					image = Image.open(bytes_reader_class(data))
 					image.thumbnail((320, 240))
 					frames.append(image)
 					#image.save('Gif_Telegram_%02d.jpg' % i, 'JPEG')
@@ -1768,7 +1787,7 @@ def get_implementation_class():
 
 
 __plugin_name__ = "Telegram Notifications"
-__plugin_pythoncompat__ = ">=3,<4"
+__plugin_pythoncompat__ = ">=2.7,<4"
 __plugin_implementation__ = get_implementation_class()
 __plugin_hooks__ = {
 	"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
