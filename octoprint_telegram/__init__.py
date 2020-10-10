@@ -83,7 +83,7 @@ class TelegramListener(threading.Thread):
 			raise exit
 		#wooooops. can't handle the message
 		except Exception as ex:
-			self._logger.error("Exception caught! " + str(ex))
+			self._logger.exception("Exception caught! " + str(ex))
 		self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 		# we had first contact after octoprint startup
 		# so lets send startup message
@@ -866,7 +866,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			self._settings.save()
 		except Exception as ex:
-			self._logger.error("MIGRATED Save failed - " + str(ex))
+			self._logger.exception("MIGRATED Save failed - " + str(ex))
 		self._logger.debug("MIGRATED Saved")
 
 
@@ -1158,9 +1158,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 											self.send_file(chatID, ret,"")
 										sendOneInLoop = True
 								except Exception as ex:
-									self._logger.error("Exception loop multicam URL to create gif: "+ str(ex) )
+									self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
 						except Exception as ex:
-							self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
+							self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
 					else:
 						ret = self.create_gif_new(chatID,0,0)
 
@@ -1249,11 +1249,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 											self._logger.debug("url is the same as the one from octoprint " )
 
 									except Exception as ex:
-										self._logger.error("Exception loop multicam URL to create image: "+ str(ex) )
+										self._logger.exception("Exception loop multicam URL to create image: "+ str(ex) )
 							except Exception as ex:
-								self._logger.error("Exception occured on getting multicam options: "+ str(ex) )
+								self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
 					except Exception as ex:
-						self._logger.error("Exception occured on getting multicam plugin: "+ str(ex) )
+						self._logger.exception("Exception occured on getting multicam plugin: "+ str(ex) )
 
 				if r is not None and inline:
 					r.raise_for_status()
@@ -1348,7 +1348,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.debug("Saved Photo "+ str(chat_id))
 
 		except Exception as ex:
-			self._logger.error("Can't load UserImage: " + str(ex))
+			self._logger.exception("Can't load UserImage: " + str(ex))
 
 	def test_token(self, token=None):
 		if not self.send_messages:
@@ -1414,7 +1414,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				r = requests.get(snapshot_url,timeout=10)
 				data = r.content
 			except Exception as e:
-				self._logger.error("TimeOut Exception: " + str(e))
+				self._logger.exception("TimeOut Exception: " + str(e))
 				return None
 		flipH = self._settings.global_get(["webcam", "flipH"])
 		flipV = self._settings.global_get(["webcam", "flipV"])
@@ -1460,7 +1460,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				else:
 					strtime = " " + format_date(finish_time,"EEE d")
 		except Exception as ex:
-			self._logger.error("An Exception in get final time : " + str(ex) )
+			self._logger.exception("An Exception in get final time : " + str(ex) )
 
 		return strtime + strdate
 
