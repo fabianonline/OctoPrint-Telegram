@@ -1541,7 +1541,26 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( 'mpeg4')
 			params.append(  '-c:a' )
 			params.append( 'mpeg4')
+			
+			flipH = self._settings.global_get(["webcam", "flipH"])
+			flipV = self._settings.global_get(["webcam", "flipV"])
+			rotate= self._settings.global_get(["webcam", "rotate90"])
 
+			flipping = ""
+			if flipH or flipV or rotate:
+				self._logger.info("Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate)
+				params.append( "-vf")
+				if flipV:
+					self._logger.info("Need flip vertical")
+					flipping = flipping + "," + "vflip"
+				if flipH:
+					self._logger.info("Horizontal flip needed")
+					flipping = flipping + "," + "hflip"
+				if rotate:
+					self._logger.info("Need to rotate 90deg counter clockwise")
+					flipping = flipping + "," + "transpose=2"
+				flipping = flipping.lstrip(',')
+				params.append( flipping )
 			#if (str(self._settings.get(["scale_gif"])) == "0"):#scale_gif
 			#	scale = ""
 			#	scale_opt =""
