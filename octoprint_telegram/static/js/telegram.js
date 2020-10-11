@@ -541,6 +541,26 @@ $(function() {
             
         }
 
+        self.isNumber = function(number) {
+            return !isNaN(parseFloat(number)) && isFinite(number);
+        }
+
+        self.onSettingsBeforeSave = function() {
+	        // Check specific settings to be a number, not a null
+	        // In case it's not a number set it to be 0
+            var settings = self.settings.settings.plugins.telegram;
+            var settings_to_check_number = [
+                settings.notification_height,
+                settings.notification_time,
+                settings.message_at_print_done_delay
+            ];
+            for (var i = 0; i < settings_to_check_number.length; i++) {
+                if (!self.isNumber(settings_to_check_number[i]())) {
+                    settings_to_check_number[i](0);
+                }
+            }
+        }
+
         self.onServerDisconnect = function(){
             clearTimeout(self.reloadPending);
         }
