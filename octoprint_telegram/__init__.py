@@ -1500,6 +1500,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			os.nice(20) # force this to use less CPU
 
 
+			flipH = self._settings.global_get(["webcam", "flipH"])
+			flipV = self._settings.global_get(["webcam", "flipV"])
+			rotate= self._settings.global_get(["webcam", "rotate90"])
+
 			fps = 15
 			if stream_url == 0:
 				stream_url = self._settings.global_get(["webcam", "stream"])
@@ -1541,6 +1545,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( 'mpeg4')
 			params.append(  '-c:a' )
 			params.append( 'mpeg4')
+
+			# Rotation 180 dregree
+			if flipH:
+				params.append( '-hf')
+			if flipV:
+				params.append( '-vf')
+
+			params.append( 'transpose=2,transpose=2' )
+			# End Rotation
+
 
 			#if (str(self._settings.get(["scale_gif"])) == "0"):#scale_gif
 			#	scale = ""
