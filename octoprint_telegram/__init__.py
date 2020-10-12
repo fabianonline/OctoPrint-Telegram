@@ -1276,7 +1276,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			files = {'document': open(path, 'rb')}
 			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id,'caption':text})
 		except Exception as ex:
-			pass
+			self._logger.debug("Caught an exception in send_file(): " + str(ex))
 
 	def send_editMessageMedia(self,chat_id,path,message_id):
 		if not self.send_messages:
@@ -1472,7 +1472,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 		#	saveDir = os.getcwd()
 		#	os.chdir(self.get_plugin_data_folder()+"/tmpgif")
+			
 			outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
+		
 			try:
 				os.remove(outPath)
 			except Exception as ex:
@@ -1521,8 +1523,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.info("sec="+str(sec))
 			#timeSec = str(datetime.timedelta(seconds=sec))
 			#self._logger.info("timeSec="+timeSec)
-			timeSec = 0
-			timeSec="00:00:" + str(sec)
+			timeSec = 0                                                   
+			timeSec="00:00:{:02d}" 
+			timeSec=timeSec.format(sec) 
+
 			self._logger.info("timeSec="+timeSec)
 			#timout = 4*sec
 			#ffmpeg -i http://192.168.1.56/webcam/?action=stream -t 00:00:05 -vf scale=320x240 -y  -c:a copy out.mkv
@@ -1546,13 +1550,17 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append(  '-c:a' )
 			params.append( 'mpeg4')
 
-			# Rotation 180 dregree
+			# Rotation 
 			if flipH:
-				params.append( '-hf')
+				params.append( '-vf')
+				params.append( 'hflip')
 			if flipV:
 				params.append( '-vf')
+				params.append( 'vflip')
+			if rotate:
+				params.append( '-vf')
+				params.append( 'transpose=2')
 
-			params.append( 'transpose=2,transpose=2' )
 			# End Rotation
 
 
