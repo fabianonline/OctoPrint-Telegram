@@ -1184,7 +1184,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					except Exception as ex:
 						self._logger.info("Caught an exception trying take image: " + str(ex))
 
-					printable_data = None
+					printable_image_data = None
 					if image_data != None: #giloser check before using
 						if is_in_python_2():
 							printable_image_data = image_data.decode('utf8', errors='ignore')
