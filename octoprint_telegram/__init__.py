@@ -1184,11 +1184,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					except Exception as ex:
 						self._logger.info("Caught an exception trying take image: " + str(ex))
 
-					printable_data = None
-					if is_in_python_2():
-						printable_image_data = image_data.decode('utf8', errors='ignore')
-					else:
-						printable_image_data = str(image_data)
+					printable_image_data = None
+					if image_data != None: #giloser check before using
+						if is_in_python_2():
+							printable_image_data = image_data.decode('utf8', errors='ignore')
+						else:
+							printable_image_data = str(image_data)
 					self._logger.debug("image data so far: {}".format(printable_image_data))
 
 					if not image_data or 'html' in printable_image_data:
@@ -1465,7 +1466,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return strtime + strdate
 
 	def create_gif_new(self,chatID,sec=7,stream_url=0):
-		i=0
 		ret = ""
 
 		try:
@@ -1499,14 +1499,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return ""
 
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-			os.nice(20) # force this to use less CPU
+			#os.nice(20) # force this to use less CPU
 
 
 			flipH = self._settings.global_get(["webcam", "flipH"])
 			flipV = self._settings.global_get(["webcam", "flipV"])
 			rotate= self._settings.global_get(["webcam", "rotate90"])
 
-			fps = 15
 			if stream_url == 0:
 				stream_url = self._settings.global_get(["webcam", "stream"])
 			if "http" not in stream_url:
@@ -1591,7 +1590,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chatID)
 			ret = ""
 
-		os.nice(0) # use CPU usage to default
+		#os.nice(0) # use CPU usage to default
 		return ret
 
 	def TestProgram(self,name):
