@@ -469,33 +469,33 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self.newChat = {}
 		# use of emojis see below at method gEmo()
 		self.emojis = {
-			'octo': 	u'\U0001F419', #octopus
-			'mistake': 	u'\U0001F616',
-			'notify': u'\U0001F514',
-			'shutdown' : u'\U0001F4A4',
-			'shutup':	 u'\U0001F64A',
-			'noNotify': u'\U0001F515',
-			'notallowed': u'\U0001F62C',
-			'rocket': u'\U0001F680',
-			'save': u'\U0001F4BE',
-			'heart': u'\U00002764',
-			'info': u'\U00002139',
-			'settings': u'\U0001F4DD',
-			'clock': u'\U000023F0',
-			'height': u'\U00002B06',
-			'question': u'\U00002753',
-			'warning': u'\U000026A0',
-			'enter': u'\U0000270F',
-			'upload': u'\U0001F4E5',
-			'check': u'\U00002705',
-			'lamp': u'\U0001F4A1',
-			'movie': u'\U0001F3AC',
-			'finish': u'\U0001F3C1',
-			'cam': u'\U0001F3A6',
-			'hooray': u'\U0001F389',
-			'error': u'\U000026D4',
-			'play': u'\U000025B6',
-			'stop': u'\U000025FC'
+			'octo': 	'\U0001F419', #octopus
+			'mistake': 	'\U0001F616',
+			'notify': '\U0001F514',
+			'shutdown' : '\U0001F4A4',
+			'shutup':	 '\U0001F64A',
+			'noNotify': '\U0001F515',
+			'notallowed': '\U0001F62C',
+			'rocket': '\U0001F680',
+			'save': '\U0001F4BE',
+			'heart': '\U00002764',
+			'info': '\U00002139',
+			'settings': '\U0001F4DD',
+			'clock': '\U000023F0',
+			'height': '\U00002B06',
+			'question': '\U00002753',
+			'warning': '\U000026A0',
+			'enter': '\U0000270F',
+			'upload': '\U0001F4E5',
+			'check': '\U00002705',
+			'lamp': '\U0001F4A1',
+			'movie': '\U0001F3AC',
+			'finish': '\U0001F3C1',
+			'cam': '\U0001F3A6',
+			'hooray': '\U0001F389',
+			'error': '\U000026D4',
+			'play': '\U000025B6',
+			'stop': '\U000025FC'
 		}
 		self.emojis.update(telegramEmojiDict)
 	# all emojis will be get via this method to disable them globaly by the corrosponding setting
@@ -1465,7 +1465,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return strtime + strdate
 
 	def create_gif_new(self,chatID,sec=7,stream_url=0):
-		i=0
 		ret = ""
 
 		try:
@@ -1499,14 +1498,13 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return ""
 
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
-			os.nice(20) # force this to use less CPU
+			#os.nice(20) # force this to use less CPU
 
 
 			flipH = self._settings.global_get(["webcam", "flipH"])
 			flipV = self._settings.global_get(["webcam", "flipV"])
 			rotate= self._settings.global_get(["webcam", "rotate90"])
 
-			fps = 15
 			if stream_url == 0:
 				stream_url = self._settings.global_get(["webcam", "stream"])
 			if "http" not in stream_url:
@@ -1591,7 +1589,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chatID)
 			ret = ""
 
-		os.nice(0) # use CPU usage to default
+		#os.nice(0) # use CPU usage to default
 		return ret
 
 	def TestProgram(self,name):
