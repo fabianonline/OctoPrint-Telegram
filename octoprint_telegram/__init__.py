@@ -1550,15 +1550,21 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( 'mpeg4')
 
 			# Rotation 
-			if flipH:
-				params.append( '-vf')
-				params.append( 'hflip')
-			if flipV:
-				params.append( '-vf')
-				params.append( 'vflip')
-			if rotate:
-				params.append( '-vf')
-				params.append( 'transpose=2')
+			flipping = ""
+			if flipH or flipV or rotate:
+				self._logger.info("Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate)
+				params.append( "-vf")
+				if flipV:
+					self._logger.info("Need flip vertical")
+					flipping = flipping + "," + "vflip"
+				if flipH:
+					self._logger.info("Need flip horizontal")
+					flipping = flipping + "," + "hflip"
+				if rotate:
+					self._logger.info("Need to rotate 90deg counter clockwise")
+					flipping = flipping + "," + "transpose=2"
+				flipping = flipping.lstrip(',')
+				params.append( flipping )
 
 			# End Rotation
 
