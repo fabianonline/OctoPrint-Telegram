@@ -66,7 +66,6 @@ class TCMD():
 	def cmdStatus(self,chat_id,from_id,cmd,parameter):
 		if not self.main._printer.is_operational():
 			with_image = self.main._settings.get_boolean(["image_not_connected"])
-			with_gif = False #self.main._settings.get_boolean(["gif_not_connected"])
 			self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 		elif self.main._printer.is_printing():
 			self.main.on_event("StatusPrinting", {},chatID=chat_id)
@@ -87,13 +86,13 @@ class TCMD():
 					if self.main._plugin_manager.get_plugin("multicam",True) and self.main._settings.get(["multicam"]):
 						try:
 							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("multicam_profiles :  "+ str(curr))
+							self._logger.info("multicam_profiles :  "+ str(curr))
 							for li in curr:
 								try:
-									self._logger.error("multicam profile : "+ str(li))
+									self._logger.info("multicam profile : "+ str(li))
 									url = li.get("URL")
-									self._logger.error("multicam URL:  "+ str(url))
-									ret = self.main.create_gif_new(chat_id,5,url)
+									self._logger.info("multicam URL:  "+ str(url))
+									ret = self.main.create_gif_new(chat_id,5,li)
 									if ret != "":
 										self.main.send_file(chat_id, ret,"")
 										sendOneInLoop = True
@@ -130,13 +129,13 @@ class TCMD():
 					if self.main._plugin_manager.get_plugin("multicam",True) and self.main._settings.get(["multicam"]):
 						try:
 							curr = self.main._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.error("multicam_profiles : "+ str(curr))
+							self._logger.info("multicam_profiles : "+ str(curr))
 							for li in curr:
 								try:
-									self._logger.error("multicam profile : "+ str(li))
+									self._logger.info("multicam profile : "+ str(li))
 									url = li.get("URL")
-									self._logger.error("multicam URL :  "+ str(url))
-									ret = self.main.create_gif_new(chat_id,10,url)
+									self._logger.info("multicam URL :  "+ str(url))
+									ret = self.main.create_gif_new(chat_id,10,li)
 									if ret != "":
 										self.main.send_file(chat_id, ret,"")
 										sendOneInLoop = True

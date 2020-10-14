@@ -1150,7 +1150,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 									self._logger.debug("multicam profile : "+ str(li))
 									url = li.get("URL")
 									self._logger.debug("multicam URL : "+ str(url))
-									ret = self.create_gif_new(chatID,0,url)
+									ret = self.create_gif_new(chatID,0,li)
 									if ret != "":
 										if not sendOneInLoop:
 											self.send_file(chatID, ret,message)
@@ -1465,8 +1465,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		return strtime + strdate
 
-	def create_gif_new(self,chatID,sec=7,stream_url=0):
+	def create_gif_new(self,chatID,sec=7,multicam_prof=0):
 		ret = ""
+		stream_url = 0
+		if multicam_prof != 0:
+			stream_url = multicam_prof.get("URL")
 
 		try:
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
@@ -1500,11 +1503,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
 			#os.nice(20) # force this to use less CPU
-
-
-			flipH = self._settings.global_get(["webcam", "flipH"])
-			flipV = self._settings.global_get(["webcam", "flipV"])
-			rotate= self._settings.global_get(["webcam", "rotate90"])
 
 			if stream_url == 0:
 				stream_url = self._settings.global_get(["webcam", "stream"])
@@ -1548,6 +1546,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( 'mpeg4')
 			params.append(  '-c:a' )
 			params.append( 'mpeg4')
+
+			if multicam_prof != 0:
+				flipH = multicam_prof.get("flipH")
+				flipV = multicam_prof.get("flipV")
+				rotate= multicam_prof.get("rotate90")
+			else:
+				flipH = self._settings.global_get(["webcam", "flipH"])
+				flipV = self._settings.global_get(["webcam", "flipV"])
+				rotate= self._settings.global_get(["webcam", "rotate90"])
 
 			# Rotation 
 			flipping = ""
