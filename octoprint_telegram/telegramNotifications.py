@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+
 import time, datetime, logging
 import octoprint.util
 from flask_babel import gettext
@@ -106,7 +106,7 @@ class EmojiFormatter():
 	def __format__(self,format):
 		self.main._logger.debug("Formatting emoticon: `" + format +"`")
 		if format in self.main.emojis:
-			return self.main.gEmo(format).encode("utf-8")
+			return self.main.gEmo(format)
 		return ""
 
 class TMSG():
@@ -221,7 +221,7 @@ class TMSG():
 			time_left = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTimeLeft'] or 0)))
 			try:
 				time_finish = self.main.calculate_ETA(time_left)
-			except Exception, ex:
+			except Exception as ex:
 				time_finish = str(ex)
 				self._logger.error("Exception on formatting message: " +str(ex))
 		file = status['job']['file']['name']
@@ -233,7 +233,7 @@ class TMSG():
 		emo = EmojiFormatter(self.main)
 		try:
 			# call format with emo class object to handle emojis, otherwise use locals
-			message = self.main._settings.get(["messages",kwargs['event'],"text"]).encode('utf-8').format(emo,**locals())
+			message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())
 		except Exception as ex:
 			self._logger.debug("Exception on formatting message: " + str(ex))
 			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+event+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + event + "'."
