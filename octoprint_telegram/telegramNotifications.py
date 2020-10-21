@@ -2,6 +2,12 @@
 import time, datetime, logging
 import octoprint.util
 from flask_babel import gettext
+import sys
+
+def is_in_python_2_7():
+	if sys.version[0] == "2":
+		return True
+	return False
 
 ###################################################################################################
 # Here you find the known notification messages and their handles.
@@ -106,8 +112,12 @@ class EmojiFormatter():
 	def __format__(self,format):
 		self.main._logger.debug("Formatting emoticon: `" + format +"`")
 		if format in self.main.emojis:
-			if self.main.is_in_python_2(): #giloser try to fix emoji problem 
-				return self.main.gEmo(format).encode("utf-8")
+			if is_in_python_2_7(): #giloser try to fix emoji problem 
+				try:
+					return self.main.gEmo(format).encode("utf-8")
+				except Exception as ex:
+					self.main._logger.debug("Exception on formatting message: " + str(ex))
+					return self.main.gEmo(format)
 			else:
 				return self.main.gEmo(format)
 		return ""
@@ -236,7 +246,7 @@ class TMSG():
 		emo = EmojiFormatter(self.main)
 		try:
 			# call format with emo class object to handle emojis, otherwise use locals
-			if self.main.is_in_python_2(): #giloser try to fix emoji problem 
+			if is_in_python_2_7(): #giloser try to fix emoji problem 
 				message = self.main._settings.get(["messages",kwargs['event'],"text"]).encode('utf-8').format(emo,**locals())
 			else:
 				message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())

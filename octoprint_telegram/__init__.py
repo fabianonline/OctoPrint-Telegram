@@ -1101,6 +1101,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if not self.send_messages:
 			return
 
+		self._logger.debug("start _send_msg")
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1118,7 +1119,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					t = threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
 
-			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
+			self._logger.debug("log instead log sending message ")
+			#self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
 			data['disable_web_page_preview'] = not showWeb
