@@ -354,7 +354,7 @@ class TCMD():
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 ############################################################################################
 	def cmdUpload(self,chat_id,from_id,cmd,parameter):
-		self.main.send_msg(self.gEmo('info') + " To upload a gcode file, just send it to me.\nThe file will be stored in 'TelegramPlugin' folder.",chatID=chat_id)
+		self.main.send_msg(self.gEmo('info') + " To upload a gcode file (also accept zip file), just send it to me.\nThe file will be stored in 'TelegramPlugin' folder.",chatID=chat_id)
 ############################################################################################
 	def cmdSys(self,chat_id,from_id,cmd,parameter):
 		if parameter and parameter != "back":
@@ -820,7 +820,7 @@ class TCMD():
 		                           "/print - Lets you start a print. A confirmation is required.\n"
 		                           "/togglepause - Pause/Resume current Print.\n"
 		                           "/con - Connect/disconnect printer.\n"
-		                           "/upload - You can just send me a gcode file to save it to my library.\n"
+		                           "/upload - You can just send me a gcode file or a zip file to save it to my library.\n"
 		                           "/sys - Execute Octoprint System Commands.\n"
 		                           "/ctrl - Use self defined controls from Octoprint.\n"
 		                           "/tune - Set feed- and flowrate. Control temperatures.\n"
@@ -851,7 +851,26 @@ class TCMD():
 			for key,val in sorted(iter(L.items()), key=lambda x: x[1]['date'] , reverse=True):
 				try:
 					self._logger.debug("should get info on item " )
-					vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
+					try:
+						#Giloser 30/10/2020 get info from history to show last state of print
+						if(len(val['history']) > 0):
+							HistList = val['history']
+							HistList.sort(key=lambda x: x['timestamp'] , reverse=True)
+							try:
+								if(HistList[0]['success'] == True):
+									#vfilename = self.main.emojis['party face']+" "+('.').join(key.split('.')[:-1])
+									vfilename = self.main.emojis['party popper']+" "+('.').join(key.split('.')[:-1])
+								else:
+									#vfilename = self.main.emojis['disappointed but relieved face']+" "+('.').join(key.split('.')[:-1]) 
+									vfilename = self.main.emojis['warning sign']+" "+('.').join(key.split('.')[:-1]) 
+							except Exception as ex:
+								vfilename = self.main.emojis['page facing up']+" "+('.').join(key.split('.')[:-1])
+						else:
+							vfilename = self.main.emojis['squared new']+" "+('.').join(key.split('.')[:-1])
+					except Exception as ex:
+						vfilename = self.main.emojis['squared new']+" "+('.').join(key.split('.')[:-1])
+						self._logger.debug("An Exception in fileList loop file items : " + str(ex))
+
 					self._logger.debug("vfilename : {}".format(vfilename))
 					vhash = self.hashMe(pathWoDest + key)
 					self._logger.debug("vhash : " + str(vhash) )
@@ -910,6 +929,28 @@ class TCMD():
 			msg += "\n<b>"+self.main.emojis['clock face twelve oclock']+"Uploaded:</b> " + datetime.datetime.fromtimestamp(file['date']).strftime('%Y-%m-%d %H:%M:%S')
 		except Exception as ex:
 			self._logger.info("An Exception in get upload time : " + str(ex) )
+
+		self._logger.debug("val : " + str(file) )
+		self._logger.debug("meta : " + str(meta) )
+		try:
+			#Giloser 30/10/2020 get info from history to show last state of print
+			if(len(file['history']) > 0):
+				HistList = file['history']
+				HistList.sort(key=lambda x: x['timestamp'] , reverse=True)
+				try:
+					if(HistList[0]['success'] == True):
+						#vfilename = self.main.emojis['party face']+" "+('.').join(key.split('.')[:-1])
+						msg += "\n<b>"+ self.main.emojis['party popper']+"Number of Print:</b> " + str(len(file['history']))
+					else:
+						#vfilename = self.main.emojis['disappointed but relieved face']+" "+('.').join(key.split('.')[:-1]) 
+						msg += "\n<b>"+ self.main.emojis['warning sign']+"Number of Print:</b> " + str(len(file['history']))
+				except Exception as ex:
+					msg += "\n<b>"+ self.main.emojis['page facing up']+"Number of Print:</b> " + str(len(file['history']))
+			else:
+				msg += "\n<b>"+ self.main.emojis['squared new']+"Number of Print:</b> 0"
+		except Exception as ex:
+			msg += "\n<b>"+ self.main.emojis['squared new']+"Number of Print:</b> 0"
+
 		msg += "\n<b>"+self.main.emojis['flexed biceps']+"Size:</b> " + self.formatSize(file['size'])
 		filaLen = 0
 		printTime = 0

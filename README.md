@@ -68,7 +68,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	print - Lets you start a print. A confirmation is required.
 	togglepause - Pause/Resume current Print.
 	con - Connect/disconnect printer.
-	upload - You can just send me a gcode file to save it to my library.
+	upload - You can just send me a gcode file to save it to my library. Also accept zip file.
 	sys - Execute Octoprint System Commands.
 	ctrl - Use self defined controls from Octoprint.
 	tune - Set feed- and flowrate. Control temperatures.
@@ -96,6 +96,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 5. Hit "Save" at the bottom of the settings dialog.
 
 6. If you want to create gif and receive them as notification we use ffmpeg like timelapse (if problem please check timelapse is configured).
+you'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
+sudo apt-get install cpulimit
 
 Congratulations! Your printer is now connected to your Telegram bot.
 
@@ -231,7 +233,7 @@ In this section you can configure the content of the notification messages.
 
 **`/con`** - Connect/disconnect printer. Choose between auto connect, use defaults to connect or manual connect (select port/baudrate/printer profile). You are also able to change the connection defaults and turn auto connect on/off.
 
-**`/upload`** - You can just send a gcode file to the bot to save it in upload folder of Octoprint. If you send this command, the bot will tell you the same :) NOTE: This will NOT work in groups.
+**`/upload`** - You can just send a gcode file or a zip file to the bot to save it in upload folder of Octoprint. If you send this command, the bot will tell you the same :) NOTE: This will NOT work in groups.
 
 **`/sys`** - Execute Octoprint System Comamnds you defined in *config.yaml*. If a confirmation is defined for the system command, it will be displayed before execution. See [Octoprint documentation](http://docs.octoprint.org/en/master/configuration/config_yaml.html#system) for details on setting up system commands. There is also a [plugin](http://plugins.octoprint.org/plugins/systemcommandeditor/) for doing this.
 
@@ -243,9 +245,11 @@ In this section you can configure the content of the notification messages.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
-**`/gif`** - Send a gif create from 20 images.
+**`/gif`** - Send a gif create from 20 images. You'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
+sudo apt-get install cpulimit
 
-**`/supergif`** - Send a gif create from 60 images.
+**`/supergif`** - Send a gif create from 60 images. You'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
+sudo apt-get install cpulimit
 
 <!-- omit in toc -->
 #### Notes:
