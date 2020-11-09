@@ -1147,6 +1147,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						try:
 							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
 							self._logger.debug("multicam_profiles : "+ str(curr))
+							ListGif = []
 							for li in curr:
 								try:
 									self._logger.debug("multicam profile : "+ str(li))
@@ -1154,13 +1155,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 									self._logger.debug("multicam URL : "+ str(url))
 									ret = self.create_gif_new(chatID,0,li)
 									if ret != "":
-										if not sendOneInLoop:
-											self.send_file(chatID, ret,message)
-										else:
-											self.send_file(chatID, ret,"")
-										sendOneInLoop = True
+										ListGif.append(ret) 
+										#if not sendOneInLoop:
+										#	self.send_file(chatID, ret,message)
+										#else:
+										#	self.send_file(chatID, ret,"")
+										#sendOneInLoop = True
 								except Exception as ex:
 									self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
+							ret = ListGif[-1]
+							self._logger.debug("ListGif: "+str(ListGif))
+							for x in ListGif:
+								try:
+									if x != ret:
+										self._logger.debug("send_file whithout message: "+str(x))
+										self.send_file(chatID, x,"")
+								except Exception as ex:
+									self._logger.exception("Exception loop multicam URL to send gif: "+ str(ex) )
+
 						except Exception as ex:
 							self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
 					else:
@@ -1170,6 +1182,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						ret = self.create_gif_new(chatID,0,0)
 
 					if ret != "" and not sendOneInLoop:
+						self._logger.debug("send_file whith message: "+str(ret))
 						self.send_file(chatID, ret,message)
 					#ret = self.create_gif_new(chatID,0,0)
 					#if ret != "":
@@ -1478,7 +1491,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		#	saveDir = os.getcwd()
 		#	os.chdir(self.get_plugin_data_folder()+"/tmpgif")
 			
-			outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
+			if multicam_prof != 0:
+				outPath = self.get_plugin_data_folder()+"/tmpgif/gif_"+multicam_prof.get("name").replace(" ", "_") + ".mp4"
+			else:
+				outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
 		
 			try:
 				os.remove(outPath)
