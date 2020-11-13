@@ -1211,24 +1211,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						message = "[ERR GET IMAGE]\n\n" + message
 						image_data = None
 
-				r = None
-
-				if image_data:
-					self._logger.debug("Sending with image.. " + str(chatID))
-					files = {'photo':("image.jpg", image_data)}
-					self._logger.debug("files so far: " + str(files))
-					if message is not "":
-						data['caption'] = message
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-
-					self._logger.debug("Sending finished. " + str(r.status_code))
-				else:
-					self._logger.debug("Sending without image.. " + str(chatID))
-					data['text'] = message
-					r =requests.post(self.bot_url + "/sendMessage", data=data)
-					self._logger.debug("Sending finished. " + str(r.status_code))
-
-				if with_image:
 					try:
 						files={}
 						sendOneInLoop = False
@@ -1252,10 +1234,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 										self._logger.debug("Snapshot URL: " + str(snapshot_url))
 										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
-											image_data = self.take_image(snapshot_url)
-											if image_data != "":
+											image_data2 = self.take_image(snapshot_url)
+											if image_data2 != "":
 												self._logger.debug("Image for  " + str(li.get("name")))
-												files = {'photo':("image.jpg", image_data)}
+												files = {'photo':("image.jpg", image_data2)}
 												data2 = data
 												data2['caption'] = ""
 												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
@@ -1270,6 +1252,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 								self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
 					except Exception as ex:
 						self._logger.exception("Exception occured on getting multicam plugin: "+ str(ex) )
+
+				r = None
+
+				if image_data:
+					self._logger.debug("Sending with image.. " + str(chatID))
+					files = {'photo':("image.jpg", image_data)}
+					self._logger.debug("files so far: " + str(files))
+					if message is not "":
+						data['caption'] = message
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+
+					self._logger.debug("Sending finished. " + str(r.status_code))
+				else:
+					self._logger.debug("Sending without image.. " + str(chatID))
+					data['text'] = message
+					r =requests.post(self.bot_url + "/sendMessage", data=data)
+					self._logger.debug("Sending finished. " + str(r.status_code))
+
 
 				if r is not None and inline:
 					r.raise_for_status()
@@ -1560,16 +1560,20 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( stream_url)
 			params.append(  '-t')
 			params.append(  timeSec)
+			params.append( '-pix_fmt')
+			params.append( 'yuv420p')
+			#work on android but seems to be a problem on some Iphone
 			#params.append( '-c:v')
 			#params.append( 'mpeg4')
 			#params.append(  '-c:a' )
 			#params.append( 'mpeg4')
-			params.append( '-b:v')
-			params.append( '0')
-			params.append( '-crf')
-			params.append( '25')
-			params.append( '-movflags')
-			params.append( 'faststart')
+			#works on iphone but seems to be a problem on some android
+			#params.append( '-b:v')
+			#params.append( '0')
+			#params.append( '-crf')
+			#params.append( '25')
+			#params.append( '-movflags')
+			#params.append( 'faststart')
 
 			if multicam_prof != 0:
 				flipH = multicam_prof.get("flipH")
