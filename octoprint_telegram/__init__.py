@@ -1560,16 +1560,18 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( stream_url)
 			params.append(  '-t')
 			params.append(  timeSec)
+			#work on android but seems to be a problem on some Iphone
 			#params.append( '-c:v')
 			#params.append( 'mpeg4')
 			#params.append(  '-c:a' )
 			#params.append( 'mpeg4')
-			params.append( '-b:v')
-			params.append( '0')
-			params.append( '-crf')
-			params.append( '25')
-			params.append( '-movflags')
-			params.append( 'faststart')
+			#works on iphone but seems to be a problem on some android
+			#params.append( '-b:v')
+			#params.append( '0')
+			#params.append( '-crf')
+			#params.append( '25')
+			#params.append( '-movflags')
+			#params.append( 'faststart')
 
 			if multicam_prof != 0:
 				flipH = multicam_prof.get("flipH")
