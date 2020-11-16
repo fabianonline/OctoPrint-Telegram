@@ -29,6 +29,8 @@ class TCMD():
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
+			"SwitchOn": 		{'cmd': self.cmdSwitchOn, 'bind_none': True},
+			"SwitchOff":  		{'cmd': self.cmdSwitchOff, 'bind_none': True},
 			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
 			'/status':  	{'cmd': self.cmdStatus},
 			'/gif':  		{'cmd': self.cmdGif}, #giloser 05/05/19 add gif command
@@ -44,6 +46,8 @@ class TCMD():
 			'/filament':	{'cmd': self.cmdFilament, 'param': True},
 			'/sys': 		{'cmd': self.cmdSys, 'param': True},
 			'/ctrl': 		{'cmd': self.cmdCtrl, 'param': True},
+			'/off': 		{'cmd': self.cmdPrinterOff, 'bind_none': True},
+			'/on': 			{'cmd': self.cmdPrinterOn, 'bind_none': True},
 			'/con': 		{'cmd': self.cmdConnection, 'param': True},
 			'/user': 		{'cmd': self.cmdUser},
 			'/tune':		{'cmd': self.cmdTune, 'param': True},
@@ -518,6 +522,44 @@ class TCMD():
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
 ############################################################################################
+	def cmdPrinterOn(self,chat_id,from_id,cmd,parameter):
+		self.main.send_msg(self.gEmo('question') + gettext(" Turn on the priner?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+############################################################################################
+	def cmdPrinterOff(self,chat_id,from_id,cmd,parameter):
+		self.main.send_msg(self.gEmo('question') + gettext(" Turn off the priner?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOff"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+############################################################################################
+	def cmdSwitchOff(self,chat_id,from_id,cmd,parameter):
+		self._logger.info("Shutting down printer with API")
+		try:
+			headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+			answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOff' }, headers=headers)
+			if (answer.status_code >= 300):
+				self._logger.debug("Call response (POST API octoprint): %s" % (answer))
+				self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				return
+			self.main.send_msg(self.gEmo('check') + " Shutdown Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		except Exception, e:
+			self._logger.error("Failed to connect to call api: %s" % e)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		return
+############################################################################################
+	def cmdSwitchOn(self,chat_id,from_id,cmd,parameter):
+
+		self._logger.info("Shutting down printer with API")
+		try:
+			headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+			answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOn' }, headers=headers)
+			if (answer.status_code >= 300):
+				self._logger.debug("Call response (POST API octoprint): %s" % (answer))
+				self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				return
+			self.main.send_msg(self.gEmo('check') + " Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		except Exception, e:
+			self._logger.error("Failed to connect to call api: %s" % e)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		return
+
+############################################################################################
 	def cmdUser(self,chat_id,from_id,cmd,parameter):
 		msg = self.gEmo('info') + " *Your user settings:*\n\n"
 		msg += "*ID:* " + str(chat_id) + "\n"
@@ -823,6 +865,8 @@ class TCMD():
 		                           "/upload - You can just send me a gcode file or a zip file to save it to my library.\n"
 		                           "/sys - Execute Octoprint System Commands.\n"
 		                           "/ctrl - Use self defined controls from Octoprint.\n"
+		                           "/off - Switch off the Printer (needed PSUControl plugin).\n"
+		                           "/on - Switch on the Printer (needed PSUControl plugin).\n"
 		                           "/tune - Set feed- and flowrate. Control temperatures.\n"
 		                           "/user - Get user info.\n"
 		                           "/help - Show this help message."),chatID=chat_id,markup="Markdown")
