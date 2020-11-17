@@ -523,40 +523,73 @@ class TCMD():
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
 ############################################################################################
 	def cmdPrinterOn(self,chat_id,from_id,cmd,parameter):
-		self.main.send_msg(self.gEmo('question') + gettext(" Turn on the priner?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+		if self.main._plugin_manager.get_plugin("psucontrol",True):
+			try:    #Let's check if the printer has been turned on before.
+				headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+				answer = requests.get("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'getPSUState' }, headers=headers)
+				if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+					self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+					self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+				else:
+					if (answer.json()["isPSUOn"] == True):  #I know it's overcoding, but it's clearer.
+						self.main.send_msg(self.gEmo('warning') + "Printer has already been turned on.",chatID=chat_id)
+						return
+			except Exception as ex:
+				self._logger.error("Failed to connect to call api: %s" % ex)
+				self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
+
+			self.main.send_msg(self.gEmo('question') + gettext(" Turn on the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+		else:
+			self.main.send_msg(self.gEmo('warning') + " PSU Control plugin not found. Command can not be executed.",chatID = chat_id)
 ############################################################################################
 	def cmdPrinterOff(self,chat_id,from_id,cmd,parameter):
-		self.main.send_msg(self.gEmo('question') + gettext(" Turn off the priner?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOff"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+		if self.main._plugin_manager.get_plugin("psucontrol",True):
+			try:    #Let's check if the printer has been turned off before.
+				headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+				answer = requests.get("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'getPSUState' }, headers=headers)
+				if (answer.status_code >= 300):   
+					self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+					self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id)
+				else:
+					if (answer.json()["isPSUOn"] == False):  
+						self.main.send_msg(self.gEmo('warning') + "Printer has already been turned off.",chatID=chat_id)
+						return
+			except Exception as ex:
+				self._logger.error("Failed to connect to call api: %s" % ex)
+				self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id)
+
+			self.main.send_msg(self.gEmo('question') + gettext(" Turn off the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOff"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+		else:
+			self.main.send_msg(self.gEmo('warning') + " PSU Control plugin not found. Command can not be executed.",chatID = chat_id)
 ############################################################################################
 	def cmdSwitchOff(self,chat_id,from_id,cmd,parameter):
 		self._logger.info("Shutting down printer with API")
 		try:
 			headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
 			answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOff' }, headers=headers)
-			if (answer.status_code >= 300):
-				self._logger.debug("Call response (POST API octoprint): %s" % (answer))
+			if (answer.status_code  >= 300):
+				self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 				self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 			self.main.send_msg(self.gEmo('check') + " Shutdown Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-		except Exception, e:
-			self._logger.error("Failed to connect to call api: %s" % e)
-			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		except Exception as ex:
+			self._logger.error("Failed to connect to call api: %s" % ex)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		return
 ############################################################################################
 	def cmdSwitchOn(self,chat_id,from_id,cmd,parameter):
-
-		self._logger.info("Shutting down printer with API")
+		self._logger.info("Attempting to turn on the printer with API")
 		try:
 			headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
 			answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOn' }, headers=headers)
 			if (answer.status_code >= 300):
-				self._logger.debug("Call response (POST API octoprint): %s" % (answer))
-				self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+				self.main.send_msg(self.gEmo('warning') + "Something wrong, Power on attempt failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 			self.main.send_msg(self.gEmo('check') + " Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
-		except Exception, e:
-			self._logger.error("Failed to connect to call api: %s" % e)
-			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+		except Exception as ex:
+			self._logger.error("Failed to connect to call api: %s" % ex)
+			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		return
 
 ############################################################################################
@@ -849,6 +882,10 @@ class TCMD():
 
 ############################################################################################
 	def cmdHelp(self,chat_id,from_id,cmd,parameter):
+		if self.main._plugin_manager.get_plugin("psucontrol",True):
+			switch_command = "/off - Switch off the Printer.\n/on - Switch on the Printer.\n"
+                else:
+			switch_command = ""
 		self.main.send_msg(self.gEmo('info') + gettext(" *The following commands are known:*\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
 		                           "/shutup - Disables automatic notifications till the next print ends.\n"
@@ -865,11 +902,8 @@ class TCMD():
 		                           "/upload - You can just send me a gcode file or a zip file to save it to my library.\n"
 		                           "/sys - Execute Octoprint System Commands.\n"
 		                           "/ctrl - Use self defined controls from Octoprint.\n"
-		                           "/off - Switch off the Printer (needed PSUControl plugin).\n"
-		                           "/on - Switch on the Printer (needed PSUControl plugin).\n"
 		                           "/tune - Set feed- and flowrate. Control temperatures.\n"
-		                           "/user - Get user info.\n"
-		                           "/help - Show this help message."),chatID=chat_id,markup="Markdown")
+		                           "/user - Get user info.\n") + switch_command + gettext("/help - Show this help message.") ,chatID=chat_id,markup="Markdown")
 ############################################################################################
 # FILE HELPERS
 ############################################################################################
