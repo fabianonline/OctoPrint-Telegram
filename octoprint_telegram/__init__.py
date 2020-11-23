@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from PIL import Image
 from subprocess import Popen, PIPE
-import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource,sys
+import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource,sys,multiprocessing
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask_babel import gettext
 from flask_login import current_user
@@ -1487,7 +1487,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			stream_url = multicam_prof.get("URL")
 
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 		#	saveDir = os.getcwd()
 		#	os.chdir(self.get_plugin_data_folder()+"/tmpgif")
 			
@@ -1499,7 +1502,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			try:
 				os.remove(outPath)
 			except Exception as ex:
-				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
+				self._logger.error("Caught an exception trying clean previous images : " + str(ex))
 		#	self._logger.info("will try to save image in path " + os.getcwd())
 
 			params = []
@@ -1519,7 +1522,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed ffmpeg with following command : `sudo apt-get install ffmpeg`",chatID=chatID)
 				return ""
 
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 			#os.nice(20) # force this to use less CPU
 
 			if stream_url == 0:
@@ -1546,16 +1552,28 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			#timout = 4*sec
 			#ffmpeg -i http://192.168.1.56/webcam/?action=stream -t 00:00:05 -vf scale=320x240 -y  -c:a copy out.mkv
 			#params = ['ffmpeg', '-y', '-i' ,stream_url, '-t', "00:00:05",'-c:v','copy', '-c:a' ,'copy']
+			used_cpu = 1
+			limit_cpu = 65
+			
+			try:
+				nb_cpu = multiprocessing.cpu_count()
+				if(nb_cpu > 1):
+					used_cpu = nb_cpu / 2
+					#limit_cpu = (65 * nb_cpu)
+			except Exception as ex:
+				self._logger.error("Caught an exception trying to get number of cpu : " + str(ex))
+
+			self._logger.info("limit_cpu="+str(limit_cpu) + " | used_cpu=" + str(used_cpu) + " | because nb_cpu=" + str(nb_cpu))
 			params.append('cpulimit')
 			params.append( '-l')
-			params.append(  '65')
+			params.append(  str(limit_cpu))
 			params.append(  '-f')
 			params.append(  '-z')
 			params.append(  '--')
 			params.append( 'ffmpeg')
 			params.append(  '-y' )
 			params.append( '-threads')
-			params.append( '1')
+			params.append( str(used_cpu))
 			params.append(  '-i')
 			params.append( stream_url)
 			params.append(  '-t')
@@ -1614,17 +1632,26 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( outPath)
 
 			self._logger.info("will now create the video  " + str(params).strip('[]') )
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 
 			myproc = Popen(params, shell=False, stdout=PIPE, stderr=PIPE)
 			while True:
 				if myproc.poll() is not None:
 					break
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				try:
+					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				except Exception as ex:
+					self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 				time.sleep(0.5)
 
 			self._logger.info("Finish the video")
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 			ret = outPath
 		except Exception as ex:
 			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
