@@ -1559,7 +1559,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				nb_cpu = multiprocessing.cpu_count()
 				if(nb_cpu > 1):
 					used_cpu = nb_cpu / 2
-					#limit_cpu = (65 * nb_cpu)
+					limit_cpu = (65 * used_cpu)
 			except Exception as ex:
 				self._logger.error("Caught an exception trying to get number of cpu : " + str(ex))
 
