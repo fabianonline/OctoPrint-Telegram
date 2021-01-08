@@ -245,8 +245,8 @@ class TMSG():
 			Layers = self.main.get_current_layers()
 			self._logger.debug("Layers - " + str(Layers))
 			if not Layers is None:
-				currentLayer = Layers['height']['currentFormatted']
-				totalLayer = Layers['height']['totalFormatted']
+				currentLayer = Layers['layer']['current']
+				totalLayer = Layers['layer']['total']
 			else:
 				currentLayer = "?"
 				totalLayer = "?"
