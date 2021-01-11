@@ -76,6 +76,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	help - show list of commands.
 	gif - send a gif of 5 seconds 
 	supergif - send a gif of 10 seconds 
+	on - Turns on the printer power via the PSUControl plugin API. Requires PSU Control plugin installation.
+	off - Turns off the printer power via the PSUControl plugin API. Requires PSU Control plugin.
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -250,6 +252,10 @@ sudo apt-get install cpulimit
 
 **`/supergif`** - Send a gif create from 60 images. You'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
 sudo apt-get install cpulimit
+
+**`/on`** - Turns on the Printer power via the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl). 
+
+**`/off`** - Turns off the Printer power via the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl).
 
 <!-- omit in toc -->
 #### Notes:
