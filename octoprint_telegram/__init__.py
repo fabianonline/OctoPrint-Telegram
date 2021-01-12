@@ -1,5 +1,4 @@
 
-
 from __future__ import unicode_literals
 from PIL import Image
 from subprocess import Popen, PIPE
@@ -13,8 +12,6 @@ from .telegramNotifications import telegramMsgDict # dict of known notification 
 from .emojiDict import telegramEmojiDict # dict of known emojis
 from babel.dates import format_date, format_datetime, format_time
 
-
-# encoding: utf-8
 
 bytes_reader_class = io.BytesIO
 
@@ -997,7 +994,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 ##########
 
 	def get_api_commands(self):
-		self._logger.debug("on_api_command with only self")
 		return dict(
 			testToken=["token"],
 			testEvent=["event"],
@@ -1005,7 +1001,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		)
 
 	def on_api_get(self, request):
-		self._logger.debug("on_api_command with request")
 		# got an user-update with this command. so lets do that
 		if 'id' in request.args and 'cmd' in request.args and 'note' in request.args  and 'allow' in request.args:
 			self.chats[request.args['id']]['accept_commands'] = self.str2bool(str(request.args['cmd']))
@@ -1037,7 +1032,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return json.dumps({'chats':retChats, 'connection_state_str':self.connection_state_str, 'connection_ok':self.connection_ok})
 
 	def on_api_command(self, command, data):
-		self._logger.debug("on_api_command {}".format(command))
 		if command=="testToken":
 			self._logger.debug("Testing token {}".format(data['token']))
 			try:
@@ -1791,7 +1785,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def recv_callback(self, comm_instance, line, *args, **kwargs):
 		# Found keyword, fire event and block until other text is received
-		if "echo:busy: paused for user" in line:
+		if "echo:busy: paused for user" in line or "//action:paused" in line:
 			if not self.triggered:
 				self.on_event("plugin_pause_for_user_event_notify", {})
 				self.triggered = True
