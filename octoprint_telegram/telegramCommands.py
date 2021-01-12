@@ -884,7 +884,7 @@ class TCMD():
 	def cmdHelp(self,chat_id,from_id,cmd,parameter):
 		if self.main._plugin_manager.get_plugin("psucontrol",True):
 			switch_command = "/off - Switch off the Printer.\n/on - Switch on the Printer.\n"
-                else:
+	 	else:
 			switch_command = ""
 		self.main.send_msg(self.gEmo('info') + gettext(" *The following commands are known:*\n\n"
 		                           "/abort - Aborts the currently running print. A confirmation is required.\n"
