@@ -101,6 +101,14 @@ telegramMsgDict = {
 				'gif': False,
 				'combined': True,
 				'markup': "off"
+			},
+			'gCode_M600' : {
+				'text': "{emo:warning} " + gettext("Color change requested Second try.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
+				'image': True,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
 			}
 		}
 
@@ -142,7 +150,8 @@ class TMSG():
 			'PrintDone': self.msgPrintDone,
 			'StatusNotPrinting': self.msgStatusNotPrinting,
 			'StatusPrinting': self.msgStatusPrinting,
-			'plugin_pause_for_user_event_notify': self.msgPauseForUserEventNotify
+			'plugin_pause_for_user_event_notify': self.msgPauseForUserEventNotify,
+			'gCode_M600': self.msgColorChangeRequested
 		}
 
 	def startEvent(self, event, payload, **kwargs):
@@ -202,6 +211,11 @@ class TMSG():
 			return
 		self._sendNotification(payload, **kwargs)
 
+	def msgColorChangeRequested(self, payload, **kwargs):
+		if payload is None:
+			payload = {}
+		self._sendNotification(payload, **kwargs)
+
 	def _sendNotification(self, payload, **kwargs):
 		status = self.main._printer.get_current_data()
 		event = kwargs['event']
@@ -226,6 +240,19 @@ class TMSG():
 		e2_temp = temps['tool1']['actual'] if 'tool1' in temps else 0.0
 		e2_target = temps['tool1']['target'] if 'tool1' in temps else 0.0
 		percent = int(status['progress']['completion'] or 0)
+		
+		try:
+			Layers = self.main.get_current_layers()
+			self._logger.debug("Layers - " + str(Layers))
+			if not Layers is None:
+				currentLayer = Layers['layer']['current']
+				totalLayer = Layers['layer']['total']
+			else:
+				currentLayer = "?"
+				totalLayer = "?"
+		except Exception as ex:
+			self._logger.exception("Exception on get_current_layers: " + str(ex))
+
 		time_done = octoprint.util.get_formatted_timedelta(datetime.timedelta(seconds=(status['progress']['printTime'] or 0)))
 		if status['progress']['printTimeLeft'] == None:
 			time_left = gettext('[Unknown]')
@@ -239,6 +266,7 @@ class TMSG():
 				self._logger.error("Exception on formatting message: " +str(ex))
 		file = status['job']['file']['name']
 		path = status['job']['file']['path']
+		
 		if "file" in payload: file = payload["file"]
 		if "gcode" in payload: file = payload["gcode"]
 		if "filename" in payload: file = payload["filename"]
@@ -251,7 +279,7 @@ class TMSG():
 			else:
 				message = self.main._settings.get(["messages",kwargs['event'],"text"]).format(emo,**locals())
 		except Exception as ex:
-			self._logger.debug("Exception on formatting message: " + str(ex))
+			self._logger.exception("Exception on formatting message: " + str(ex))
 			message =  self.main.gEmo('warning') + " ERROR: I was not able to format the Notification for '"+event+"' properly. Please open your OctoPrint settings for " + self.main._plugin_name + " and check message settings for '" + event + "'."
 		self._logger.debug("Sending Notification: " + message)
 		# Do we want to send with Markup?
