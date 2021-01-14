@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from PIL import Image
 from subprocess import Popen, PIPE
-import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource,sys
+import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource,sys,multiprocessing
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask_babel import gettext
 from flask_login import current_user
@@ -1101,6 +1101,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if not self.send_messages:
 			return
 
+		self._logger.debug("start _send_msg")
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1118,7 +1119,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					t = threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
 
-			self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
+			self._logger.debug("log instead log sending message ")
+			#self._logger.info("Sending a message: " + message.replace("\n", "\\n") + " with_image=" + str(with_image) + " with_gif=" + str(with_gif) + " chatID= " + str(chatID))
 			data = {}
 			# Do we want to show web link previews?
 			data['disable_web_page_preview'] = not showWeb
@@ -1145,6 +1147,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						try:
 							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
 							self._logger.debug("multicam_profiles : "+ str(curr))
+							ListGif = []
 							for li in curr:
 								try:
 									self._logger.debug("multicam profile : "+ str(li))
@@ -1152,13 +1155,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 									self._logger.debug("multicam URL : "+ str(url))
 									ret = self.create_gif_new(chatID,0,li)
 									if ret != "":
-										if not sendOneInLoop:
-											self.send_file(chatID, ret,message)
-										else:
-											self.send_file(chatID, ret,"")
-										sendOneInLoop = True
+										ListGif.append(ret) 
+										#if not sendOneInLoop:
+										#	self.send_file(chatID, ret,message)
+										#else:
+										#	self.send_file(chatID, ret,"")
+										#sendOneInLoop = True
 								except Exception as ex:
 									self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
+							ret = ListGif[-1]
+							self._logger.debug("ListGif: "+str(ListGif))
+							for x in ListGif:
+								try:
+									if x != ret:
+										self._logger.debug("send_file whithout message: "+str(x))
+										self.send_file(chatID, x,"")
+								except Exception as ex:
+									self._logger.exception("Exception loop multicam URL to send gif: "+ str(ex) )
+
 						except Exception as ex:
 							self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
 					else:
@@ -1168,6 +1182,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						ret = self.create_gif_new(chatID,0,0)
 
 					if ret != "" and not sendOneInLoop:
+						self._logger.debug("send_file whith message: "+str(ret))
 						self.send_file(chatID, ret,message)
 					#ret = self.create_gif_new(chatID,0,0)
 					#if ret != "":
@@ -1196,24 +1211,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						message = "[ERR GET IMAGE]\n\n" + message
 						image_data = None
 
-				r = None
-
-				if image_data:
-					self._logger.debug("Sending with image.. " + str(chatID))
-					files = {'photo':("image.jpg", image_data)}
-					self._logger.debug("files so far: " + str(files))
-					if message is not "":
-						data['caption'] = message
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
-
-					self._logger.debug("Sending finished. " + str(r.status_code))
-				else:
-					self._logger.debug("Sending without image.. " + str(chatID))
-					data['text'] = message
-					r =requests.post(self.bot_url + "/sendMessage", data=data)
-					self._logger.debug("Sending finished. " + str(r.status_code))
-
-				if with_image:
 					try:
 						files={}
 						sendOneInLoop = False
@@ -1237,10 +1234,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 										self._logger.debug("Snapshot URL: " + str(snapshot_url))
 										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
-											image_data = self.take_image(snapshot_url)
-											if image_data != "":
+											image_data2 = self.take_image(snapshot_url)
+											if image_data2 != "":
 												self._logger.debug("Image for  " + str(li.get("name")))
-												files = {'photo':("image.jpg", image_data)}
+												files = {'photo':("image.jpg", image_data2)}
 												data2 = data
 												data2['caption'] = ""
 												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
@@ -1255,6 +1252,24 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 								self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
 					except Exception as ex:
 						self._logger.exception("Exception occured on getting multicam plugin: "+ str(ex) )
+
+				r = None
+
+				if image_data:
+					self._logger.debug("Sending with image.. " + str(chatID))
+					files = {'photo':("image.jpg", image_data)}
+					self._logger.debug("files so far: " + str(files))
+					if message is not "":
+						data['caption'] = message
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+
+					self._logger.debug("Sending finished. " + str(r.status_code))
+				else:
+					self._logger.debug("Sending without image.. " + str(chatID))
+					data['text'] = message
+					r =requests.post(self.bot_url + "/sendMessage", data=data)
+					self._logger.debug("Sending finished. " + str(r.status_code))
+
 
 				if r is not None and inline:
 					r.raise_for_status()
@@ -1472,16 +1487,22 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			stream_url = multicam_prof.get("URL")
 
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 		#	saveDir = os.getcwd()
 		#	os.chdir(self.get_plugin_data_folder()+"/tmpgif")
 			
-			outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
+			if multicam_prof != 0:
+				outPath = self.get_plugin_data_folder()+"/tmpgif/gif_"+multicam_prof.get("name").replace(" ", "_") + ".mp4"
+			else:
+				outPath = self.get_plugin_data_folder()+"/tmpgif/gif.mp4"
 		
 			try:
 				os.remove(outPath)
 			except Exception as ex:
-				self._logger.info("Caught an exception trying clean previous images : " + str(ex))
+				self._logger.error("Caught an exception trying clean previous images : " + str(ex))
 		#	self._logger.info("will try to save image in path " + os.getcwd())
 
 			params = []
@@ -1501,7 +1522,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file, and make sure you have installed ffmpeg with following command : `sudo apt-get install ffmpeg`",chatID=chatID)
 				return ""
 
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 			#os.nice(20) # force this to use less CPU
 
 			if stream_url == 0:
@@ -1528,24 +1552,46 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			#timout = 4*sec
 			#ffmpeg -i http://192.168.1.56/webcam/?action=stream -t 00:00:05 -vf scale=320x240 -y  -c:a copy out.mkv
 			#params = ['ffmpeg', '-y', '-i' ,stream_url, '-t', "00:00:05",'-c:v','copy', '-c:a' ,'copy']
+			used_cpu = 1
+			limit_cpu = 65
+			
+			try:
+				nb_cpu = multiprocessing.cpu_count()
+				if(nb_cpu > 1):
+					used_cpu = nb_cpu / 2
+					limit_cpu = (65 * used_cpu)
+			except Exception as ex:
+				self._logger.error("Caught an exception trying to get number of cpu : " + str(ex))
+
+			self._logger.info("limit_cpu="+str(limit_cpu) + " | used_cpu=" + str(used_cpu) + " | because nb_cpu=" + str(nb_cpu))
 			params.append('cpulimit')
 			params.append( '-l')
-			params.append(  '65')
+			params.append(  str(limit_cpu))
 			params.append(  '-f')
 			params.append(  '-z')
 			params.append(  '--')
 			params.append( 'ffmpeg')
 			params.append(  '-y' )
 			params.append( '-threads')
-			params.append( '1')
+			params.append( str(used_cpu))
 			params.append(  '-i')
 			params.append( stream_url)
 			params.append(  '-t')
 			params.append(  timeSec)
-			params.append( '-c:v')
-			params.append( 'mpeg4')
-			params.append(  '-c:a' )
-			params.append( 'mpeg4')
+			params.append( '-pix_fmt')
+			params.append( 'yuv420p')
+			#work on android but seems to be a problem on some Iphone
+			#params.append( '-c:v')
+			#params.append( 'mpeg4')
+			#params.append(  '-c:a' )
+			#params.append( 'mpeg4')
+			#works on iphone but seems to be a problem on some android
+			#params.append( '-b:v')
+			#params.append( '0')
+			#params.append( '-crf')
+			#params.append( '25')
+			#params.append( '-movflags')
+			#params.append( 'faststart')
 
 			if multicam_prof != 0:
 				flipH = multicam_prof.get("flipH")
@@ -1586,17 +1632,26 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			params.append( outPath)
 
 			self._logger.info("will now create the video  " + str(params).strip('[]') )
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 
 			myproc = Popen(params, shell=False, stdout=PIPE, stderr=PIPE)
 			while True:
 				if myproc.poll() is not None:
 					break
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				try:
+					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				except Exception as ex:
+					self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 				time.sleep(0.5)
 
 			self._logger.info("Finish the video")
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			try:
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+			except Exception as ex:
+				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 			ret = outPath
 		except Exception as ex:
 			self._logger.info("Caught an exception trying create gif general error : " + str(ex))
