@@ -695,7 +695,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			delay_img_gif=.5,
 			number_img_gif=20,
 			frame_img_gif=15,
-			fileOrder = False
+			fileOrder = False,
+			PreImgMethod="None",
+			PreImgCommand="",
+			PostImgMethod="None",
+			PostImgCommand=""
 		)
 
 	def get_settings_preprocessors(self):
@@ -1134,6 +1138,26 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 
 		self._logger.debug("start _send_msg")
+
+		try:
+			##find a way to decide if should and what command to light on
+			premethod = self._settings.get(["PreImgMethod"])
+			self._logger.debug("PreImgMethod {}".format(premethod))
+			precommand = self._settings.get(["PreImgCommand"])
+			if premethod == "GCODE":
+				self._logger.debug("PreImgCommand {}".format(precommand))
+				self._printer.commands(precommand)
+			elif premethod == "SYSTEM":
+				self._logger.debug("PreImgCommand {}".format(precommand))
+				p = subprocess.Popen(precommand, shell=True)
+				self._logger.debug("PreImg system command executed. PID={}, Command={}".format(p.pid, precommand))
+				while p.poll() is None:
+					time.sleep(0.1)
+					r = p.returncode
+					self._logger.debug("PreImg system command returned: {}".format(r))
+		except Exception as ex:
+			self._logger.exception("Exception PreImgMethod: "+ str(ex) )
+
 		if delay > 0:
 			time.sleep(delay)
 		try:
@@ -1326,6 +1350,26 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.exception("Caught an exception in _send_msg(): " + str(ex))
 
+		try:
+			##find a way to decide if should and what command to light on
+			postmethod = self._settings.get(["PostImgMethod"])
+			self._logger.debug("PostImgMethod {}".format(postmethod))
+			postcommand = self._settings.get(["PostImgCommand"])
+			if postmethod == "GCODE":
+				self._logger.debug("PostImgCommand {}".format(postcommand))
+				self._printer.commands(postcommand)
+			elif postmethod == "SYSTEM":
+				self._logger.debug("PostImgCommand {}".format(postcommand))
+				p = subprocess.Popen(postcommand, shell=True)
+				self._logger.debug("PostImg system command executed. PID={}, Command={}".format(p.pid, postcommand))
+				while p.poll() is None:
+					time.sleep(0.1)
+					r = p.returncode
+					self._logger.debug("PostImg system command returned: {}".format(r))
+		except Exception as ex:
+			self._logger.exception("Exception PostImgMethod: "+ str(ex) )
+
+
 	def send_file(self,chat_id,path,text):
 		if not self.send_messages:
 			return
@@ -1493,6 +1537,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			image.save(output, format="JPEG")
 			data = output.getvalue()
 			output.close()
+
 		return data
 
 	def get_current_layers(self):
@@ -1521,23 +1566,25 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			currentData = self._printer.get_current_data()
 			current_time = datetime.datetime.today()
 			if not currentData["progress"]["printTimeLeft"]:
-				if not printTime == 0:
-					self._logger.debug("will do timedelta on printTime: " + str(printTime) )
-					finish_time = current_time + datetime.timedelta(0,printTime)
-				else:
-					return ""
+				if printTime == 0:
+					return ""  # maybe put something like "nothing to print" in here
+				finish_time = current_time + datetime.timedelta(0, printTime)
 			else:
-				self._logger.debug("will do timedelta on currentData['progress']['printTimeLeft']: " + str(currentData["progress"]["printTimeLeft"]) )
-				finish_time = current_time + datetime.timedelta(0,currentData["progress"]["printTimeLeft"])
-			strtime = format_time(finish_time)
-			strdate = ""
-			if finish_time.day > current_time.day:
-				if finish_time.day == current_time.day + 1:
-					strdate = " Tomorrow"
-				else:
-					strtime = " " + format_date(finish_time,"EEE d")
+				finish_time = current_time + datetime.timedelta(0, currentData["progress"]["printTimeLeft"])
+
+			if finish_time.day > current_time.day and finish_time > current_time + datetime.timedelta(days=7):
+				# longer than a week ahead
+				format = "%d.%m.%Y %H:%M:%S"
+			elif finish_time.day > current_time.day:
+				# not today but within a week
+				format = "%a %H:%M:%S"
+			else:
+				# today
+				format = "%H:%M:%S"
+			return finish_time.strftime(format)
 		except Exception as ex:
 			self._logger.exception("An Exception in get final time : " + str(ex) )
+			return "There was a problem calculating the finishing time. Check the logs for more detail."
 
 		return strtime + strdate
 

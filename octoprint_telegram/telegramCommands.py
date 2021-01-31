@@ -6,6 +6,7 @@ import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
 from flask_babel import gettext
+from subprocess import Popen, PIPE
 from .telegramNotifications import telegramMsgDict
 
 ################################################################################################################
@@ -29,8 +30,8 @@ class TCMD():
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
-			"SwitchOn": 		{'cmd': self.cmdSwitchOn, 'bind_none': True},
-			"SwitchOff":  		{'cmd': self.cmdSwitchOff, 'bind_none': True},
+			"SwitchOn": 	{'cmd': self.cmdSwitchOn, 'param': True},
+			"SwitchOff":  	{'cmd': self.cmdSwitchOff, 'param': True},
 			'/test':  		{'cmd': self.cmdTest, 'bind_none': True},
 			'/status':  	{'cmd': self.cmdStatus},
 			'/gif':  		{'cmd': self.cmdGif}, #giloser 05/05/19 add gif command
@@ -46,12 +47,13 @@ class TCMD():
 			'/filament':	{'cmd': self.cmdFilament, 'param': True},
 			'/sys': 		{'cmd': self.cmdSys, 'param': True},
 			'/ctrl': 		{'cmd': self.cmdCtrl, 'param': True},
-			'/off': 		{'cmd': self.cmdPrinterOff, 'bind_none': True},
-			'/on': 			{'cmd': self.cmdPrinterOn, 'bind_none': True},
+			'/off': 		{'cmd': self.cmdPrinterOff, 'param': True},
+			'/on': 			{'cmd': self.cmdPrinterOn, 'param': True},
 			'/con': 		{'cmd': self.cmdConnection, 'param': True},
 			'/user': 		{'cmd': self.cmdUser},
 			'/tune':		{'cmd': self.cmdTune, 'param': True},
-			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True}
+			'/help':  		{'cmd': self.cmdHelp, 'bind_none': True},
+			'/gcode':		{'cmd': self.cmdGCode, 'param': True}
 		}
 
 
@@ -85,6 +87,25 @@ class TCMD():
 			#elif self.main._printer.is_printing():
 				sendOneInLoop = False
 				try:
+					##find a way to decide if should and what command to light on
+					premethod = self.main._settings.get(["PreImgMethod"])
+					self._logger.debug("PreImgMethod {}".format(premethod))
+					precommand = self.main._settings.get(["PreImgCommand"])
+					if premethod == "GCODE":
+						self._logger.debug("PreImgCommand {}".format(precommand))
+						self.main._printer.commands(precommand)
+					elif premethod == "SYSTEM":
+						self._logger.debug("PreImgCommand {}".format(precommand))
+						p = subprocess.Popen(precommand, shell=True)
+						self._logger.debug("PreImg system command executed. PID={}, Command={}".format(p.pid, precommand))
+						while p.poll() is None:
+							time.sleep(0.1)
+							r = p.returncode
+							self._logger.debug("PreImg system command returned: {}".format(r))
+				except Exception as ex:
+					self._logger.exception("Exception PostImgMethod: "+ str(ex) )
+
+				try:
 					self._logger.info("Will try to create a gif")
 					ret = ""
 					if self.main._plugin_manager.get_plugin("multicam",True) and self.main._settings.get(["multicam"]):
@@ -115,6 +136,25 @@ class TCMD():
 				except Exception as ex:
 					self._logger.error("Exception occured during creating of the gif: "+ str(ex) )
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file ",chatID=chat_id)
+
+				try:
+					postmethod = self.main._settings.get(["PostImgMethod"])
+					self._logger.debug("PostImgMethod {}".format(postmethod))
+					postcommand = self.main._settings.get(["PostImgCommand"])
+					if postmethod == "GCODE":
+						self._logger.debug("PostImgCommand {}".format(postcommand))
+						self.main._printer.commands(postcommand)
+					elif postmethod == "SYSTEM":
+						self._logger.debug("PostImgCommand {}".format(postcommand))
+						p = subprocess.Popen(postcommand, shell=True)
+						self._logger.debug("PostImg system command executed. PID={}, Command={}".format(p.pid, postcommand))
+						while p.poll() is None:
+							time.sleep(0.1)
+							r = p.returncode
+							self._logger.debug("PostImg system command returned: {}".format(r))
+				except Exception as ex:
+					self._logger.exception("Exception PostImgMethod: "+ str(ex) )
+
 			#else:
 			#	self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 		else:
@@ -127,6 +167,25 @@ class TCMD():
 				with_image = self.main._settings.get_boolean(["image_not_connected"])
 				self.main.send_msg(self.gEmo('warning') + gettext(" Not connected to a printer. Use /con to connect."),chatID=chat_id,inline=False,with_image=with_image)
 			elif self.main._printer.is_printing():
+				try:
+					##find a way to decide if should and what command to light on
+					premethod = self.main._settings.get(["PreImgMethod"])
+					self._logger.debug("PreImgMethod {}".format(premethod))
+					precommand = self.main._settings.get(["PreImgCommand"])
+					if premethod == "GCODE":
+						self._logger.debug("PreImgCommand {}".format(precommand))
+						self.main._printer.commands(precommand)
+					elif premethod == "SYSTEM":
+						self._logger.debug("PreImgCommand {}".format(precommand))
+						p = subprocess.Popen(precommand, shell=True)
+						self._logger.debug("PreImg system command executed. PID={}, Command={}".format(p.pid, precommand))
+						while p.poll() is None:
+							time.sleep(0.1)
+							r = p.returncode
+							self._logger.debug("PreImg system command returned: {}".format(r))
+				except Exception as ex:
+					self._logger.exception("Exception PostImgMethod: "+ str(ex) )
+
 				try:
 					sendOneInLoop = False
 					self._logger.info("Will try to create a super gif")
@@ -158,6 +217,24 @@ class TCMD():
 				except Exception as ex:
 					self._logger.error("Exception occured during creating of the supergif: "+ str(ex) )
 					self.main.send_msg(self.gEmo('dizzy face') + " Problem creating super gif, please check log file",chatID=chat_id)
+
+				try:
+					postmethod = self.main._settings.get(["PostImgMethod"])
+					self._logger.debug("PostImgMethod {}".format(postmethod))
+					postcommand = self.main._settings.get(["PostImgCommand"])
+					if postmethod == "GCODE":
+						self._logger.debug("PostImgCommand {}".format(postcommand))
+						self.main._printer.commands(postcommand)
+					elif postmethod == "SYSTEM":
+						self._logger.debug("PostImgCommand {}".format(postcommand))
+						p = subprocess.Popen(postcommand, shell=True)
+						self._logger.debug("PostImg system command executed. PID={}, Command={}".format(p.pid, postcommand))
+						while p.poll() is None:
+							time.sleep(0.1)
+							r = p.returncode
+							self._logger.debug("PostImg system command returned: {}".format(r))
+				except Exception as ex:
+					self._logger.exception("Exception PostImgMethod: "+ str(ex) )
 			else:
 				self.main.on_event("StatusNotPrinting", {},chatID=chat_id)
 		else:
@@ -517,7 +594,7 @@ class TCMD():
 					keys.append(tmpKeys)
 				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
 			except Exception as ex:
-				self._logger.info("An Exception in get list action: " + str(ex) )
+				self._logger.exception("An Exception in get list action: " + str(ex) )
 			if empty: message += "\n\n"+self.gEmo('warning')+" No Printer Control Command found..."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
 			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)
@@ -535,10 +612,76 @@ class TCMD():
 						self.main.send_msg(self.gEmo('warning') + "Printer has already been turned on.",chatID=chat_id)
 						return
 			except Exception as ex:
-				self._logger.error("Failed to connect to call api: %s" % ex)
+				self._logger.exception("Failed to connect to call api: %s" % ex)
 				self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
 
 			self.main.send_msg(self.gEmo('question') + gettext(" Turn on the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+		elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+			if parameter and parameter != "back" and parameter != "No":
+				try:    #Let's check if the printer has been turned on before.
+					pluglabel = parameter
+					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					data = '{ "command":"checkStatusRet", "label":"'+pluglabel+'" }'
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
+					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+					else:
+						if (answer.json()["currentState"] == "on"):  #I know it's overcoding, but it's clearer.
+							self.main.send_msg(self.gEmo('warning') + "Plug " + pluglabel + " has already been turned on.",chatID=chat_id)
+							return
+				except Exception as ex:
+					self._logger.exception("Failed to connect to call api: %s" % ex)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
+
+				#self.main.send_msg(self.gEmo('question') + gettext(" Turn on the Plug "+pluglabel+"?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn",pluglabel], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+				self._logger.info("Attempting to turn on the printer with API")
+				try:
+					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					data = '{ "command":"turnOn","label":"'+pluglabel+'" }'
+					answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)
+					if (answer.status_code >= 300):
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						self.main.send_msg(self.gEmo('warning') + "Something wrong, Power on attempt failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+						return
+					self.main.send_msg(self.gEmo('check') + " Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				except Exception as ex:
+					self._logger.exception("Failed to connect to call api: %s" % ex)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				return
+			else:
+				try:
+					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					data = '{ "command":"getListPlug","label":"all" }'
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
+					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+					else:
+						keys = []
+						tmpKeys = []
+						message = "Which plug would you turn on "
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						json_data = answer.json()
+						
+						for label in json_data:
+							try:
+								tmpKeys.append([str(label['label']),"/on_" + str(label['label'])])
+							except Exception as e:
+								self._logger.exception("loop to add plug failed: %s" % e)
+						
+						if len(json_data) == 1:
+							self.main.send_msg(self.gEmo('question') + gettext(" Turn on the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn_"+tmpKeys[0][0]], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+						else:
+							keys.append(tmpKeys)
+							keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+							msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+							self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)		
+						return
+				except Exception as e:
+					self._logger.exception("Command failed: %s" % e)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
 		else:
 			self.main.send_msg(self.gEmo('warning') + " PSU Control plugin not found. Command can not be executed.",chatID = chat_id)
 ############################################################################################
@@ -555,40 +698,139 @@ class TCMD():
 						self.main.send_msg(self.gEmo('warning') + "Printer has already been turned off.",chatID=chat_id)
 						return
 			except Exception as ex:
-				self._logger.error("Failed to connect to call api: %s" % ex)
+				self._logger.exception("Failed to connect to call api: %s" % ex)
 				self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id)
 
 			self.main.send_msg(self.gEmo('question') + gettext(" Turn off the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOff"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+		elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+			if parameter and parameter != "back" and parameter != "No":
+				try:    #Let's check if the printer has been turned on before.
+					pluglabel = parameter
+					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					data = '{ "command":"checkStatusRet", "label":"'+pluglabel+'" }'
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
+					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						self.main.send_msg(self.gEmo('warning') + "Something wrong, power off command failed.",chatID=chat_id)
+					else:
+						if (answer.json()["currentState"] == "off"):  #I know it's overcoding, but it's clearer.
+							self.main.send_msg(self.gEmo('warning') + "Plug " + pluglabel + " has already been turned off.",chatID=chat_id)
+							return
+				except Exception as ex:
+					self._logger.exception("Failed to connect to call api: %s" % ex)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
+
+				#self.main.send_msg(self.gEmo('question') + gettext(" Turn on the Plug "+pluglabel+"?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn",pluglabel], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+				self._logger.info("Attempting to turn off the printer with API")
+				try:
+					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					data = '{ "command":"turnOff","label":"'+pluglabel+'" }'
+					answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)
+					if (answer.status_code >= 300):
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						self.main.send_msg(self.gEmo('warning') + "Something wrong, Power off attempt failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+						return
+					self.main.send_msg(self.gEmo('check') + " Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				except Exception as ex:
+					self._logger.exception("Failed to connect to call api: %s" % ex)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				return
+			else:
+				try:
+					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					data = '{ "command":"getListPlug","label":"all" }'
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
+					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						self.main.send_msg(self.gEmo('warning') + "Something wrong, power off command failed.",chatID=chat_id)
+					else:
+						keys = []
+						tmpKeys = []
+						message = "Which plug would you turn off "
+						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
+						json_data = answer.json()
+						
+						for label in json_data:
+							try:
+								tmpKeys.append([str(label['label']),"/off_" + str(label['label'])])
+							except Exception as e:
+								self._logger.exception("loop to add plug failed: %s" % e)
+						
+						if len(json_data) == 1:
+							self.main.send_msg(self.gEmo('question') + gettext(" Turn off the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOff_"+tmpKeys[0][0]], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
+						else:
+							keys.append(tmpKeys)
+							keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+							msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+							self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id = msg_id)		
+						return
+				except Exception as e:
+					self._logger.exception("Command failed: %s" % e)
+					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % e,chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
 		else:
 			self.main.send_msg(self.gEmo('warning') + " PSU Control plugin not found. Command can not be executed.",chatID = chat_id)
 ############################################################################################
 	def cmdSwitchOff(self,chat_id,from_id,cmd,parameter):
 		self._logger.info("Shutting down printer with API")
 		try:
-			headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-			answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOff' }, headers=headers)
+			if self.main._plugin_manager.get_plugin("psucontrol",True):
+				headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+				answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOff' }, headers=headers)
+				
+			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+				if parameter and parameter != "back" and parameter != "No":
+					try:    #Let's check if the printer has been turned on before.
+						pluglabel = parameter
+						headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+						data = '{ "command":"turnOff","label":"'+pluglabel+'" }'
+						answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)	
+					except Exception as ex:
+						self._logger.exception("Failed to connect to call api: %s" % ex)
+						self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				else:
+					self._logger.debug("should had parameters but not")
+					self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
 			if (answer.status_code  >= 300):
 				self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 				self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 			self.main.send_msg(self.gEmo('check') + " Shutdown Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		except Exception as ex:
-			self._logger.error("Failed to connect to call api: %s" % ex)
+			self._logger.exception("Failed to connect to call api: %s" % ex)
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		return
 ############################################################################################
 	def cmdSwitchOn(self,chat_id,from_id,cmd,parameter):
 		self._logger.info("Attempting to turn on the printer with API")
 		try:
-			headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-			answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOn' }, headers=headers)
+			if self.main._plugin_manager.get_plugin("psucontrol",True):
+				headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+				answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOn' }, headers=headers)
+			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+				if parameter and parameter != "back" and parameter != "No":
+					try:    #Let's check if the printer has been turned on before.
+						pluglabel = parameter
+						headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+						data = '{ "command":"turnOn","label":"'+pluglabel+'" }'
+						answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)	
+						self._logger.debug("Call response (POST API octoprint): code {} with data {}".format(str(answer.status_code),str(answer.text)))
+					except Exception as ex:
+						self._logger.exception("Failed to connect to call api: %s" % ex)
+						self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+				else:
+					self._logger.debug("should had parameters but not")
+					self.main.send_msg(self.gEmo('warning') + "Something wrong, shutdown failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+					return
+			
 			if (answer.status_code >= 300):
 				self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 				self.main.send_msg(self.gEmo('warning') + "Something wrong, Power on attempt failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 				return
 			self.main.send_msg(self.gEmo('check') + " Command executed." ,chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		except Exception as ex:
-			self._logger.error("Failed to connect to call api: %s" % ex)
+			self._logger.exception("Failed to connect to call api: %s" % ex)
 			self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
 		return
 
@@ -789,96 +1031,110 @@ class TCMD():
 			self.main.send_msg(msg, responses=keys,chatID=chat_id,msg_id=msg_id,markup="Markdown")
 ############################################################################################
 	def cmdFilament(self,chat_id,from_id,cmd,parameter):
-		if parameter and parameter != "back":
-			self._logger.info("Parameter received for filament: %s" % parameter)
-			params = parameter.split('_')
-			apikey = self.main._settings.global_get(['api','key'])
-			errorText = ""
-			if params[0] == "spools":
-				try:
-					resp = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/spools?apikey="+apikey)
-					resp2 = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections?apikey="+apikey)
-					if (resp.status_code != 200):
-						errorText = resp.text
-					resp = resp.json()
-					resp2 = resp2.json()
-					self._logger.info("Spools: %s" % resp["spools"])
-					message = self.gEmo('info') + " Available filament spools are:\n"
-					for spool in resp["spools"]:
-						weight = spool["weight"]
-						used = spool["used"]
-						percent = int(100 - (used / weight * 100))
-						message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
-					for selection in resp2["selections"]:
-						if selection["tool"] == 0:
-							message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + " " + str(selection["spool"]["profile"]["material"])
-					msg_id=self.main.getUpdateMsgId(chat_id)
-					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
-				except ValueError:
-					message = self.gEmo('mistake')+" Error getting spools. Are you sure, you have installed the Filament Manager Plugin?"
-					if (errorText != ""):
-						message += "\nError text: " + str(errorText)
-					msg_id=self.main.getUpdateMsgId(chat_id)
-					self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
-			if params[0] == "changeSpool":
-				self._logger.info("Command to change spool: %s" % params)
-				if len(params) > 1:
-					self._logger.info("Changing to spool: %s" % params[1])
-					try:
-						payload = {"selection": {"spool": {"id": params[1]},"tool": 0}}
-						self._logger.info("Payload: %s" % payload)
-						resp = requests.patch("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
-						if (resp.status_code != 200):
-							errorText = resp.text
-						self._logger.info("Response: %s" % resp)
-						resp = resp.json()
-						message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
-						msg_id=self.main.getUpdateMsgId(chat_id)
-						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
-					except ValueError:
-						message = self.gEmo('mistake')+" Error changing spool"
-						if (errorText != ""):
-							message += "\nError text: " + str(errorText)
-						msg_id=self.main.getUpdateMsgId(chat_id)
-						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
-				else:
-					self._logger.info("Asking for spool")
+		if self.main._plugin_manager.get_plugin("filamentmanager",True):
+			if parameter and parameter != "back":
+				self._logger.info("Parameter received for filament: %s" % parameter)
+				params = parameter.split('_')
+				apikey = self.main._settings.global_get(['api','key'])
+				errorText = ""
+				if params[0] == "spools":
 					try:
 						resp = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/spools?apikey="+apikey)
+						resp2 = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections?apikey="+apikey)
 						if (resp.status_code != 200):
 							errorText = resp.text
 						resp = resp.json()
-						message = self.gEmo('question') + " which filament spool do you want to select?"
-						keys = []
-						tmpKeys = []
-						i = 1
+						resp2 = resp2.json()
+						self._logger.info("Spools: %s" % resp["spools"])
+						message = self.gEmo('info') + " Available filament spools are:\n"
 						for spool in resp["spools"]:
-							self._logger.info("Appending spool: %s" % spool)
-							tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
-							if i%2 == 0:
-								keys.append(tmpKeys)
-								tmpKeys = []
-							i += 1
-						if len(tmpKeys) > 0:
-							keys.append(tmpKeys)
-						keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+							weight = spool["weight"]
+							used = spool["used"]
+							percent = int(100 - (used / weight * 100))
+							message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
+						for selection in resp2["selections"]:
+							if selection["tool"] == 0:
+								message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + " " + str(selection["spool"]["profile"]["material"])
 						msg_id=self.main.getUpdateMsgId(chat_id)
-						self._logger.info("Sending message")
-						self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 					except ValueError:
-						message = self.gEmo('mistake')+" Error changing spool"
+						message = self.gEmo('mistake')+" Error getting spools. Are you sure, you have installed the Filament Manager Plugin?"
 						if (errorText != ""):
 							message += "\nError text: " + str(errorText)
 						msg_id=self.main.getUpdateMsgId(chat_id)
 						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+				if params[0] == "changeSpool":
+					self._logger.info("Command to change spool: %s" % params)
+					if len(params) > 1:
+						self._logger.info("Changing to spool: %s" % params[1])
+						try:
+							payload = {"selection": {"spool": {"id": params[1]},"tool": 0}}
+							self._logger.info("Payload: %s" % payload)
+							resp = requests.patch("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
+							if (resp.status_code != 200):
+								errorText = resp.text
+							self._logger.info("Response: %s" % resp)
+							resp = resp.json()
+							message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+						except ValueError:
+							message = self.gEmo('mistake')+" Error changing spool"
+							if (errorText != ""):
+								message += "\nError text: " + str(errorText)
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+					else:
+						self._logger.info("Asking for spool")
+						try:
+							resp = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/spools?apikey="+apikey)
+							if (resp.status_code != 200):
+								errorText = resp.text
+							resp = resp.json()
+							message = self.gEmo('question') + " which filament spool do you want to select?"
+							keys = []
+							tmpKeys = []
+							i = 1
+							for spool in resp["spools"]:
+								self._logger.info("Appending spool: %s" % spool)
+								tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
+								if i%2 == 0:
+									keys.append(tmpKeys)
+									tmpKeys = []
+								i += 1
+							if len(tmpKeys) > 0:
+								keys.append(tmpKeys)
+							keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self._logger.info("Sending message")
+							self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+						except ValueError:
+							message = self.gEmo('mistake')+" Error changing spool"
+							if (errorText != ""):
+								message += "\nError text: " + str(errorText)
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+			else:
+				message = self.gEmo('info') + " The following Filament Manager commands are known."
+				keys = []
+				keys.append([["Show spools","/filament_spools"]])
+				keys.append([["Change spool","/filament_changeSpool"]])
+				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+				msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+				self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
 		else:
-			message = self.gEmo('info') + " The following Filament Manager commands are known."
-			keys = []
-			keys.append([["Show spools","/filament_spools"]])
-			keys.append([["Change spool","/filament_changeSpool"]])
-			keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+			message = self.gEmo('warning') + " No filament manager plugin installed."
 			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
-			self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+			self.main.send_msg(message,chatID=chat_id,msg_id=msg_id)
+###########################################################################################
+	def cmdGCode(self,chat_id,from_id,cmd,parameter):
+		if parameter and parameter != "back":
+			params = parameter.split('_')
+			self.main._printer.commands(params[0])
+		else:
+			message = self.gEmo('info') + " call gCode commande with /gcode_XXX where XXX is the gcode command"
+			msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+			self.main.send_msg(message,chatID=chat_id,msg_id=msg_id)
 
 ############################################################################################
 	def cmdHelp(self,chat_id,from_id,cmd,parameter):

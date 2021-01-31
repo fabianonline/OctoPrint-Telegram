@@ -6,7 +6,7 @@
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages (settings, start a print and much more). Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized commands. You may also use this bot in groups.
 
-**Latest release: [1.6.2](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
+**Latest release: [1.6.3](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
 <!-- omit in toc -->
 ## Contents
@@ -78,6 +78,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	supergif - send a gif of 10 seconds 
 	on - Turns on the printer power via the PSUControl plugin API. Requires PSU Control plugin installation.
 	off - Turns off the printer power via the PSUControl plugin API. Requires PSU Control plugin.
+	gcode_XXX - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -206,6 +207,7 @@ In this section you can configure the content of the notification messages.
    * `{time_done}`, `{time_left}`, `{time_finish}` (only useful for height change events) - Time done / left in the print and ETA.
    * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
    * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
+   * `{currentLayer}`, `{totalLayer}` - the current and total layers number (need the plugin [DisplayLayerProgress](https://github.com/OllisGit/OctoPrint-DisplayLayerProgress))
    * You are also able to access the current printer state data. See [here](./dev_utils/datastructures/octoprint/_printer.get_current_data.py) for datastructure of this data. The base variable is `{status}`.
 	```
 	Example: {status[progress][filepos]} - will insert the actual position in the printed file.
@@ -253,9 +255,14 @@ sudo apt-get install cpulimit
 **`/supergif`** - Send a gif create from 60 images. You'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
 sudo apt-get install cpulimit
 
-**`/on`** - Turns on the Printer power via the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl). 
+**`/on`** - Turns on the Printer power via - the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl)
+										   - the TuyaSmartplug plugin API. Requires the [TuyaSmartplug plugin](https://github.com/ziirish/OctoPrint-TuyaSmartplug/) sadly for now wait on accept the push request to get the list of plug
 
-**`/off`** - Turns off the Printer power via the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl).
+**`/off`** - Turns off the Printer power via - the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl)
+                                             - the TuyaSmartplug plugin API. Requires the [TuyaSmartplug plugin](https://github.com/ziirish/OctoPrint-TuyaSmartplug/)
+											 sadly for now wait on accept the push request to get the list of plug
+
+**`/gcode_XXX`** - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
 
 <!-- omit in toc -->
 #### Notes:
