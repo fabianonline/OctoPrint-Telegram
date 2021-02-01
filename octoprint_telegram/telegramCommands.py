@@ -616,20 +616,24 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
 
 			self.main.send_msg(self.gEmo('question') + gettext(" Turn on the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOn"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
-		elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+		elif self.main._plugin_manager.get_plugin("tuyasmartplug",True) or self.main._plugin_manager.get_plugin("tasmota_mqtt",True) :
+			if self.main._plugin_manager.get_plugin("tasmota_mqtt",True):
+				plugpluginname = "tasmota_mqtt"
+			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+				plugpluginname = "tuyasmartplug"
 			if parameter and parameter != "back" and parameter != "No":
 				try:    #Let's check if the printer has been turned on before.
-					pluglabel = parameter
-					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-					data = '{ "command":"checkStatusRet", "label":"'+pluglabel+'" }'
-					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
-					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
-						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
-						self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+					params = parameter.split('_')
+					pluglabel = params[0]
+					if plugpluginname == "tasmota_mqtt":
+						relayN = params[1]
+						CurrentStatus = params[2]
 					else:
-						if (answer.json()["currentState"] == "on"):  #I know it's overcoding, but it's clearer.
-							self.main.send_msg(self.gEmo('warning') + "Plug " + pluglabel + " has already been turned on.",chatID=chat_id)
-							return
+						CurrentStatus = params[1]
+					
+					if (CurrentStatus == "on"):
+						self.main.send_msg(self.gEmo('warning') + "Plug " + pluglabel + " has already been turned on.",chatID=chat_id)
+						return
 				except Exception as ex:
 					self._logger.exception("Failed to connect to call api: %s" % ex)
 					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
@@ -638,8 +642,11 @@ class TCMD():
 				self._logger.info("Attempting to turn on the printer with API")
 				try:
 					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-					data = '{ "command":"turnOn","label":"'+pluglabel+'" }'
-					answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)
+					if plugpluginname == "tuyasmartplug" :
+						data = '{ "command":"turnOn","label":"'+pluglabel+'" }'
+					elif plugpluginname == "tasmota_mqtt":
+						data = '{ "command":"turnOn","topic":"'+pluglabel+'","relayN": "'+ relayN +'" }'
+					answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/"+plugpluginname,  headers=headers,data=data)
 					if (answer.status_code >= 300):
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 						self.main.send_msg(self.gEmo('warning') + "Something wrong, Power on attempt failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
@@ -652,8 +659,12 @@ class TCMD():
 			else:
 				try:
 					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-					data = '{ "command":"getListPlug","label":"all" }'
-					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
+					if plugpluginname == "tuyasmartplug" :
+						data = '{ "command":"getListPlug","label":"all" }'
+					elif plugpluginname == "tasmota_mqtt":
+						data = '{ "command":"getListPlug"}'
+					self._logger.debug("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname + " | data= "+str(data))
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
 					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 						self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
@@ -666,7 +677,10 @@ class TCMD():
 						
 						for label in json_data:
 							try:
-								tmpKeys.append([str(label['label']),"/on_" + str(label['label'])])
+								if plugpluginname == "tuyasmartplug" :
+									tmpKeys.append([str(label['label']),"/on_" + str(label['label'])+"_"+ str(label['currentState'])])
+								elif plugpluginname == "tasmota_mqtt":
+									tmpKeys.append([str(label['topic'])+ "_" + str(label['relayN']),"/on_" + str(label['topic'])+ "_" + str(label['relayN']) + "_"+ str(label['currentstate'])])
 							except Exception as e:
 								self._logger.exception("loop to add plug failed: %s" % e)
 						
@@ -702,20 +716,24 @@ class TCMD():
 				self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id)
 
 			self.main.send_msg(self.gEmo('question') + gettext(" Turn off the Printer?\n\n") , responses=[[[self.main.emojis['check']+gettext(" Yes"),"SwitchOff"], [self.main.emojis['cross mark']+gettext(" No"),"No"]]],chatID=chat_id)
-		elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+		elif self.main._plugin_manager.get_plugin("tuyasmartplug",True) or self.main._plugin_manager.get_plugin("tasmota_mqtt",True) :
+			if self.main._plugin_manager.get_plugin("tasmota_mqtt",True):
+				plugpluginname = "tasmota_mqtt"
+			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+				plugpluginname = "tuyasmartplug"
 			if parameter and parameter != "back" and parameter != "No":
 				try:    #Let's check if the printer has been turned on before.
-					pluglabel = parameter
-					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-					data = '{ "command":"checkStatusRet", "label":"'+pluglabel+'" }'
-					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
-					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
-						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
-						self.main.send_msg(self.gEmo('warning') + "Something wrong, power off command failed.",chatID=chat_id)
+					params = parameter.split('_')
+					pluglabel = params[0]
+					if plugpluginname == "tasmota_mqtt":
+						relayN = params[1]
+						CurrentStatus = params[2]
 					else:
-						if (answer.json()["currentState"] == "off"):  #I know it's overcoding, but it's clearer.
-							self.main.send_msg(self.gEmo('warning') + "Plug " + pluglabel + " has already been turned off.",chatID=chat_id)
-							return
+						CurrentStatus = params[1]
+					
+					if (CurrentStatus == "on"):
+						self.main.send_msg(self.gEmo('warning') + "Plug " + pluglabel + " has already been turned off.",chatID=chat_id)
+						return
 				except Exception as ex:
 					self._logger.exception("Failed to connect to call api: %s" % ex)
 					self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex,chatID = chat_id)
@@ -724,8 +742,11 @@ class TCMD():
 				self._logger.info("Attempting to turn off the printer with API")
 				try:
 					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-					data = '{ "command":"turnOff","label":"'+pluglabel+'" }'
-					answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)
+					if plugpluginname == "tuyasmartplug" :
+						data = '{ "command":"turnOff","label":"'+pluglabel+'" }'
+					elif plugpluginname == "tasmota_mqtt":
+						data = '{ "command":"turnOff","topic":"'+pluglabel+'" ,"relayN": "'+ relayN +'"}'
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
 					if (answer.status_code >= 300):
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 						self.main.send_msg(self.gEmo('warning') + "Something wrong, Power off attempt failed.",chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
@@ -738,8 +759,11 @@ class TCMD():
 			else:
 				try:
 					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-					data = '{ "command":"getListPlug","label":"all" }'
-					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/tuyasmartplug', headers=headers, data=data)
+					if plugpluginname == "tuyasmartplug" :
+						data = '{ "command":"getListPlug","label":"all" }'
+					elif plugpluginname == "tasmota_mqtt":
+						data = '{ "command":"getListPlug" }'
+					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
 					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 						self.main.send_msg(self.gEmo('warning') + "Something wrong, power off command failed.",chatID=chat_id)
@@ -752,7 +776,10 @@ class TCMD():
 						
 						for label in json_data:
 							try:
-								tmpKeys.append([str(label['label']),"/off_" + str(label['label'])])
+								if plugpluginname == "tuyasmartplug" :
+									tmpKeys.append([str(label['label']),"/on_" + str(label['label'])+"_"+ str(label['currentState'])])
+								elif plugpluginname == "tasmota_mqtt":
+									tmpKeys.append([str(label['topic'])+"_" + str(label['relayN']),"/on_" + str(label['topic'])+ "_" + str(label['relayN']) + "_"+ str(label['currentstate'])])
 							except Exception as e:
 								self._logger.exception("loop to add plug failed: %s" % e)
 						
@@ -778,13 +805,22 @@ class TCMD():
 				headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
 				answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOff' }, headers=headers)
 				
-			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True) or self.main._plugin_manager.get_plugin("tasmota_mqtt",True) :
+				if self.main._plugin_manager.get_plugin("tasmota_mqtt",True):
+					plugpluginname = "tasmota_mqtt"
+				elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+					plugpluginname = "tuyasmartplug"
 				if parameter and parameter != "back" and parameter != "No":
 					try:    #Let's check if the printer has been turned on before.
-						pluglabel = parameter
+						params = parameter.split('_')
+						pluglabel = params[0]
+						if plugpluginname == "tuyasmartplug" :
+							data = '{ "command":"turnOff","label":"'+pluglabel+'"  }'
+						if plugpluginname == "tasmota_mqtt":
+							relayN = params[1]
+							data = '{ "command":"turnOff","topic":"'+pluglabel+'","relayN":"'+relayN+'"}'
 						headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-						data = '{ "command":"turnOff","label":"'+pluglabel+'" }'
-						answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)	
+						answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
 					except Exception as ex:
 						self._logger.exception("Failed to connect to call api: %s" % ex)
 						self.main.send_msg(self.gEmo('warning') + " Command failed with exception: %s!" % ex, chatID = chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
@@ -808,13 +844,24 @@ class TCMD():
 			if self.main._plugin_manager.get_plugin("psucontrol",True):
 				headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
 				answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/psucontrol", json={ 'command':'turnPSUOn' }, headers=headers)
-			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+			elif self.main._plugin_manager.get_plugin("tuyasmartplug",True) or self.main._plugin_manager.get_plugin("tasmota_mqtt",True) :
+				if self.main._plugin_manager.get_plugin("tasmota_mqtt",True):
+					plugpluginname = "tasmota_mqtt"
+				elif self.main._plugin_manager.get_plugin("tuyasmartplug",True):
+					plugpluginname = "tuyasmartplug"
 				if parameter and parameter != "back" and parameter != "No":
 					try:    #Let's check if the printer has been turned on before.
-						pluglabel = parameter
+						params = parameter.split('_')
+						pluglabel = params[0]
+						if plugpluginname == "tuyasmartplug" :
+							data = '{ "command":"turnOn","label":"'+pluglabel+'"  }'
+						if plugpluginname == "tasmota_mqtt":
+							relayN = params[1]
+							data = '{ "command":"turnOn","topic":"'+pluglabel+'","relayN":"'+relayN+'"}'
+
+						self._logger.debug("Call POST API octoprint): url {} with data {}".format(str("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname),str(data)))
 						headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
-						data = '{ "command":"turnOn","label":"'+pluglabel+'" }'
-						answer = requests.post("http://localhost:" + str(self.port) + "/api/plugin/tuyasmartplug",  headers=headers,data=data)	
+						answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
 						self._logger.debug("Call response (POST API octoprint): code {} with data {}".format(str(answer.status_code),str(answer.text)))
 					except Exception as ex:
 						self._logger.exception("Failed to connect to call api: %s" % ex)
