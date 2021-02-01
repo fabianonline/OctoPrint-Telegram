@@ -533,7 +533,7 @@ class TCMD():
 			else:
 				message_text = " No known System Commands."
 			try:
-				self._logger.info("IP: " + str(self.main._settings.global_get(["server","onlineCheck","host"]))  +":" +self.main._settings.global_get(["server","onlineCheck","port"]) )
+				self._logger.info("IP: " + str(self.main._settings.global_get(["server","onlineCheck","host"]))  +":" +str(self.main._settings.global_get(["server","onlineCheck","port"]) ))
 				server_ip = [(s.connect((self.main._settings.global_get(["server","onlineCheck","host"]), self.main._settings.global_get(["server","onlineCheck","port"]))), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
 				message_text += "\n\nIP: " + server_ip
 			except Exception as ex: self._logger.error("Exception retrieving IP address: " + str(ex))
