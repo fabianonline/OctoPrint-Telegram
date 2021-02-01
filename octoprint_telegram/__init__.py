@@ -526,7 +526,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 	# so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]
 	def gEmo(self,key):
 		if self._settings.get(["send_icon"]) and key in self.emojis:
-			return unicode(self.emojis[key])
+			return self.emojis[key]
 		return ""
 
 	# starts the telegram listener thread
