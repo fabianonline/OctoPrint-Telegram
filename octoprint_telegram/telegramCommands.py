@@ -26,7 +26,7 @@ class TCMD():
 		self.conSettingsTemp = []
 		self.dirHashDict = {}
 		self.tmpFileHash = ""
-		self.port = 80
+		self.port = self.main._settings.global_get(["server","port"])
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
 			"No":  			{'cmd': self.cmdNo, 'bind_none': True},
@@ -534,7 +534,10 @@ class TCMD():
 				message_text = " No known System Commands."
 			try:
 				self._logger.info("IP: " + str(self.main._settings.global_get(["server","host"]))  +":" +str(self.main._settings.global_get(["server","port"]) ))
+
 				server_ip = [(s.connect((self.main._settings.global_get(["server","onlineCheck","host"]), self.main._settings.global_get(["server","onlineCheck","port"]))), s.getsockname()[0], s.close()) for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]][0][1]
+				if str(self.port) != "5000":
+					server_ip += ":" + str(port)
 				message_text += "\n\nIP: " + server_ip
 			except Exception as ex: self._logger.error("Exception retrieving IP address: " + str(ex))
 
