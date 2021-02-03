@@ -2,7 +2,7 @@
 from __future__ import unicode_literals
 from PIL import Image
 from subprocess import Popen, PIPE
-import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,resource,sys,multiprocessing
+import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask,base64,PIL, pkg_resources,subprocess,zipfile,glob,sys,multiprocessing
 import octoprint.plugin, octoprint.util, octoprint.filemanager
 from flask_babel import gettext
 from flask_login import current_user
@@ -971,7 +971,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				current=self._plugin_version,
 				user="fabianonline",
 				repo="OctoPrint-Telegram",
-				pip="https://github.com/fabianonline/OctoPrint-Telegram/releases/download/{target_version}/release.zip"
+				#pip="https://github.com/fabianonline/OctoPrint-Telegram/releases/download/{target_version}/release.zip"
+				pip="https://github.com/fabianonline/OctoPrint-Telegram/archive/{target_version}.zip"
 			)
 		)
 
@@ -1322,7 +1323,45 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 				r = None
 
-				if image_data:
+				try:
+					thumbnail_data = None
+					if kwargs['thumbnail'] != None:
+						self._logger.debug("send_file thumbnail whithout message: "+str(kwargs['thumbnail']))
+						url = "http://localhost:"+str(self.tcmd.port)+ "/" + str(kwargs['thumbnail'])
+
+						#outPath = self.get_plugin_data_folder()+"/tmpgif/thumbnail.png"
+						#try:
+						#	os.remove(outPath)
+						#except Exception as ex:
+						#	self._logger.error("Caught an exception trying clean previous images : " + str(ex))
+						#	self._logger.info("will try to save image in path " + os.getcwd())
+						r = requests.get(url)
+
+						if r.status_code >= 300:
+							thumbnail_data = None
+						else:
+							thumbnail_data = r.content
+
+						#with open(outPath, 'wb') as f:
+						#	f.write(r.content) 
+						#self.send_file(chatID,outPath ,"")
+				except Exception as ex:
+					self._logger.exception("Exception occured on getting thumbnail: "+ str(ex) )
+
+				if image_data and thumbnail_data != None:
+					self._logger.debug("Sending with image.. and thumbnail so image first " + str(chatID))
+					files = {'photo':("image.jpg", image_data)}
+					data['caption'] = ""
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					self._logger.debug("Sending image finished. " + str(r.status_code))
+
+					self._logger.debug("Sending thumbnail.. " + str(chatID))
+					files = {'photo':("image.jpg", thumbnail_data)}
+					if message is not "":
+						data['caption'] = message
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					self._logger.debug("Sending finished. " + str(r.status_code))
+				elif image_data:
 					self._logger.debug("Sending with image.. " + str(chatID))
 					files = {'photo':("image.jpg", image_data)}
 					#self._logger.debug("files so far: " + str(files))
@@ -1331,6 +1370,18 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
 
 					self._logger.debug("Sending finished. " + str(r.status_code))
+
+				elif thumbnail_data != None:
+					self._logger.debug("Sending with thumbnail.. " + str(chatID))
+					files = {'photo':("image.jpg", thumbnail_data)}
+
+					if message is not "":
+						data['caption'] = message
+
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+
+					self._logger.debug("Sending finished. " + str(r.status_code))
+
 				else:
 					self._logger.debug("Sending without image.. " + str(chatID))
 					data['text'] = message
@@ -1782,26 +1833,29 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return 1
 
 	def track_action(self, action):
-		if not self._settings.get_boolean(["tracking_activated"]):
-			return
-		if self._settings.get(["tracking_token"]) is None:
-			token = "".join(random.choice("abcdef0123456789") for i in range(16))
-			self._settings.set(["tracking_token"], token)
-		params = {
-			'idsite': '3',
-			'rec': '1',
-			'url': 'http://octoprint-telegram/'+action,
-			'action_name': ("%20/%20".join(action.split("/"))),
-			'_id': self._settings.get(["tracking_token"]),
-			'uid': self._settings.get(["tracking_token"]),
-			'cid': self._settings.get(["tracking_token"]),
-			'send_image': '0',
-			'_idvc': '1',
-			'dimension1': str(self._plugin_version)
-		}
-		t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params})
-		t.daemon = True
-		t.run()
+		try:
+			if not self._settings.get_boolean(["tracking_activated"]):
+				return
+			if self._settings.get(["tracking_token"]) is None:
+				token = "".join(random.choice("abcdef0123456789") for i in range(16))
+				self._settings.set(["tracking_token"], token)
+			params = {
+				'idsite': '3',
+				'rec': '1',
+				'url': 'http://octoprint-telegram/'+action,
+				'action_name': ("%20/%20".join(action.split("/"))),
+				'_id': self._settings.get(["tracking_token"]),
+				'uid': self._settings.get(["tracking_token"]),
+				'cid': self._settings.get(["tracking_token"]),
+				'send_image': '0',
+				'_idvc': '1',
+				'dimension1': str(self._plugin_version)
+			}
+			t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params})
+			t.daemon = True
+			t.run()
+		except Exception as ex:
+			self._logger.exception("Caught an exception trying to track_action : " + str(ex))
 
 	def route_hook(self, server_routes, *args, **kwargs):
 		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory

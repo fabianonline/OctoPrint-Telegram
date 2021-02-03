@@ -287,6 +287,22 @@ class TMSG():
 			file = status['job']['file']['name']
 			path = status['job']['file']['path']
 			
+			try:
+				if event == "PrintStarted":
+					#get additionnal metadata and thumbnail
+					self._logger.info("get thumbnail url for path=" + str(path))
+					meta = self.main._file_manager.get_metadata("local", path)
+					if 'thumbnail' in meta:
+						kwargs['thumbnail'] = meta['thumbnail']
+					else:
+						kwargs['thumbnail'] = None
+					self._logger.info("thumbnail =" + str(kwargs['thumbnail']))
+					#self._logger.info("meta =" + str(meta))
+				else:
+					kwargs['thumbnail'] = None
+			except Exception as ex:
+				self._logger.exception("Exception on getting thumbnail: " + str(ex))
+
 			if "file" in payload: file = payload["file"]
 			if "gcode" in payload: file = payload["gcode"]
 			if "filename" in payload: file = payload["filename"]
