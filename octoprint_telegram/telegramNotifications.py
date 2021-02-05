@@ -291,7 +291,7 @@ class TMSG():
 				if event == "PrintStarted":
 					#get additionnal metadata and thumbnail
 					self._logger.info("get thumbnail url for path=" + str(path))
-					meta = self.main._file_manager.get_metadata("local", path)
+					meta = self.main._file_manager.get_metadata(octoprint.filemanager.FileDestinations.LOCAL, path)
 					if 'thumbnail' in meta:
 						kwargs['thumbnail'] = meta['thumbnail']
 					else:

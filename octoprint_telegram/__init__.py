@@ -647,7 +647,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 	def on_startup(self, host, port):
 		try:
-			self.tcmd.port = port
+			self.tcmd.port =  self._settings.global_get(["server","port"])
 			#self.main.tcmd.port = port
 		except Exception as ex:
 			self._logger.error("Exception on_startup: "+ str(ex) )
@@ -1141,21 +1141,21 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.debug("start _send_msg")
 
 		try:
-			##find a way to decide if should and what command to light on
-			premethod = self._settings.get(["PreImgMethod"])
-			self._logger.debug("PreImgMethod {}".format(premethod))
-			precommand = self._settings.get(["PreImgCommand"])
-			if premethod == "GCODE":
-				self._logger.debug("PreImgCommand {}".format(precommand))
-				self._printer.commands(precommand)
-			elif premethod == "SYSTEM":
-				self._logger.debug("PreImgCommand {}".format(precommand))
-				p = subprocess.Popen(precommand, shell=True)
-				self._logger.debug("PreImg system command executed. PID={}, Command={}".format(p.pid, precommand))
-				while p.poll() is None:
-					time.sleep(0.1)
-					r = p.returncode
-					self._logger.debug("PreImg system command returned: {}".format(r))
+			if with_image or with_gif:
+				premethod = self._settings.get(["PreImgMethod"])
+				self._logger.debug("PreImgMethod {}".format(premethod))
+				precommand = self._settings.get(["PreImgCommand"])
+				if premethod == "GCODE":
+					self._logger.debug("PreImgCommand {}".format(precommand))
+					self._printer.commands(precommand)
+				elif premethod == "SYSTEM":
+					self._logger.debug("PreImgCommand {}".format(precommand))
+					p = subprocess.Popen(precommand, shell=True)
+					self._logger.debug("PreImg system command executed. PID={}, Command={}".format(p.pid, precommand))
+					while p.poll() is None:
+						time.sleep(0.1)
+						r = p.returncode
+						self._logger.debug("PreImg system command returned: {}".format(r))
 		except Exception as ex:
 			self._logger.exception("Exception PreImgMethod: "+ str(ex) )
 
@@ -1325,7 +1325,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 				try:
 					thumbnail_data = None
-					if kwargs['thumbnail'] != None:
+					if 'thumbnail' in kwargs and kwargs['thumbnail'] != None:
 						self._logger.debug("send_file thumbnail whithout message: "+str(kwargs['thumbnail']))
 						url = "http://localhost:"+str(self.tcmd.port)+ "/" + str(kwargs['thumbnail'])
 
@@ -1402,21 +1402,22 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			self._logger.exception("Caught an exception in _send_msg(): " + str(ex))
 
 		try:
-			##find a way to decide if should and what command to light on
-			postmethod = self._settings.get(["PostImgMethod"])
-			self._logger.debug("PostImgMethod {}".format(postmethod))
-			postcommand = self._settings.get(["PostImgCommand"])
-			if postmethod == "GCODE":
-				self._logger.debug("PostImgCommand {}".format(postcommand))
-				self._printer.commands(postcommand)
-			elif postmethod == "SYSTEM":
-				self._logger.debug("PostImgCommand {}".format(postcommand))
-				p = subprocess.Popen(postcommand, shell=True)
-				self._logger.debug("PostImg system command executed. PID={}, Command={}".format(p.pid, postcommand))
-				while p.poll() is None:
-					time.sleep(0.1)
-					r = p.returncode
-					self._logger.debug("PostImg system command returned: {}".format(r))
+			if with_image or with_gif:
+				##find a way to decide if should and what command to light on
+				postmethod = self._settings.get(["PostImgMethod"])
+				self._logger.debug("PostImgMethod {}".format(postmethod))
+				postcommand = self._settings.get(["PostImgCommand"])
+				if postmethod == "GCODE":
+					self._logger.debug("PostImgCommand {}".format(postcommand))
+					self._printer.commands(postcommand)
+				elif postmethod == "SYSTEM":
+					self._logger.debug("PostImgCommand {}".format(postcommand))
+					p = subprocess.Popen(postcommand, shell=True)
+					self._logger.debug("PostImg system command executed. PID={}, Command={}".format(p.pid, postcommand))
+					while p.poll() is None:
+						time.sleep(0.1)
+						r = p.returncode
+						self._logger.debug("PostImg system command returned: {}".format(r))
 		except Exception as ex:
 			self._logger.exception("Exception PostImgMethod: "+ str(ex) )
 
@@ -1598,7 +1599,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if self._plugin_manager.get_plugin("DisplayLayerProgress",True):
 				headers = { 'X-Api-Key' : self._settings.global_get(['api','key']),}
 				#r = requests.get("http://localhost:"+ str(self.tcmd.port) + "/plugin/DisplayLayerProgress/value", headers=headers)
-				r = requests.get("http://localhost:5000/plugin/DisplayLayerProgress/values", headers=headers,timeout=3)
+				r = requests.get("http://localhost:"+ str(self.tcmd.port) +"/plugin/DisplayLayerProgress/values", headers=headers,timeout=3)
 				self._logger.debug("get_current_layers : r=" +str(r) )
 				if (r.status_code >= 300):
 					return None

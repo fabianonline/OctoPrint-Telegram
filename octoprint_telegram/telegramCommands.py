@@ -5,6 +5,7 @@ from octoprint.printer import UnknownScript
 import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
+import base64
 from flask_babel import gettext
 from subprocess import Popen, PIPE
 from .telegramNotifications import telegramMsgDict
@@ -1412,6 +1413,7 @@ class TCMD():
 					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			else:
 				msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
+
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]
 		keyDownload = [self.main.emojis['save']+" Download",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|dl"]
