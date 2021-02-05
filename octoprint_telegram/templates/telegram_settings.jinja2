@@ -197,7 +197,7 @@
 			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.send_gif ,click:toggleGifGen()"  /> 
 			</label>
-				<span class="help-block"><small>Check to enable sending of gifs. <span class="text-warning">Warning, enabling this feature might affect your prints and make octoprint unresponsive: use at your own risk<span></small></span>
+			<span class="help-block"><small>Check to enable sending of gifs. <span class="text-warning">Warning, enabling this feature might affect your prints and make octoprint unresponsive: use at your own risk<span></small></span>
 		</div>
 	</div>
 
@@ -207,7 +207,34 @@
 			<label class="checkbox">
 				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.multicam"  /> 
 			</label>
-				<span class="help-block"><small>Check to enable sending images from every camera define in the plugin multicam. <span class="text-warning">Multicam plugin has to be installed and configured<span></small></span>
+			<span class="help-block"><small>Check to enable sending images from every camera define in the plugin multicam. <span class="text-warning">Multicam plugin has to be installed and configured<span></small></span>
+		</div>
+	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('Pre Image Action') }}</label>
+		<div class="controls">
+			<select id="settings_plugin_telegram_PreImgMethod" data-bind="value: settings.settings.plugins.telegram.PreImgMethod">
+			 	<option value="None">No Action</option>
+                <option value="GCODE">G-Code Command</option>
+                <option value="SYSTEM">System Command</option>
+            </select>
+			<span class="help-block"><small>Action pre image could be none, a gcode or a system command (script name with full path)</small></span>
+			<input type="text" class="input-block-level" id="settings_plugin_telegram_PreImgCommand" data-bind="value: settings.settings.plugins.telegram.PreImgCommand"/>
+		</div>
+	</div>
+	
+
+	<div class="control-group">
+		<label class="control-label">{{ _('Post  Image Action') }}</label>
+		<div class="controls">
+			<select id="settings_plugin_telegram_PostImgMethod" data-bind="value: settings.settings.plugins.telegram.PostImgMethod">
+			    <option value="None">No Action</option>
+                <option value="GCODE">G-Code Command</option>
+                <option value="SYSTEM">System Command</option>
+            </select>
+			<span class="help-block"><small>Action post image could be none, a gcode or a system command (script name with full path)</small></span>
+			<input type="text" class="input-block-level" id="settings_plugin_telegram_PostImgCommand" data-bind="value: settings.settings.plugins.telegram.PostImgCommand" />
 		</div>
 	</div>
 
