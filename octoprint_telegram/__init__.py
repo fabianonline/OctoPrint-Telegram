@@ -1141,7 +1141,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.debug("start _send_msg")
 
 		try:
-			if with_image or with_gif:
+			if (with_image or with_gif):
 				premethod = self._settings.get(["PreImgMethod"])
 				self._logger.debug("PreImgMethod {}".format(premethod))
 				precommand = self._settings.get(["PreImgCommand"])
@@ -1197,53 +1197,57 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data['disable_notification'] = silent
 			if with_gif: #giloser 05/05/19
 				try:
-					self._logger.info("Will try to create a gif ")
 					sendOneInLoop = False
-					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-					if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
-						try:
-							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.debug("multicam_profiles : "+ str(curr))
-							ListGif = []
-							for li in curr:
-								try:
-									self._logger.debug("multicam profile : "+ str(li))
-									url = li.get("URL")
-									self._logger.debug("multicam URL : "+ str(url))
-									ret = self.create_gif_new(chatID,0,li)
-									if ret != "":
-										ListGif.append(ret) 
-										#if not sendOneInLoop:
-										#	self.send_file(chatID, ret,message)
-										#else:
-										#	self.send_file(chatID, ret,"")
-										#sendOneInLoop = True
-								except Exception as ex:
-									self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
-							ret = ListGif[-1]
-							self._logger.debug("ListGif: "+str(ListGif))
-							for x in ListGif:
-								try:
-									if x != ret:
-										self._logger.debug("send_file whithout message: "+str(x))
-										self.send_file(chatID, x,"")
-								except Exception as ex:
-									self._logger.exception("Exception loop multicam URL to send gif: "+ str(ex) )
-
-						except Exception as ex:
-							self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
+					if kwargs['event'] == "MovieDone":
+						ret = kwargs['movie']
 					else:
-						ret = self.create_gif_new(chatID,0,0)
+						self._logger.info("Will try to create a gif ")
+						
+						#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+						if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
+							try:
+								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
+								self._logger.debug("multicam_profiles : "+ str(curr))
+								ListGif = []
+								for li in curr:
+									try:
+										self._logger.debug("multicam profile : "+ str(li))
+										url = li.get("URL")
+										self._logger.debug("multicam URL : "+ str(url))
+										ret = self.create_gif_new(chatID,0,li)
+										if ret != "":
+											ListGif.append(ret) 
+											#if not sendOneInLoop:
+											#	self.send_file(chatID, ret,message)
+											#else:
+											#	self.send_file(chatID, ret,"")
+											#sendOneInLoop = True
+									except Exception as ex:
+										self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
+								ret = ListGif[-1]
+								self._logger.debug("ListGif: "+str(ListGif))
+								for x in ListGif:
+									try:
+										if x != ret:
+											self._logger.debug("send_file whithout message: "+str(x))
+											self.send_file(chatID, x,"")
+									except Exception as ex:
+										self._logger.exception("Exception loop multicam URL to send gif: "+ str(ex) )
 
-					if ret == "":
-						ret = self.create_gif_new(chatID,0,0)
+							except Exception as ex:
+								self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
+						else:
+							ret = self.create_gif_new(chatID,0,0)
+
+						if ret == "":
+							ret = self.create_gif_new(chatID,0,0)
 
 					if ret != "" and not sendOneInLoop:
 						self._logger.debug("send_file whith message: "+str(ret))
 						self.send_file(chatID, ret,message)
-					#ret = self.create_gif_new(chatID,0,0)
-					#if ret != "":
-					#	self.send_file(chatID, ret,message)
+						#ret = self.create_gif_new(chatID,0,0)
+						#if ret != "":
+						#	self.send_file(chatID, ret,message)
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
 					self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chatID)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
@@ -1620,6 +1624,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if not currentData["progress"]["printTimeLeft"]:
 				if printTime == 0:
 					return ""  # maybe put something like "nothing to print" in here
+				self._logger.debug("printTime=" + str(printTime))
 				finish_time = current_time + datetime.timedelta(0, printTime)
 			else:
 				finish_time = current_time + datetime.timedelta(0, currentData["progress"]["printTimeLeft"])

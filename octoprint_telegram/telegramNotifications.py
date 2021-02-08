@@ -117,6 +117,14 @@ telegramMsgDict = {
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
+			},
+			'MovieDone': {
+				'text': "{emo:movie} " + gettext("Movie done"),
+				'image': False,
+				'silent': False,
+				'gif': True,
+				'combined' : True,
+				'markup': "off"
 			}
 
 		}
@@ -161,7 +169,8 @@ class TMSG():
 			'StatusPrinting': self.msgStatusPrinting,
 			'plugin_pause_for_user_event_notify': self.msgPauseForUserEventNotify,
 			'gCode_M600': self.msgColorChangeRequested,
-			'Error': self.msgPrinterError
+			'Error': self.msgPrinterError,
+			'MovieDone': self.msgMovieDone
 		}
 
 	def startEvent(self, event, payload, **kwargs):
@@ -200,6 +209,9 @@ class TMSG():
 		self.main.shut_up = {}
 		self._sendNotification(payload, **kwargs)
 	
+	def msgMovieDone(self, payload, **kwargs):
+		self._sendNotification(payload, **kwargs)
+
 	def msgPrinterError(self, payload, **kwargs):
 		self._sendNotification(payload, **kwargs)
 
@@ -302,6 +314,12 @@ class TMSG():
 					kwargs['thumbnail'] = None
 			except Exception as ex:
 				self._logger.exception("Exception on getting thumbnail: " + str(ex))
+
+			try:
+				if event == "MovieDone":
+					if "movie" in payload: kwargs['movie'] = payload["movie"]
+			except Exception as ex:
+				self._logger.exception("Exception on getting movie for MovieDone: " + str(ex))
 
 			if "file" in payload: file = payload["file"]
 			if "gcode" in payload: file = payload["gcode"]
