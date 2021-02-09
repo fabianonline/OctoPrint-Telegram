@@ -208,7 +208,7 @@ class TelegramListener(threading.Thread):
 						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, bytes_reader_class(data))
 						#self.main._file_manager.add_folder(self.get_plugin_data_folder() , "tmpzip", ignore_existing=True)
 						zip_filename = self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
-						with open(zip_filename, 'w') as f:
+						with open(zip_filename, 'wb') as f:
 							f.write(data)
 						#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 					except Exception as ex:
@@ -269,7 +269,7 @@ class TelegramListener(threading.Thread):
 					os.remove(zip_filename)
 				else:
 					path = self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
-					with open(path, 'w') as f:
+					with open(path, 'wb') as f:
 						f.write(data)
 					file_wrapper = octoprint.filemanager.util.DiskFileWrapper(target_filename, path)
 					added_file = self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL,file_wrapper.filename,file_wrapper,allow_overwrite=True)
