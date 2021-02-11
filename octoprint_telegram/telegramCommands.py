@@ -933,7 +933,7 @@ class TCMD():
 							relayN = params[1]
 							data = '{ "command":"turnOn","topic":"'+pluglabel+'","relayN":"'+relayN+'"}'
 						elif plugpluginname == "tplinksmartplug":
-							data = '{ "command":"turnOff","ip":"'+pluglabel+'"  }'
+							data = '{ "command":"turnOn","ip":"'+pluglabel+'"  }'
 						self._logger.debug("Call POST API octoprint): url {} with data {}".format(str("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname),str(data)))
 						headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
 						answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
