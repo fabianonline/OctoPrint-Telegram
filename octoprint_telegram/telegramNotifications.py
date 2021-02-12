@@ -125,6 +125,14 @@ telegramMsgDict = {
 				'gif': True,
 				'combined' : True,
 				'markup': "off"
+			},
+			'UserNotif' : {
+				'text': "{emo:waving hand sign} " + gettext("User Notification {UserNotif_Text}"),
+				'image': True,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
 			}
 
 		}
@@ -170,7 +178,8 @@ class TMSG():
 			'plugin_pause_for_user_event_notify': self.msgPauseForUserEventNotify,
 			'gCode_M600': self.msgColorChangeRequested,
 			'Error': self.msgPrinterError,
-			'MovieDone': self.msgMovieDone
+			'MovieDone': self.msgMovieDone,
+			'UserNotif': self.msgUserNotif
 		}
 
 	def startEvent(self, event, payload, **kwargs):
@@ -237,6 +246,11 @@ class TMSG():
 		self._sendNotification(payload, **kwargs)
 
 	def msgColorChangeRequested(self, payload, **kwargs):
+		if payload is None:
+			payload = {}
+		self._sendNotification(payload, **kwargs)
+
+	def msgUserNotif(self,payload, **kwargs):
 		if payload is None:
 			payload = {}
 		self._sendNotification(payload, **kwargs)
@@ -325,6 +339,7 @@ class TMSG():
 			if "gcode" in payload: file = payload["gcode"]
 			if "filename" in payload: file = payload["filename"]
 			if 'error' in payload: error_msg = payload["error"]
+			if 'UserNotif' in payload: UserNotif_Text = payload["UserNotif"]
 
 			self._logger.debug("VARS - " + str(locals()))
 			emo = EmojiFormatter(self.main)
@@ -376,6 +391,7 @@ class TMSG():
 	def is_usernotification_necessary(self):
 		timediff = 30 # force to every 30 seconds
 		# check the timediff
+		self._logger.debug("self.last_notification_time + timediff: " + str(self.last_notification_time + timediff) +"<= time.time()" + str(time.time()))
 		if self.last_notification_time + timediff <= time.time():
 			self.last_notification_time = time.time()
 			return True

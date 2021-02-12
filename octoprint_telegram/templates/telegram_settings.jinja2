@@ -21,6 +21,13 @@
 		</div>
 	</div>
 	
+	<div class="control-group">
+		<label class="control-label">{{ _('Telegram Bot Command List') }}</label>
+		<div class="controls">
+			<button class="btn" id="btnSetCommandList" data-bind="click:  setCommandList " title="Set default command list"><i class="fas fa-terminal"></i>&nbsp;Set default command list</button>
+			<p>	<strong id="CmdteleErrored" data-bind="text: setCommandList_state_str, visible: ! isloading()"></strong> </p>
+		</div>
+	</div>
 	<br>
 	<hr>
 

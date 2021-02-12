@@ -45,7 +45,7 @@ class TelegramListener(threading.Thread):
 	def run(self):
 		self._logger.debug("Try first connect.")
 		self.tryFirstContact()
-		# repeat fetching and processing messages unitil thread stopped
+		# repeat fetching and processing messages until thread stopped
 		self._logger.debug("Listener is running.")
 		try:
 			while not self.do_stop:
@@ -1002,7 +1002,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return dict(
 			testToken=["token"],
 			testEvent=["event"],
-			delChat=["ID"]
+			delChat=["ID"],
+			setCommandList=["force"]
 		)
 
 	def on_api_get(self, request):
@@ -1064,6 +1065,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return json.dumps({'ok': True, 'error_msg': None })
 			except Exception as ex:
 				return json.dumps({'ok': False, 'username': None, 'error_msg': str(ex)})
+		elif command=="setCommandList":
+			self._logger.debug("Set default command for bot")
+			try:
+				self.setMyCommands(True)
+				self._logger.debug("Set default command for bot done will return ok")
+				return json.dumps({'ok': True, 'setMyCommands_state_str': gettext("SetMyCommands done",), 'error_msg': None})
+			except Exception as ex:
+				return json.dumps({'ok': False, 'setMyCommands_state_str': gettext("Error: %(error)s", error=ex), 'error_msg': str(ex)})
+
+
 ##########
 ### Telegram API-Functions
 ##########
@@ -1527,6 +1538,45 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		else:
 			return "@" + json['result']['username']
 
+
+	# sets bot own list of commands
+	def setMyCommands(self, force=False):
+		if not self.send_messages:
+			return
+		try:
+			shallRun=force
+			if not force:
+				# check if a list of commands was already set
+				resp = requests.get(self.bot_url + "/getMyCommands").json()
+				self._logger.debug("getMyCommands returned " + str(resp))
+				shallRun=(len(resp['result']) == 0)
+			if shallRun:
+				commands = []
+				commands.append({"command":"status","description":"Displays the current status including a capture from the camera"})
+				commands.append({"command":"togglepause","description":"Pauses/Resumes current print"})
+				commands.append({"command":"files","description":"Lists all the files available for printing"})
+				commands.append({"command":"print","description":"Lets you start a print (confirmation required)"})
+				commands.append({"command":"tune","description":"Sets feed and flow rate, control temperatures"})
+				commands.append({"command":"ctrl","description":"Activates self defined controls from Octoprint"})
+				commands.append({"command":"con","description":"Connects or disconnects the printer"})
+				commands.append({"command":"sys","description":"Executes Octoprint system commands"})
+				commands.append({"command":"abort","description":"Aborts the currently running print (confirmation required)"})
+				commands.append({"command":"off","description":"Turn off the printer"})
+				commands.append({"command":"on","description":"Turn on the printer"})
+				commands.append({"command":"settings","description":"Displays notification settings and lets change them"})
+				commands.append({"command":"upload","description":"Stores a file into the Octoprint library"})
+				commands.append({"command":"filament","description":"Shows filament spools and lets you change it (requires Filament Manager Plugin)"})
+				commands.append({"command":"user","description":"Gets user info"})
+				commands.append({"command":"gcode","description":"call gCode commande with /gcode_XXX where XXX is the gcode command"})
+				commands.append({"command":"gif","description":"Sends a gif from the current video"})
+				commands.append({"command":"supergif","description":"Sends a bigger gif from the current video"})
+				commands.append({"command":"shutup","description":"Disables automatic notifications until the next print ends"})
+				commands.append({"command":"dontshutup","description":"Makes the bot talk again (opposite of `/shutup`)"})
+				commands.append({"command":"help","description":"Shows this help message"})
+				resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}).json()
+				self._logger.debug("setMyCommands returned " + str(resp))
+		except Exception as ex:
+			pass
 ##########
 ### Helper methods
 ##########
@@ -1885,7 +1935,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if gcode and cmd[:4] == "M600":
 			self._logger.info("M600 registered")
 			try:
-				#self.on_event("plugin_pause_for_user_event_notify", {})
 				self.on_event("gCode_M600", {})
 			except Exception as ex:
 				self._logger.error("exception on event M600: " + str(ex))
@@ -1896,7 +1945,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if not self.triggered:
 				self.on_event("plugin_pause_for_user_event_notify", {})
 				self.triggered = True
-    	# Other text, we may fire another event if we encounter "paused for user" again
+		elif "echo:UserNotif" in line:
+			self.on_event("UserNotif", {"UserNotif":line[15:]})
+		# Other text, we may fire another event if we encounter "paused for user" again
 		else:
 			self.triggered = False
 			
