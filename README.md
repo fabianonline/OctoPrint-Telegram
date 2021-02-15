@@ -1,4 +1,4 @@
-
+<!-- omit in toc -->
 # OctoPrint-Telegram
 
 <img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/logo/octoprint_telegram_logo.png" width="25%" align="left"> 
@@ -6,21 +6,22 @@
 This plugin integrates Telegram Messenger with Octoprint. It sends messages (with photos if available) on print start, end and failure. Also it sends messages during the print at configurable intervals. That way you don't have to remember to regularly have a look at the printing process.
 Also, you can control Octoprint via messages (settings, start a print and much more). Send `/status` to get the current printer status or `/abort` to abort the current print. Send `/help` for a list of all recognized commands. You may also use this bot in groups.
 
-**Latest release: [1.5.0](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
+**Latest release: [1.6.3](https://github.com/fabianonline/OctoPrint-Telegram/releases)**
 
-
+<!-- omit in toc -->
 ## Contents
 
-* [Installation](#installation)
-  * [Create Telegram Bot](#create-telegram-bot) 
-  * [Plugin Setup](#plugin-setup)
-  * [User Setup](#user-setup)
-* [Configuration](#configuration)
-  * [General](#general)
-  * [Users](#users)
-  * [Notifications](#notifications)
-* [Available Commands](#available-commands)
-* [Info / Contact / Help](#info--contact--help)
+- [Screenshots](#screenshots)
+- [Installation](#installation)
+	- [Create Telegram Bot](#create-telegram-bot)
+	- [Plugin setup](#plugin-setup)
+	- [User setup](#user-setup)
+- [Configuration](#configuration)
+	- [General](#general)
+	- [Users](#users)
+	- [Notifications](#notifications)
+- [Available Commands](#available-commands)
+- [Info / Contact / Help](#info--contact--help)
 
 ## Screenshots
 
@@ -46,6 +47,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_new.png" alt="Register new bot" width="35%" align="center"/>
 	
+<!-- omit in toc -->
 #### OPTIONAL
 
 	While you're there, you could also do the following steps:
@@ -66,7 +68,7 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	print - Lets you start a print. A confirmation is required.
 	togglepause - Pause/Resume current Print.
 	con - Connect/disconnect printer.
-	upload - You can just send me a gcode file to save it to my library.
+	upload - You can just send me a gcode file to save it to my library. Also accept zip file.
 	sys - Execute Octoprint System Commands.
 	ctrl - Use self defined controls from Octoprint.
 	tune - Set feed- and flowrate. Control temperatures.
@@ -74,6 +76,9 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	help - show list of commands.
 	gif - send a gif of 5 seconds 
 	supergif - send a gif of 10 seconds 
+	on - Turns on the printer power via the PSUControl plugin API. Requires PSU Control plugin installation.
+	off - Turns off the printer power via the PSUControl plugin API. Requires PSU Control plugin.
+	gcode_XXX - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -94,6 +99,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 5. Hit "Save" at the bottom of the settings dialog.
 
 6. If you want to create gif and receive them as notification we use ffmpeg like timelapse (if problem please check timelapse is configured).
+you'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
+sudo apt-get install cpulimit
 
 Congratulations! Your printer is now connected to your Telegram bot.
 
@@ -200,6 +207,7 @@ In this section you can configure the content of the notification messages.
    * `{time_done}`, `{time_left}`, `{time_finish}` (only useful for height change events) - Time done / left in the print and ETA.
    * `{bed_temp}`, `{e1_temp}`, `{e2_temp}` - Temperatures of bed, extruder 1 and extruder 2.
    * `{bed_target}`, `{e1_target}`, `{e2_target}` - Target temperatures of bed, extruder 1 and extruder 2.
+   * `{currentLayer}`, `{totalLayer}` - the current and total layers number (need the plugin [DisplayLayerProgress](https://github.com/OllisGit/OctoPrint-DisplayLayerProgress))
    * You are also able to access the current printer state data. See [here](./dev_utils/datastructures/octoprint/_printer.get_current_data.py) for datastructure of this data. The base variable is `{status}`.
 	```
 	Example: {status[progress][filepos]} - will insert the actual position in the printed file.
@@ -229,7 +237,7 @@ In this section you can configure the content of the notification messages.
 
 **`/con`** - Connect/disconnect printer. Choose between auto connect, use defaults to connect or manual connect (select port/baudrate/printer profile). You are also able to change the connection defaults and turn auto connect on/off.
 
-**`/upload`** - You can just send a gcode file to the bot to save it in upload folder of Octoprint. If you send this command, the bot will tell you the same :) NOTE: This will NOT work in groups.
+**`/upload`** - You can just send a gcode file or a zip file to the bot to save it in upload folder of Octoprint. If you send this command, the bot will tell you the same :) NOTE: This will NOT work in groups.
 
 **`/sys`** - Execute Octoprint System Comamnds you defined in *config.yaml*. If a confirmation is defined for the system command, it will be displayed before execution. See [Octoprint documentation](http://docs.octoprint.org/en/master/configuration/config_yaml.html#system) for details on setting up system commands. There is also a [plugin](http://plugins.octoprint.org/plugins/systemcommandeditor/) for doing this.
 
@@ -241,10 +249,22 @@ In this section you can configure the content of the notification messages.
 
 **`/help`** - Displays a help message with all accepted commands and a short description.
 
-**`/gif`** - Send a gif create from 20 images.
+**`/gif`** - Send a gif create from 20 images. You'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
+sudo apt-get install cpulimit
 
-**`/supergif`** - Send a gif create from 60 images.
+**`/supergif`** - Send a gif create from 60 images. You'll have to install CpuLimit to be able to create gif so please for raspberry connect to your raspberry with putty (for exemple) and execute
+sudo apt-get install cpulimit
 
+**`/on`** - Turns on the Printer power via - the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl)
+										   - the TuyaSmartplug plugin API. Requires the [TuyaSmartplug plugin](https://github.com/ziirish/OctoPrint-TuyaSmartplug/) sadly for now wait on accept the push request to get the list of plug
+
+**`/off`** - Turns off the Printer power via - the PSUControl plugin API. Requires the [PSU Control plugin](https://github.com/kantlivelong/OctoPrint-PSUControl)
+                                             - the TuyaSmartplug plugin API. Requires the [TuyaSmartplug plugin](https://github.com/ziirish/OctoPrint-TuyaSmartplug/)
+											 sadly for now wait on accept the push request to get the list of plug
+
+**`/gcode_XXX`** - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
+
+<!-- omit in toc -->
 #### Notes:
 
 * the `/help` command is always allowed
@@ -269,3 +289,4 @@ If you want to talk to other users of this plugin and maybe have some influence 
 you can join the [Octoprint-Telegram-Users-Group](https://telegram.me/joinchat/CXFirQjl9XTp5dr4OZqH9Q).
 
 This software is licensed under [AGPLv3](http://www.gnu.org/licenses/agpl-3.0.txt)
+
