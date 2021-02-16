@@ -1672,7 +1672,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			currentData = self._printer.get_current_data()
 			current_time = datetime.datetime.today()
 			if not currentData["progress"]["printTimeLeft"]:
-				if printTime == 0:
+				if printTime == 0 or str(printTime)=="11:11:00":
 					return ""  # maybe put something like "nothing to print" in here
 				self._logger.debug("printTime=" + str(printTime))
 				finish_time = current_time + datetime.timedelta(0, printTime)
