@@ -117,6 +117,22 @@ telegramMsgDict = {
 				'gif': False,
 				'combined' : True,
 				'markup': "off"
+			},
+			'MovieDone': {
+				'text': "{emo:movie} " + gettext("Movie done"),
+				'image': False,
+				'silent': False,
+				'gif': True,
+				'combined' : True,
+				'markup': "off"
+			},
+			'UserNotif' : {
+				'text': "{emo:waving hand sign} " + gettext("User Notification {UserNotif_Text}"),
+				'image': True,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
 			}
 
 		}
@@ -161,7 +177,9 @@ class TMSG():
 			'StatusPrinting': self.msgStatusPrinting,
 			'plugin_pause_for_user_event_notify': self.msgPauseForUserEventNotify,
 			'gCode_M600': self.msgColorChangeRequested,
-			'Error': self.msgPrinterError
+			'Error': self.msgPrinterError,
+			'MovieDone': self.msgMovieDone,
+			'UserNotif': self.msgUserNotif
 		}
 
 	def startEvent(self, event, payload, **kwargs):
@@ -200,6 +218,9 @@ class TMSG():
 		self.main.shut_up = {}
 		self._sendNotification(payload, **kwargs)
 	
+	def msgMovieDone(self, payload, **kwargs):
+		self._sendNotification(payload, **kwargs)
+
 	def msgPrinterError(self, payload, **kwargs):
 		self._sendNotification(payload, **kwargs)
 
@@ -225,6 +246,11 @@ class TMSG():
 		self._sendNotification(payload, **kwargs)
 
 	def msgColorChangeRequested(self, payload, **kwargs):
+		if payload is None:
+			payload = {}
+		self._sendNotification(payload, **kwargs)
+
+	def msgUserNotif(self,payload, **kwargs):
 		if payload is None:
 			payload = {}
 		self._sendNotification(payload, **kwargs)
@@ -292,7 +318,7 @@ class TMSG():
 					#get additionnal metadata and thumbnail
 					self._logger.info("get thumbnail url for path=" + str(path))
 					meta = self.main._file_manager.get_metadata(octoprint.filemanager.FileDestinations.LOCAL, path)
-					if 'thumbnail' in meta:
+					if meta != None and 'thumbnail' in meta:
 						kwargs['thumbnail'] = meta['thumbnail']
 					else:
 						kwargs['thumbnail'] = None
@@ -303,10 +329,17 @@ class TMSG():
 			except Exception as ex:
 				self._logger.exception("Exception on getting thumbnail: " + str(ex))
 
+			try:
+				if event == "MovieDone":
+					if "movie" in payload: kwargs['movie'] = payload["movie"]
+			except Exception as ex:
+				self._logger.exception("Exception on getting movie for MovieDone: " + str(ex))
+
 			if "file" in payload: file = payload["file"]
 			if "gcode" in payload: file = payload["gcode"]
 			if "filename" in payload: file = payload["filename"]
 			if 'error' in payload: error_msg = payload["error"]
+			if 'UserNotif' in payload: UserNotif_Text = payload["UserNotif"]
 
 			self._logger.debug("VARS - " + str(locals()))
 			emo = EmojiFormatter(self.main)
@@ -358,6 +391,7 @@ class TMSG():
 	def is_usernotification_necessary(self):
 		timediff = 30 # force to every 30 seconds
 		# check the timediff
+		self._logger.debug("self.last_notification_time + timediff: " + str(self.last_notification_time + timediff) +"<= time.time()" + str(time.time()))
 		if self.last_notification_time + timediff <= time.time():
 			self.last_notification_time = time.time()
 			return True

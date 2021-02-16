@@ -668,24 +668,41 @@ class TCMD():
 			else:
 				try:
 					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					optionname = None
 					if plugpluginname == "tuyasmartplug" :
 						data = '{ "command":"getListPlug","label":"all" }'
+						optionname = "arrSmartplugs"
 					elif plugpluginname == "tasmota_mqtt":
 						data = '{ "command":"getListPlug"}'
+						optionname = "arrRelays"
 					elif plugpluginname == "tplinksmartplug":
 						data = '{ "command":"getListPlug"}'
+						optionname = "arrSmartplugs"
 					self._logger.debug("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname + " | data= "+str(data))
 					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
-					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+					force = True
+					if (answer.status_code >= 300 or force == True):    #It's not true that it's right. But so be it.
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
-						self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+						#will try to get the list of plug from config 
+						try:
+							curr = self.main._settings.global_get(["plugins",plugpluginname,optionname])
+							if curr != None:
+								json_data = curr
+							else:
+								json_data = None
+						except Exception as e:
+							self._logger.exception("getting settings failed: %s" % e)
+							self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+							return
 					else:
-						keys = []
-						tmpKeys = []
-						message = "Which plug would you turn on "
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 						json_data = answer.json()
-						firstplug = ""
+					keys = []
+					tmpKeys = []
+					message = "Which plug would you turn on "	
+					firstplug = ""
+
+					if len(json_data) >= 1:
 						for label in json_data:
 							try:
 								if plugpluginname == "tuyasmartplug" :
@@ -782,23 +799,41 @@ class TCMD():
 			else:
 				try:
 					headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
+					optionname = None
 					if plugpluginname == "tuyasmartplug" :
 						data = '{ "command":"getListPlug","label":"all" }'
+						optionname = "arrSmartplugs"
 					elif plugpluginname == "tasmota_mqtt":
-						data = '{ "command":"getListPlug" }'
+						data = '{ "command":"getListPlug"}'
+						optionname = "arrRelays"
 					elif plugpluginname == "tplinksmartplug":
 						data = '{ "command":"getListPlug"}'
+						optionname = "arrSmartplugs"
+					self._logger.debug("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname + " | data= "+str(data))
 					answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
-					if (answer.status_code >= 300):    #It's not true that it's right. But so be it.
+					force = True
+					if (answer.status_code >= 300 or force == True):    #It's not true that it's right. But so be it.
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
-						self.main.send_msg(self.gEmo('warning') + "Something wrong, power off command failed.",chatID=chat_id)
+						#will try to get the list of plug from config 
+						try:
+							curr = self.main._settings.global_get(["plugins",plugpluginname,optionname])
+							if curr != None:
+								json_data = curr
+							else:
+								json_data = None
+						except Exception as e:
+							self._logger.exception("getting settings failed: %s" % e)
+							self.main.send_msg(self.gEmo('warning') + "Something wrong, power on command failed.",chatID=chat_id)
+							return
 					else:
-						keys = []
-						tmpKeys = []
-						message = "Which plug would you turn off "
 						self._logger.debug("Call response (POST API octoprint): %s" % str(answer))
 						json_data = answer.json()
-						firstplug = ""
+					
+					keys = []
+					tmpKeys = []
+					message = "Which plug would you turn off "
+					firstplug = ""
+					if len(json_data) >= 1:
 						for label in json_data:
 							try:
 								if plugpluginname == "tuyasmartplug" :
@@ -898,7 +933,7 @@ class TCMD():
 							relayN = params[1]
 							data = '{ "command":"turnOn","topic":"'+pluglabel+'","relayN":"'+relayN+'"}'
 						elif plugpluginname == "tplinksmartplug":
-							data = '{ "command":"turnOff","ip":"'+pluglabel+'"  }'
+							data = '{ "command":"turnOn","ip":"'+pluglabel+'"  }'
 						self._logger.debug("Call POST API octoprint): url {} with data {}".format(str("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname),str(data)))
 						headers = {'Content-Type': 'application/json', 'X-Api-Key' : self.main._settings.global_get(['api','key'])}
 						answer =requests.post("http://localhost:" + str(self.port) + '/api/plugin/'+plugpluginname, headers=headers, data=data)
@@ -1413,6 +1448,39 @@ class TCMD():
 					msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
 			else:
 				msg += "\n<b>"+self.main.emojis['money bag']+"Cost:</b> -"
+
+		#will try to get the image from the thumbnail
+		#will have to upload to somewhere to get internet url
+		try:
+			api_key = self.main._settings.get(["imgbbApiKey"]) 
+			self._logger.info("get thumbnail url for path=" + str(path))
+			meta = self.main._file_manager.get_metadata(octoprint.filemanager.FileDestinations.LOCAL, path)
+			
+			if 'thumbnail' in meta:
+				imgUrl = meta['thumbnail']
+			else:
+				imgUrl = None
+			
+			if api_key != "" and imgUrl != None:
+				imgUrl = "http://localhost:"+str(self.port)+ "/" + imgUrl
+				r = requests.get(imgUrl)
+
+				if r.status_code >= 300:
+					thumbnail_data = None
+				else:
+					thumbnail_data = r.content
+				if thumbnail_data != None:
+					url = "https://api.imgbb.com/1/upload"
+					payload = {
+						"key": api_key,
+						"image": base64.b64encode(thumbnail_data),
+					}
+					res = requests.post(url, payload)
+					if res.status_code < 300:
+						test = res.json()
+						msg = "<a href='"+test['data']["url"]+"' >&#8199;</a>\n" + msg
+		except Exception as ex:
+			self._logger.error("An Exception the get the thumbnail : " + str(ex) )
 
 		keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 		keyDetails = [self.main.emojis['left-pointing magnifying glass']+" Details",cmd+"_"+pathHash+"|"+str(page)+"|"+fileHash+"|inf"]

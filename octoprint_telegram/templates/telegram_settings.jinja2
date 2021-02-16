@@ -21,6 +21,13 @@
 		</div>
 	</div>
 	
+	<div class="control-group">
+		<label class="control-label">{{ _('Telegram Bot Command List') }}</label>
+		<div class="controls">
+			<button class="btn" id="btnSetCommandList" data-bind="click:  setCommandList " title="Set default command list"><i class="fas fa-terminal"></i>&nbsp;Set default command list</button>
+			<p>	<strong id="CmdteleErrored" data-bind="text: setCommandList_state_str, visible: ! isloading()"></strong> </p>
+		</div>
+	</div>
 	<br>
 	<hr>
 
@@ -235,6 +242,14 @@
             </select>
 			<span class="help-block"><small>Action post image could be none, a gcode or a system command (script name with full path)</small></span>
 			<input type="text" class="input-block-level" id="settings_plugin_telegram_PostImgCommand" data-bind="value: settings.settings.plugins.telegram.PostImgCommand" />
+		</div>
+	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('api key imgbb') }}</label>
+		<div class="controls">
+			<span class="help-block"><small>We can show the thumbnail on files selection but we need an internet link so we upload the file to your private account on imgbb (you can set the account to be private and the file to be deleted after 5 minutes.</small></span>
+			<input type="text" class="input-block-level" id="settings_plugin_telegram_imgbbApiKey" data-bind="value: settings.settings.plugins.telegram.imgbbApiKey" />
 		</div>
 	</div>
 

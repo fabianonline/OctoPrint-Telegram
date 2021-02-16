@@ -45,7 +45,7 @@ class TelegramListener(threading.Thread):
 	def run(self):
 		self._logger.debug("Try first connect.")
 		self.tryFirstContact()
-		# repeat fetching and processing messages unitil thread stopped
+		# repeat fetching and processing messages until thread stopped
 		self._logger.debug("Listener is running.")
 		try:
 			while not self.do_stop:
@@ -208,7 +208,7 @@ class TelegramListener(threading.Thread):
 						#stream = octoprint.filemanager.util.StreamWrapper(target_filename, bytes_reader_class(data))
 						#self.main._file_manager.add_folder(self.get_plugin_data_folder() , "tmpzip", ignore_existing=True)
 						zip_filename = self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
-						with open(zip_filename, 'w') as f:
+						with open(zip_filename, 'wb') as f:
 							f.write(data)
 						#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 					except Exception as ex:
@@ -269,7 +269,7 @@ class TelegramListener(threading.Thread):
 					os.remove(zip_filename)
 				else:
 					path = self.main.get_plugin_data_folder()+"/tmpzip/" +file_name
-					with open(path, 'w') as f:
+					with open(path, 'wb') as f:
 						f.write(data)
 					file_wrapper = octoprint.filemanager.util.DiskFileWrapper(target_filename, path)
 					added_file = self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL,file_wrapper.filename,file_wrapper,allow_overwrite=True)
@@ -1002,7 +1002,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		return dict(
 			testToken=["token"],
 			testEvent=["event"],
-			delChat=["ID"]
+			delChat=["ID"],
+			setCommandList=["force"]
 		)
 
 	def on_api_get(self, request):
@@ -1064,6 +1065,16 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return json.dumps({'ok': True, 'error_msg': None })
 			except Exception as ex:
 				return json.dumps({'ok': False, 'username': None, 'error_msg': str(ex)})
+		elif command=="setCommandList":
+			self._logger.debug("Set default command for bot")
+			try:
+				self.setMyCommands(True)
+				self._logger.debug("Set default command for bot done will return ok")
+				return json.dumps({'ok': True, 'setMyCommands_state_str': gettext("SetMyCommands done",), 'error_msg': None})
+			except Exception as ex:
+				return json.dumps({'ok': False, 'setMyCommands_state_str': gettext("Error: %(error)s", error=ex), 'error_msg': str(ex)})
+
+
 ##########
 ### Telegram API-Functions
 ##########
@@ -1141,7 +1152,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		self._logger.debug("start _send_msg")
 
 		try:
-			if with_image or with_gif:
+			if (with_image or with_gif):
 				premethod = self._settings.get(["PreImgMethod"])
 				self._logger.debug("PreImgMethod {}".format(premethod))
 				precommand = self._settings.get(["PreImgCommand"])
@@ -1197,53 +1208,57 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			data['disable_notification'] = silent
 			if with_gif: #giloser 05/05/19
 				try:
-					self._logger.info("Will try to create a gif ")
 					sendOneInLoop = False
-					#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
-					if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
-						try:
-							curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
-							self._logger.debug("multicam_profiles : "+ str(curr))
-							ListGif = []
-							for li in curr:
-								try:
-									self._logger.debug("multicam profile : "+ str(li))
-									url = li.get("URL")
-									self._logger.debug("multicam URL : "+ str(url))
-									ret = self.create_gif_new(chatID,0,li)
-									if ret != "":
-										ListGif.append(ret) 
-										#if not sendOneInLoop:
-										#	self.send_file(chatID, ret,message)
-										#else:
-										#	self.send_file(chatID, ret,"")
-										#sendOneInLoop = True
-								except Exception as ex:
-									self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
-							ret = ListGif[-1]
-							self._logger.debug("ListGif: "+str(ListGif))
-							for x in ListGif:
-								try:
-									if x != ret:
-										self._logger.debug("send_file whithout message: "+str(x))
-										self.send_file(chatID, x,"")
-								except Exception as ex:
-									self._logger.exception("Exception loop multicam URL to send gif: "+ str(ex) )
-
-						except Exception as ex:
-							self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
+					if kwargs['event'] == "MovieDone":
+						ret = kwargs['movie']
 					else:
-						ret = self.create_gif_new(chatID,0,0)
+						self._logger.info("Will try to create a gif ")
+						
+						#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+						if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
+							try:
+								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
+								self._logger.debug("multicam_profiles : "+ str(curr))
+								ListGif = []
+								for li in curr:
+									try:
+										self._logger.debug("multicam profile : "+ str(li))
+										url = li.get("URL")
+										self._logger.debug("multicam URL : "+ str(url))
+										ret = self.create_gif_new(chatID,0,li)
+										if ret != "":
+											ListGif.append(ret) 
+											#if not sendOneInLoop:
+											#	self.send_file(chatID, ret,message)
+											#else:
+											#	self.send_file(chatID, ret,"")
+											#sendOneInLoop = True
+									except Exception as ex:
+										self._logger.exception("Exception loop multicam URL to create gif: "+ str(ex) )
+								ret = ListGif[-1]
+								self._logger.debug("ListGif: "+str(ListGif))
+								for x in ListGif:
+									try:
+										if x != ret:
+											self._logger.debug("send_file whithout message: "+str(x))
+											self.send_file(chatID, x,"")
+									except Exception as ex:
+										self._logger.exception("Exception loop multicam URL to send gif: "+ str(ex) )
 
-					if ret == "":
-						ret = self.create_gif_new(chatID,0,0)
+							except Exception as ex:
+								self._logger.exception("Exception occured on getting multicam options: "+ str(ex) )
+						else:
+							ret = self.create_gif_new(chatID,0,0)
+
+						if ret == "":
+							ret = self.create_gif_new(chatID,0,0)
 
 					if ret != "" and not sendOneInLoop:
 						self._logger.debug("send_file whith message: "+str(ret))
 						self.send_file(chatID, ret,message)
-					#ret = self.create_gif_new(chatID,0,0)
-					#if ret != "":
-					#	self.send_file(chatID, ret,message)
+						#ret = self.create_gif_new(chatID,0,0)
+						#if ret != "":
+						#	self.send_file(chatID, ret,message)
 				except Exception as ex:
 					self._logger.info("Caught an exception trying send gif: " + str(ex))
 					self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chatID)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
@@ -1523,6 +1538,45 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		else:
 			return "@" + json['result']['username']
 
+
+	# sets bot own list of commands
+	def setMyCommands(self, force=False):
+		if not self.send_messages:
+			return
+		try:
+			shallRun=force
+			if not force:
+				# check if a list of commands was already set
+				resp = requests.get(self.bot_url + "/getMyCommands").json()
+				self._logger.debug("getMyCommands returned " + str(resp))
+				shallRun=(len(resp['result']) == 0)
+			if shallRun:
+				commands = []
+				commands.append({"command":"status","description":"Displays the current status including a capture from the camera"})
+				commands.append({"command":"togglepause","description":"Pauses/Resumes current print"})
+				commands.append({"command":"files","description":"Lists all the files available for printing"})
+				commands.append({"command":"print","description":"Lets you start a print (confirmation required)"})
+				commands.append({"command":"tune","description":"Sets feed and flow rate, control temperatures"})
+				commands.append({"command":"ctrl","description":"Activates self defined controls from Octoprint"})
+				commands.append({"command":"con","description":"Connects or disconnects the printer"})
+				commands.append({"command":"sys","description":"Executes Octoprint system commands"})
+				commands.append({"command":"abort","description":"Aborts the currently running print (confirmation required)"})
+				commands.append({"command":"off","description":"Turn off the printer"})
+				commands.append({"command":"on","description":"Turn on the printer"})
+				commands.append({"command":"settings","description":"Displays notification settings and lets change them"})
+				commands.append({"command":"upload","description":"Stores a file into the Octoprint library"})
+				commands.append({"command":"filament","description":"Shows filament spools and lets you change it (requires Filament Manager Plugin)"})
+				commands.append({"command":"user","description":"Gets user info"})
+				commands.append({"command":"gcode","description":"call gCode commande with /gcode_XXX where XXX is the gcode command"})
+				commands.append({"command":"gif","description":"Sends a gif from the current video"})
+				commands.append({"command":"supergif","description":"Sends a bigger gif from the current video"})
+				commands.append({"command":"shutup","description":"Disables automatic notifications until the next print ends"})
+				commands.append({"command":"dontshutup","description":"Makes the bot talk again (opposite of `/shutup`)"})
+				commands.append({"command":"help","description":"Shows this help message"})
+				resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}).json()
+				self._logger.debug("setMyCommands returned " + str(resp))
+		except Exception as ex:
+			pass
 ##########
 ### Helper methods
 ##########
@@ -1618,8 +1672,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			currentData = self._printer.get_current_data()
 			current_time = datetime.datetime.today()
 			if not currentData["progress"]["printTimeLeft"]:
-				if printTime == 0:
+				if printTime == 0 or str(printTime)=="11:11:00":
 					return ""  # maybe put something like "nothing to print" in here
+				self._logger.debug("printTime=" + str(printTime))
 				finish_time = current_time + datetime.timedelta(0, printTime)
 			else:
 				finish_time = current_time + datetime.timedelta(0, currentData["progress"]["printTimeLeft"])
@@ -1880,7 +1935,6 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if gcode and cmd[:4] == "M600":
 			self._logger.info("M600 registered")
 			try:
-				#self.on_event("plugin_pause_for_user_event_notify", {})
 				self.on_event("gCode_M600", {})
 			except Exception as ex:
 				self._logger.error("exception on event M600: " + str(ex))
@@ -1891,7 +1945,9 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if not self.triggered:
 				self.on_event("plugin_pause_for_user_event_notify", {})
 				self.triggered = True
-    	# Other text, we may fire another event if we encounter "paused for user" again
+		elif "echo:UserNotif" in line:
+			self.on_event("UserNotif", {"UserNotif":line[15:]})
+		# Other text, we may fire another event if we encounter "paused for user" again
 		else:
 			self.triggered = False
 			
