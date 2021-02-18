@@ -199,7 +199,6 @@ class TelegramListener(threading.Thread):
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message
 			print "Previous command was an unknown command."
-			self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
 			raise ExitThisLoopException()
 		# check if user is allowed to execute the command
 		if self.isCommandAllowed(chat_id,from_id,command) and self.main.tcmd.checkState(from_id, command, parameter):
