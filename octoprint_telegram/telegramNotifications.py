@@ -103,7 +103,7 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'gCode_M600' : {
-				'text': "{emo:warning} " + gettext("Color change requested Second try.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
+				'text': "{emo:warning} " + gettext("Color change requested.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}."),
 				'image': True,
 				'silent': False,
 				'gif': False,
@@ -126,6 +126,38 @@ telegramMsgDict = {
 				'combined' : True,
 				'markup': "off"
 			},
+			'Connected' : {
+				'text': "{emo:link symbol} " + gettext("Printer Connected"),
+				'image': False,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
+			},
+			'Disconnected' : {
+				'text': "{emo:broken heart} " + gettext("Printer Disconnected"),
+				'image': False,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
+			},
+			'Home' : {
+				'text': "{emo:house building} " + gettext("Printer received home command \nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}"),
+				'image': True,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
+			},
+			'Alert' : {
+				'text': "{emo:bell} " + gettext("Printer received alert command \nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}"),
+				'image': True,
+				'silent': False,
+				'gif': False,
+				'combined': True,
+				'markup': "off"
+			},
 			'UserNotif' : {
 				'text': "{emo:waving hand sign} " + gettext("User Notification {UserNotif_Text}"),
 				'image': True,
@@ -133,8 +165,7 @@ telegramMsgDict = {
 				'gif': False,
 				'combined': True,
 				'markup': "off"
-			}
-
+			},
 		}
 
 # class to handle emojis on notifigation message format
@@ -179,7 +210,11 @@ class TMSG():
 			'gCode_M600': self.msgColorChangeRequested,
 			'Error': self.msgPrinterError,
 			'MovieDone': self.msgMovieDone,
-			'UserNotif': self.msgUserNotif
+			'UserNotif': self.msgUserNotif,
+			'Connected':self.msgConnected,
+			'Disconnected':self.msgConnected,
+			'Alert':self.msgConnected,
+			'Home':self.msgConnected,
 		}
 
 	def startEvent(self, event, payload, **kwargs):
@@ -251,6 +286,11 @@ class TMSG():
 		self._sendNotification(payload, **kwargs)
 
 	def msgUserNotif(self,payload, **kwargs):
+		if payload is None:
+			payload = {}
+		self._sendNotification(payload, **kwargs)
+
+	def msgConnected(self,payload, **kwargs):
 		if payload is None:
 			payload = {}
 		self._sendNotification(payload, **kwargs)

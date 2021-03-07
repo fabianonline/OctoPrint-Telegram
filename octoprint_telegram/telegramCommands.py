@@ -27,6 +27,7 @@ class TCMD():
 		self.conSettingsTemp = []
 		self.dirHashDict = {}
 		self.tmpFileHash = ""
+		self._spoolManagerPluginImplementation = None
 		self.port = self.main._settings.global_get(["server","port"])
 		self.commandDict = {
 			"Yes": 			{'cmd': self.cmdYes, 'bind_none': True},
@@ -303,14 +304,14 @@ class TCMD():
 				return
 		else:
 			if self.main._settings.get_boolean(["send_gif"]):
-				gif_txt = "Desactivate gif"
+				gif_txt = "Deactivate gif"
 				gif_emo = self.gEmo('check')
 			else:
 				gif_txt = "Activate gif"
 				gif_emo = self.gEmo('error')
 
 			if self.main._settings.get_boolean(["multicam"]):
-				multicam_txt = "Desactivate management of multicam"
+				multicam_txt = "Deactivate management of multicam"
 				multicam_emo = self.gEmo('check')
 			else:
 				multicam_txt = "Activate mangement of multicam"
@@ -1181,6 +1182,105 @@ class TCMD():
 						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
 					except ValueError:
 						message = self.gEmo('mistake')+" Error getting spools. Are you sure, you have installed the Filament Manager Plugin?"
+						if (errorText != ""):
+							message += "\nError text: " + str(errorText)
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+				if params[0] == "changeSpool":
+					self._logger.info("Command to change spool: %s" % params)
+					if len(params) > 1:
+						self._logger.info("Changing to spool: %s" % params[1])
+						try:
+							payload = {"selection": {"spool": {"id": params[1]},"tool": 0}}
+							self._logger.info("Payload: %s" % payload)
+							resp = requests.patch("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections/0?apikey="+apikey, json=payload, headers={'Content-Type': 'application/json'})
+							if (resp.status_code != 200):
+								errorText = resp.text
+							self._logger.info("Response: %s" % resp)
+							resp = resp.json()
+							message = self.gEmo('check') + " Selected spool is now: " + str(resp["selection"]["spool"]["profile"]["vendor"]) + " " + str(resp["selection"]["spool"]["name"]) + " " + str(resp["selection"]["spool"]["profile"]["material"])
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+						except ValueError:
+							message = self.gEmo('mistake')+" Error changing spool"
+							if (errorText != ""):
+								message += "\nError text: " + str(errorText)
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+					else:
+						self._logger.info("Asking for spool")
+						try:
+							resp = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/spools?apikey="+apikey)
+							if (resp.status_code != 200):
+								errorText = resp.text
+							resp = resp.json()
+							message = self.gEmo('question') + " which filament spool do you want to select?"
+							keys = []
+							tmpKeys = []
+							i = 1
+							for spool in resp["spools"]:
+								self._logger.info("Appending spool: %s" % spool)
+								tmpKeys.append([str(spool["profile"]["vendor"]) + " " + str(spool['name']) + " " + str(spool["profile"]["material"]) ,"/filament_changeSpool_" + str(spool['id'])])
+								if i%2 == 0:
+									keys.append(tmpKeys)
+									tmpKeys = []
+								i += 1
+							if len(tmpKeys) > 0:
+								keys.append(tmpKeys)
+							keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self._logger.info("Sending message")
+							self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+						except ValueError:
+							message = self.gEmo('mistake')+" Error changing spool"
+							if (errorText != ""):
+								message += "\nError text: " + str(errorText)
+							msg_id=self.main.getUpdateMsgId(chat_id)
+							self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+			else:
+				message = self.gEmo('info') + " The following Filament Manager commands are known."
+				keys = []
+				keys.append([["Show spools","/filament_spools"]])
+				keys.append([["Change spool","/filament_changeSpool"]])
+				keys.append([[self.main.emojis['cross mark']+gettext(" Close"),"No"]])
+				msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+				self.main.send_msg(message,chatID=chat_id,responses=keys,msg_id=msg_id)
+		elif self.main._plugin_manager.get_plugin("SpoolManager",True):
+			if parameter and parameter != "back":
+				self._logger.info("Parameter received for filament: %s" % parameter)
+				params = parameter.split('_')
+				apikey = self.main._settings.global_get(['api','key'])
+				errorText = ""
+				if params[0] == "spools":
+					try:
+						
+						if self._spoolManagerPluginImplementation == None:
+							self._spoolManagerPluginImplementation = self.main._plugin_manager.get_plugin("SpoolManager",True)
+						message ="SpoolManager: "+str(self._spoolManagerPluginImplementation.SpoolManagerAPI.load_allSpools())
+						#selectedSpool = self._spoolManagerPluginImplementation.filamentManager.loadSelectedSpool()
+						#allSpool = self._spoolManagerPluginImplementation.filamentManager.load_allSpools
+						#message ="selectedSpool= " +str(selectedSpool) + "\nallSpool=" +str(allSpool)
+
+						# resp = requests.get("http://localhost:" + str(self.port) + "/plugin/spoolmanager/loadSpoolsByQuery?="+query)
+						# resp2 = requests.get("http://localhost:" + str(self.port) + "/plugin/filamentmanager/selections?apikey="+apikey)
+						# if (resp.status_code != 200):
+						# 	errorText = resp.text
+						# resp = resp.json()
+						# resp2 = resp2.json()
+						# self._logger.info("Spools: %s" % resp["spools"])
+						# message = self.gEmo('info') + " Available filament spools are:\n"
+						# for spool in resp["spools"]:
+						# 	weight = spool["weight"]
+						# 	used = spool["used"]
+						# 	percent = int(100 - (used / weight * 100))
+						# 	message += str(spool["profile"]["vendor"]) + " " + str(spool["name"]) + " " + str(spool["profile"]["material"]) + " [" + str(percent) + "%]\n"
+						# for selection in resp2["selections"]:
+						# 	if selection["tool"] == 0:
+						# 		message += "\n\nCurrently selected: " + str(selection["spool"]["profile"]["vendor"]) + " " + str(selection["spool"]["name"]) + " " + str(selection["spool"]["profile"]["material"])
+						msg_id=self.main.getUpdateMsgId(chat_id)
+						self.main.send_msg(message,chatID=chat_id,msg_id = msg_id,inline=False)
+					except ValueError:
+						message = self.gEmo('mistake')+" Error getting spools. Are you sure, you have installed the Spool Manager Plugin?"
 						if (errorText != ""):
 							message += "\nError text: " + str(errorText)
 						msg_id=self.main.getUpdateMsgId(chat_id)

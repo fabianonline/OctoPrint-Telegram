@@ -856,4 +856,6 @@ telegramEmojiDict = {
 'smiling cat face with open mouth': '\U0001f63a',
 'shutdown' : '\U0001F4A4',
 'film frame' : '\U0001F39E',
+'ice cube' : '\U0001F9CA',
+'freezing face' : '\U0001F976',
 }

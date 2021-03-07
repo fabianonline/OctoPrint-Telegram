@@ -45,6 +45,7 @@ $(function() {
         self.varInfoDialog = undefined;      
         self.emoInfoDialog = undefined;
         self.mupInfoDialog = undefined;  
+        self.timeInfoDialog = undefined;  
     	self.currChatID = "Unknown";
         self.currChatTitle = ko.observable("Unknown");
         self.bind_cmd = {}; 
@@ -571,6 +572,7 @@ $(function() {
             self.varInfoDialog = $('#settings-telegramDialogVarInfo');
             self.emoInfoDialog = $('#settings-telegramDialogEmoInfo');
             self.mupInfoDialog = $('#settings-telegramDialogMupInfo');
+            self.timeInfoDialog = $('#settings-telegramDialogTimeInfo');
             $('.teleEmojiImg').each( function(){
                 $(this).attr('src','/plugin/telegram/static/img/'+$(this).attr('id')+".png")
             });
