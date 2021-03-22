@@ -1151,20 +1151,20 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 							self._logger.debug("self.chats[key]['notifications']=" + str(self.chats[key]['notifications']))
 							if self.chats[key]['notifications'][kwargs['event']] and (key not in self.shut_up or self.shut_up[key]==0) and self.chats[key]['send_notifications']:
 								kwargs['chatID'] = key
-								t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+								threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 						except Exception as ex:
 							self._logger.exception("Caught an exception in loop chatId for key: " +str(key) + " => " + str(ex))	
 			# Seems to be a broadcast
 			elif 'chatID' not in kwargs:
 				for key in self.chats:
 					kwargs['chatID'] = key
-					t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+					threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 			# This is a 'editMessageText' message
 			elif 'msg_id' in kwargs and kwargs['msg_id'] is not "" and  kwargs['msg_id'] is not None:
-				t = threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
+				threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
 			# direct message or event notification to a chat_id
 			else:
-				t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+				threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 		except Exception as ex:
 			self._logger.exception("Caught an exception in send_msg(): " + str(ex))
 
@@ -1241,11 +1241,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					del args['self']
 					args['message'] = ""
 					self._logger.debug("Sending image...")
-					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					threading.Thread(target=self._send_msg, kwargs = args).run()
 					args['message'] = message
 					args['with_image'] = False
 					self._logger.debug("Sending text...")
-					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
 
 			self._logger.debug("log instead log sending message ")
@@ -2014,7 +2014,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				'_idvc': '1',
 				'dimension1': str(self._plugin_version)
 			}
-			t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params}, proxies=self.getProxies())
+			t = threading.Thread(target=requests.get, args=("http://piwik.schlenz.ruhr/piwik.php",), kwargs={'params': params})
 			t.daemon = True
 			t.run()
 		except Exception as ex:

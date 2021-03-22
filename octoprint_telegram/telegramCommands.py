@@ -7,7 +7,8 @@ import octoprint.filemanager
 import requests
 import base64
 from flask_babel import gettext
-from subprocess import Popen, PIPE
+#from subprocess import Popen, PIPE
+import subprocess
 from .telegramNotifications import telegramMsgDict
 
 ################################################################################################################
