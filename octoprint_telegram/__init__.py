@@ -21,9 +21,10 @@ def is_in_python_2():
 		return True
 	return False
 
-if is_in_python_2():
-	from __future__ import StringIO
-	bytes_reader_class = StringIO.StringIO
+
+#if is_in_python_2():
+#	from __future__ import StringIO
+#	bytes_reader_class = StringIO.StringIO
 
 ####################################################
 #        TelegramListener Thread Class
