@@ -22,7 +22,7 @@ def is_in_python_2():
 	return False
 
 if is_in_python_2():
-	import StringIO
+	from __future__ import StringIO
 	bytes_reader_class = StringIO.StringIO
 
 ####################################################
