@@ -219,6 +219,27 @@
 	</div>
 
 	<div class="control-group">
+		<label class="control-label">{{ _('Invert Image Rotation') }}</label>
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.invertImgRot"  /> 
+			</label>
+			<span class="help-block"><small>Check to invert the image rotation.</small></span>
+		</div>
+	</div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('Message bot do not understand you') }}</label>
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.no_mistake"  /> 
+			</label>
+			<span class="help-block"><small>Check to disable the "I do not understand you!" message from the bot</small></span>
+		</div>
+	</div>
+	
+
+	<div class="control-group">
 		<label class="control-label">{{ _('Pre Image Action') }}</label>
 		<div class="controls">
 			<select id="settings_plugin_telegram_PreImgMethod" data-bind="value: settings.settings.plugins.telegram.PreImgMethod">
@@ -248,11 +269,86 @@
 	<div class="control-group">
 		<label class="control-label">{{ _('api key imgbb') }}</label>
 		<div class="controls">
-			<span class="help-block"><small>We can show the thumbnail on files selection but we need an internet link so we upload the file to your private account on imgbb (you can set the account to be private and the file to be deleted after 5 minutes.</small></span>
 			<input type="text" class="input-block-level" id="settings_plugin_telegram_imgbbApiKey" data-bind="value: settings.settings.plugins.telegram.imgbbApiKey" />
+			<span class="help-block"><small>We can show the thumbnail on files selection but we need an internet link so we upload the file to your private account on imgbb (you can set the account to be private and the file to be deleted after 5 minutes.</small></span>
 		</div>
 	</div>
 
+	<div class="control-group">
+        <label class="control-label">{{ _('Proxy http') }}</label>
+        <div class="controls">
+            <input type="text" class="input-block-level" id="settings_plugin_telegram_http_proxy" data-bind="value: settings.settings.plugins.telegram.http_proxy" />
+            <div style="float:left;">
+                <span class="help-block"><small>Example: socks5h://0.0.0.0:0000.<br> Use socks5h:// prefix to proxy dns requests, and socks5:// for regular dns requests.</small></span>
+            </div>
+
+        </div>
+    </div>
+
+	<div class="control-group">
+        <label class="control-label">{{ _('Proxy https') }}</label>
+        <div class="controls">
+            <input type="text" class="input-block-level" id="settings_plugin_telegram_https_proxy" data-bind="value: settings.settings.plugins.telegram.https_proxy" />
+            <div style="float:left;">
+                <span class="help-block"><small>Example: socks5h://0.0.0.0:0000.<br> Use socks5h:// prefix to proxy dns requests, and socks5:// for regular dns requests.</small></span>
+            </div>
+
+        </div>
+    </div>
+
+	<div class="control-group">
+		<label class="control-label">{{ _('Select file on upload') }}</label>
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.selectFileUpload"  /> 
+			</label>
+			<span class="help-block"><small>Check to select the file directly after upload</small></span>
+		</div>
+	</div>
+	
+	<div class="control-group">
+		<label class="control-label">{{ _('Message on a loop') }}</label>
+		<div class="controls">
+			<label class="checkbox">
+				<input type="checkbox" data-bind="checked: settings.settings.plugins.telegram.ForceLoopMessage"  /> 
+			</label>
+			<span class="help-block"><small>Check to call the printing event on loop if we never get an event (like for SD printing)</small></span>
+		</div>
+	</div>
+
+	<div class="control-group">
+        <label class="control-label">{{ _('Time Format ') }}</label>
+        <div class="controls">
+            <input type="text" class="input-block-level" id="settings_plugin_telegram_TimeFormat" data-bind="value: settings.settings.plugins.telegram.TimeFormat" />
+            <div style="float:left;">
+                <span class="help-block"><small>Time format for finishing within the day.</small><br></span>
+            </div>
+
+        </div>
+    </div>
+
+	<div class="control-group">
+        <label class="control-label">{{ _('Day Time Format') }}</label>
+        <div class="controls">
+            <input type="text" class="input-block-level" id="settings_plugin_telegram_DayTimeFormat" data-bind="value: settings.settings.plugins.telegram.DayTimeFormat" />
+            <div style="float:left;">
+                <span class="help-block"><small>Time format for finishing within the week.</small></span>
+            </div>
+
+        </div>
+    </div>
+
+	<div class="control-group">
+        <label class="control-label">{{ _('Week Time Format') }}</label>
+        <div class="controls">
+            <input type="text" class="input-block-level" id="settings_plugin_telegram_WeekTimeFormat" data-bind="value: settings.settings.plugins.telegram.WeekTimeFormat" />
+            <div style="float:left;">
+                <span class="help-block"><small>Time format for more than one week.</small></span>
+            </div>
+			<button title="Click to open information dialog" class="btn btn-info btn-small" data-bind="click: function() {$root.timeInfoDialog.modal('show');}"><i class="icon-info-sign"></i>&nbsp;&nbsp;{{ _('TimeFormat') }}</button>
+        </div>
+    </div>
+	
 	<br>
 	<br>
 	<hr>
@@ -431,14 +527,14 @@
 				    <tr><td style="border-right:1px dashed #ddd;text-align:center;"><img id="2705" class="teleEmojiImg"></td><td style="border-right:1px solid #ddd">check</td><td>&nbsp;</td><td>&nbsp;</td></tr>
 			    </tbody>
 			</table>
-    	</p>
+
     	<p>
 	    	<span class="muted"><small>
 	    		Data for internal icon list taken from: <a href="https://github.com/github/gemoji" target="_blank">github/gemoji</a><br>
 	    		These emoji images are taken from Github's <a href="https://github.com/github/gemoji" target="_blank">gemoji project</a>. The icons are copyright of Apple Inc. See the <a href="https://github.com/github/gemoji/blob/master/LICENSE" target="_blank">license</a> for details. 
 			</small></span>
     	</p>
-      
+      </p>
     </div>
   
 </div>
@@ -458,6 +554,7 @@
 				        <th style="border-right:1px dashed #ddd;text-align:center;">{{_('Markdown') }}</th>
 				        <th style="border-right:1px dashed #ddd;text-align:center;">{{ _('HTML') }}</th>
 				        <th style="text-align:center">{{ _('Effect') }}</th>
+					</tr>
 			    </thead>
 			    <tbody >
 			    	<tr>
@@ -487,12 +584,179 @@
 				  	</tr>
 				    </tbody>
 			</table>
-    	</p>
     	<p>
 	    	<span class="muted"><small>
 	    		See <a href="https://core.telegram.org/bots/api#formatting-options" target="_blank">Telegram Bot API Documentation</a> for more information.</small></span>
     	</p>
       
     </div>
-  
+
+	<div id="settings-telegramDialogTimeInfo" class="modal hide fade">
+		<div class="modal-header">
+			<button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+		   <nobr><h4><i class="icon-info-sign icon-large" style="color:blue"></i>&nbsp;&nbsp;{{_('TimeFormat') }}</h4></nobr>
+		</div>
+		<div class="modal-body">
+			<p>You can set the time format in the options.
+				<table class="table table-condensed table-striped" style="table-layout: auto">
+					<thead>
+						<tr>
+							<th style="border-right:1px dashed #ddd;text-align:center;">{{_('Code') }}</th>
+							<th style="border-right:1px dashed #ddd;text-align:center;">{{ _('Meaning') }}</th>
+							<th style="text-align:center">{{ _('Example') }}</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%a</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Weekday as locale’s abbreviated name.</td>
+							<td style="vertical-align: middle;">Mon</td>
+						</tr>
+						<tr>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%A	</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Weekday as locale’s full name.	</td>
+							<td style="vertical-align: middle;">Monday</td>
+						</tr>
+
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%d</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Day of the month as a zero-padded decimal number.	</td>			
+							<td style="vertical-align: middle;">30</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-d</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Day of the month as a decimal number. (Platform specific)	</td>	
+							<td style="vertical-align: middle;">30</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%b</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Month as locale’s abbreviated name.	</td>
+							<td style="vertical-align: middle;">Sep</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%B</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Month as locale’s full name.	</td>
+							<td style="vertical-align: middle;">September</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%m</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Month as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">09</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-m</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Month as a decimal number. (Platform specific)	</td>
+							<td style="vertical-align: middle;">9</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%y</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Year without century as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">13</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%Y</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Year with century as a decimal number.	</td>
+							<td style="vertical-align: middle;">2013</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%H</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Hour (24-hour clock) as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">07</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-H</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Hour (24-hour clock) as a decimal number. (Platform specific)	</td>
+							<td style="vertical-align: middle;">7</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%I</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Hour (12-hour clock) as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">07</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-I</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Hour (12-hour clock) as a decimal number. (Platform specific)	</td>
+							<td style="vertical-align: middle;">7</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%p</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Locale’s equivalent of either AM or PM.	</td>
+							<td style="vertical-align: middle;">AM</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%M</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Minute as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">06</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-M</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Minute as a decimal number. (Platform specific)	</td>
+							<td style="vertical-align: middle;">6</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%S</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Second as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">05</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-S</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Second as a decimal number. (Platform specific)	</td>
+							<td style="vertical-align: middle;">5</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%f</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Microsecond as a decimal number, zero-padded on the left.	</td>
+							<td style="vertical-align: middle;">000000</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%z</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">UTC offset in the form +HHMM or -HHMM (empty string if the the object is naive).	</td>	
+							<td style="vertical-align: middle;"></td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%Z</td>	
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Time zone name (empty string if the object is naive).	</td>	
+							<td style="vertical-align: middle;"></td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%j</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Day of the year as a zero-padded decimal number.	</td>
+							<td style="vertical-align: middle;">273</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%-j</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Day of the year as a decimal number. (Platform specific)	</td>
+							<td style="vertical-align: middle;">273</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%U</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Week number of the year (Sunday as the first day of the week) as a zero padded decimal number. All days in a new year preceding the first Sunday are considered to be in week 0.	</td>
+							<td style="vertical-align: middle;">39</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%W</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Week number of the year (Monday as the first day of the week) as a decimal number. All days in a new year preceding the first Monday are considered to be in week 0.	</td>
+							<td style="vertical-align: middle;">39</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%c</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Locale’s appropriate date and time representation.	</td>
+							<td style="vertical-align: middle;">Mon Sep 30 07:06:05 2013</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%x</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Locale’s appropriate date representation.	</td>
+							<td style="vertical-align: middle;">09/30/13</td>
+						</tr>
+						<tr>
+							<td  style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">%X</td>
+							<td style="vertical-align: middle;border-right:1px dashed #ddd;text-align:center;">Locale’s appropriate time representation.	</td>
+							<td style="vertical-align: middle;">07:06:05</td>
+						</tr>
+					</tbody>
+				</table>
+			</p>
+		  
+		</div>
+	</div>
 </div>

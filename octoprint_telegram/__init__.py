@@ -21,9 +21,10 @@ def is_in_python_2():
 		return True
 	return False
 
-if is_in_python_2():
-	import StringIO
-	bytes_reader_class = StringIO.StringIO
+
+#if is_in_python_2():
+#	from __future__ import StringIO
+#	bytes_reader_class = StringIO.StringIO
 
 ####################################################
 #        TelegramListener Thread Class
@@ -41,6 +42,7 @@ class TelegramListener(threading.Thread):
 		self.username = "UNKNOWN"
 		self._logger = main._logger.getChild("listener")
 		self.gEmo = self.main.gEmo
+		
 
 	def run(self):
 		self._logger.debug("Try first connect.")
@@ -84,6 +86,17 @@ class TelegramListener(threading.Thread):
 		#wooooops. can't handle the message
 		except Exception as ex:
 			self._logger.exception("Exception caught! " + str(ex))
+
+		try:
+			if self.main._settings.get(["ForceLoopMessage"]):
+				if self.main._printer.is_printing():
+					if self.main.tmsg.is_notification_necessary(None,None):
+						self._logger.debug("ForceLoopMessage on_event StatusPrinting")
+						self.main.on_event("StatusPrinting", {})
+
+		except Exception as ex:
+			self._logger.exception("Exception ForceLoopMessage caught! " + str(ex))
+
 		self.set_status(gettext("Connected as %(username)s.", username=self.username), ok=True)
 		# we had first contact after octoprint startup
 		# so lets send startup message
@@ -200,7 +213,7 @@ class TelegramListener(threading.Thread):
 					target_filename = "telegram_"+file_name
 				# for parameter no_markup see _send_edit_msg()
 				self.main.send_msg(self.gEmo('save') + gettext(" Saving file {}...".format(target_filename)), chatID=chat_id)
-				requests.get(self.main.bot_url + "/sendChatAction", params={'chat_id': chat_id, 'action': 'upload_document'})
+				requests.get(self.main.bot_url + "/sendChatAction", params={'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 				data = self.main.get_file(message['message']['document']['file_id'])
 				#giloser 09/05/2019 try to zip the gcode file to lower the size
 				if isZipFile:
@@ -220,12 +233,13 @@ class TelegramListener(threading.Thread):
 						self._logger.info('namelist ')
 						list_files = zf.namelist()
 						stringmsg = ""
+						nbFile=0
 						for filename in list_files:
 							if octoprint.filemanager.valid_file_type(filename, "machinecode"):
 								try:
 									data = zf.read(filename)
 									path = self.main.get_plugin_data_folder()+"/tmpzip/" +filename
-									with open(path, 'w') as f:
+									with open(path, 'wb') as f:
 										f.write(data)
 									#stream = octoprint.filemanager.util.StreamWrapper(filename, bytes_reader_class(data))
 									if self.main.version >= 1.3:
@@ -237,12 +251,13 @@ class TelegramListener(threading.Thread):
 										target_filename = "telegram_"+filename
 									file_wrapper = octoprint.filemanager.util.DiskFileWrapper(target_filename, path)
 									added_file = self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL,file_wrapper.filename,file_wrapper,allow_overwrite=True)
+									self._logger.debug("added_file=" + str(added_file))
 #									self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
 									if stringmsg == "":
 										stringmsg = self.gEmo('upload') + " I've successfully saved the file you sent me as {}".format(target_filename)
 									else:
 										stringmsg = stringmsg + ", " + target_filename
-
+									nbFile+=1
 									try:
 										os.remove(path)
 									except Exception as ex:
@@ -261,6 +276,19 @@ class TelegramListener(threading.Thread):
 						zf.close()
 					if stringmsg != "":
 						self.main.send_msg(stringmsg, msg_id=self.main.getUpdateMsgId(chat_id), chatID=chat_id)
+						if nbFile == 1 and self.main._settings.get(["selectFileUpload"]):
+							file = self.main._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, added_file)
+							self._logger.debug("Using full path: %s", file)
+							self.main._printer.select_file(file, False, printAfterSelect=False)
+							data = self.main._printer.get_current_data()
+							if data['job']['file']['name'] is not None:
+								msg = self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as " +str(added_file)+" and he is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name'])
+								self.main.send_msg(msg,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id), responses=[[[self.main.emojis['check']+gettext("Print"),"/print_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"/print_x"]]],chatID=chat_id)
+							elif not self.main._printer.is_operational():
+								self.main.send_msg(self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as " + added_file + " but I can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+							else:
+								self.main.send_msg(self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as " + added_file + " but ... Problems on loading the file for print."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+
 					else:
 						self.main.send_msg(self.gEmo('warning') + " Something went wrong during processing of your file."+self.gEmo('mistake')+" Sorry. More details are in octoprint.log.",msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
 						self._logger.info("Exception occured during processing of a file: "+ traceback.format_exc() )
@@ -273,6 +301,7 @@ class TelegramListener(threading.Thread):
 						f.write(data)
 					file_wrapper = octoprint.filemanager.util.DiskFileWrapper(target_filename, path)
 					added_file = self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL,file_wrapper.filename,file_wrapper,allow_overwrite=True)
+					self._logger.debug("added_file=" + str(added_file))
 
 					#stream = octoprint.filemanager.util.StreamWrapper(target_filename, bytes_reader_class(data))
 					#self.main._file_manager.add_file(octoprint.filemanager.FileDestinations.LOCAL, target_filename, stream, allow_overwrite=True)
@@ -282,10 +311,25 @@ class TelegramListener(threading.Thread):
 					#pathWoDest = "/".join(fullPath.split("/")[1:]) if len(fullPath.split("/")) > 1 else fullPath
 					#keyPrint = [self.main.emojis['rocket']+" Print","/print_"+fileHash]
 					self.main.send_msg(self.gEmo('upload') + " I've successfully saved the file you sent me as {}.".format(target_filename),msg_id=self.main.getUpdateMsgId(chat_id),chatID=chat_id)
+
 					try:
 						os.remove(path)
 					except Exception as ex:
 						self._logger.exception("Exception occured during remove of a file= "+path + " : " + traceback.format_exc())
+
+					if self.main._settings.get(["selectFileUpload"]):
+						file = self.main._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, added_file)
+						self._logger.debug("Using full path: %s", file)
+						self.main._printer.select_file(file, False, printAfterSelect=False)
+						data = self.main._printer.get_current_data()
+						if data['job']['file']['name'] is not None:
+							msg = self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as " + added_file + " and he is loaded.\n\n"+self.gEmo('question')+" Do you want me to start printing it now?", file=data['job']['file']['name'])
+							self.main.send_msg(msg,noMarkup=True, msg_id = self.main.getUpdateMsgId(chat_id), responses=[[[self.main.emojis['check']+gettext("Print"),"/print_s"], [self.main.emojis['cross mark']+gettext(" Cancel"),"/print_x"]]],chatID=chat_id)
+						elif not self.main._printer.is_operational():
+							self.main.send_msg(self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as " + added_file + " but I can't start printing: I'm not connected to a printer."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+						else:
+							self.main.send_msg(self.gEmo('upload') + gettext(" I've successfully saved the file you sent me as " + added_file + " but Uh oh... Problems on loading the file for print."),chatID=chat_id, msg_id = self.main.getUpdateMsgId(chat_id))
+
 			except ExitThisLoopException:
 				pass
 			except Exception as ex:
@@ -318,7 +362,8 @@ class TelegramListener(threading.Thread):
 		if command not in self.main.tcmd.commandDict:
 			# we dont know the command so skip the message
 			self._logger.warn("Previous command was an unknown command.")
-			self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
+			if not self.main._settings.get(["no_mistake"]):
+				self.main.send_msg("I do not understand you! " + self.gEmo('mistake'),chatID=chat_id)
 			raise ExitThisLoopException()
 		# check if user is allowed to execute the command
 		if self.main.isCommandAllowed(chat_id,from_id,command):
@@ -391,7 +436,7 @@ class TelegramListener(threading.Thread):
 			if self.update_offset == 0 and self.first_contact:
 				res = ["0","0"]
 				while len(res) > 0:
-					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10)
+					req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':0}, allow_redirects=False, timeout=10, proxies=self.getProxies())
 					json = req.json()
 					if not json['ok']:
 						self.set_status(gettext("Response didn't include 'ok:true'. Waiting 2 minutes before trying again. Response was: %(response)s", response=json))
@@ -405,7 +450,7 @@ class TelegramListener(threading.Thread):
 				if self.update_offset == 0:
 					self.set_update_offset(0)
 			else:
-				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40)
+				req = requests.get(self.main.bot_url + "/getUpdates", params={'offset':self.update_offset, 'timeout':30}, allow_redirects=False, timeout=40, proxies=self.getProxies())
 		except requests.exceptions.Timeout:
 			# Just start the next loop.
 			raise ExitThisLoopException()
@@ -447,6 +492,13 @@ class TelegramListener(threading.Thread):
 		self.connection_ok = ok
 		self.main.connection_state_str = status
 
+	def getProxies(self):
+		http_proxy = self.main._settings.get(["http_proxy"])
+		https_proxy = self.main._settings.get(["https_proxy"])
+		return {
+			'http': http_proxy,
+			'https': https_proxy
+			}
 
 class TelegramPluginLoggingFilter(logging.Filter):
 	def filter(self, record):
@@ -691,6 +743,8 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			gif_not_connected = False, #GWE 05/05/19,
 			send_gif = False, #giloser 12/08/2019,
 			multicam = False,
+			no_mistake = False,
+			invertImgRot = False,
 			scale_gif=0,
 			delay_img_gif=.5,
 			number_img_gif=20,
@@ -699,7 +753,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			PreImgMethod="None",
 			PreImgCommand="",
 			PostImgMethod="None",
-			PostImgCommand=""
+			PostImgCommand="",
+			TimeFormat="%H:%M:%S",
+			DayTimeFormat="%a %H:%M:%S",
+			WeekTimeFormat="%d.%m.%Y %H:%M:%S"
 		)
 
 	def get_settings_preprocessors(self):
@@ -760,7 +817,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					message['text'] = "The OctoPrint Plugin " + self._plugin_name + " has been updated to new Version "+self._plugin_version+ ".\n\nPlease open your " + self._plugin_name + " settings in OctoPrint and set configurations for this chat. Until then you are not able to send or receive anything useful with this Bot.\n\nMore informations on: https://github.com/fabianonline/OctoPrint-Telegram"
 					message['chat_id'] = chat
 					message['disable_web_page_preview'] = True
-					r = requests.post("https://api.telegram.org/bot" + self._settings.get(['token']) + "/sendMessage", data =  message)
+					r = requests.post("https://api.telegram.org/bot" + self._settings.get(['token']) + "/sendMessage", data =  message, proxies=self.getProxies())
 					r.raise_for_status()
 					if r.headers['content-type'] != 'application/json':
 						raise Exception("invalid content-type")
@@ -1087,23 +1144,28 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		try:
 			# If it's a regular event notification
 			if 'chatID' not in kwargs and 'event' in kwargs:
-				self._logger.debug("Send_msg() found event: " + str(kwargs['event']))
+				self._logger.debug("Send_msg() found event: " + str(kwargs['event']) + " | chats list="+str(self.chats))
 				for key in self.chats:
+					self._logger.debug("send_msg loop key="+str(key))
 					if key != 'zBOTTOMOFCHATS':
-						if self.chats[key]['notifications'][kwargs['event']] and (key not in self.shut_up or self.shut_up[key]==0) and self.chats[key]['send_notifications']:
-							kwargs['chatID'] = key
-							t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+						try:
+							self._logger.debug("self.chats[key]['notifications']=" + str(self.chats[key]['notifications']))
+							if self.chats[key]['notifications'][kwargs['event']] and (key not in self.shut_up or self.shut_up[key]==0) and self.chats[key]['send_notifications']:
+								kwargs['chatID'] = key
+								threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+						except Exception as ex:
+							self._logger.exception("Caught an exception in loop chatId for key: " +str(key) + " => " + str(ex))	
 			# Seems to be a broadcast
 			elif 'chatID' not in kwargs:
 				for key in self.chats:
 					kwargs['chatID'] = key
-					t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+					threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 			# This is a 'editMessageText' message
 			elif 'msg_id' in kwargs and kwargs['msg_id'] is not "" and  kwargs['msg_id'] is not None:
-				t = threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
+				threading.Thread(target=self._send_edit_msg, kwargs = kwargs).run()
 			# direct message or event notification to a chat_id
 			else:
-				t = threading.Thread(target=self._send_msg, kwargs = kwargs).run()
+				threading.Thread(target=self._send_msg, kwargs = kwargs).run()
 		except Exception as ex:
 			self._logger.exception("Caught an exception in send_msg(): " + str(ex))
 
@@ -1134,7 +1196,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				keyboard = {'inline_keyboard':myArr}
 				data['reply_markup'] = json.dumps(keyboard)
 			self._logger.debug("SENDING UPDATE: " + str(data))
-			req = requests.post(self.bot_url + "/editMessageText", data=data)
+			req = requests.post(self.bot_url + "/editMessageText", data=data, proxies=self.getProxies())
 			if req.headers['content-type'] != 'application/json':
 				self._logger.debug(gettext("Unexpected Content-Type. Expected: application/json. Was: %(type)s. Waiting 2 minutes before trying again.", type=req.headers['content-type']))
 				return
@@ -1180,11 +1242,11 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					del args['self']
 					args['message'] = ""
 					self._logger.debug("Sending image...")
-					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					threading.Thread(target=self._send_msg, kwargs = args).run()
 					args['message'] = message
 					args['with_image'] = False
 					self._logger.debug("Sending text...")
-					t = threading.Thread(target=self._send_msg, kwargs = args).run()
+					threading.Thread(target=self._send_msg, kwargs = args).run()
 					return
 
 			self._logger.debug("log instead log sending message ")
@@ -1211,10 +1273,21 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					sendOneInLoop = False
 					if kwargs['event'] == "MovieDone":
 						ret = kwargs['movie']
+						#file = self._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, ret)
+						file = ret
+						file_size = os.path.getsize(file)
+						humanFileSize = self.humanbytes(file_size)
+						self._logger.info("File Size is : {0}".format(humanFileSize))
+						if( file_size > 50000000 ): #bigger than 50mb
+							ret=""
+							self._logger.debug("Sending without image.. " + str(chatID))
+							data['text'] = message + " but file size is {0} so we cannot send it with the message".format(humanFileSize)
+							r =requests.post(self.bot_url + "/sendMessage", data=data, proxies=self.getProxies())
+							self._logger.debug("Sending finished. " + str(r.status_code))
 					else:
 						self._logger.info("Will try to create a gif ")
 						
-						#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+						#requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 						if self._plugin_manager.get_plugin("multicam",True) and self._settings.get(["multicam"]):
 							try:
 								curr = self._settings.global_get(["plugins","multicam","multicam_profiles"])
@@ -1260,7 +1333,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						#if ret != "":
 						#	self.send_file(chatID, ret,message)
 				except Exception as ex:
-					self._logger.info("Caught an exception trying send gif: " + str(ex))
+					self._logger.exception("Caught an exception trying send gif: " + str(ex))
 					self.send_msg(self.gEmo('dizzy face') + " Problem creating gif, please check log file", chatID=chatID)#and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
 			else:
 				self._logger.debug("data so far: " + str(data))
@@ -1318,12 +1391,12 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 										self._logger.debug("Snapshot URL: " + str(snapshot_url))
 										if snapshot_url != self._settings.global_get(["webcam", "snapshot"]):
 											image_data2 = self.take_image(snapshot_url)
-											if image_data2 != "":
+											if str(image_data2) != "":
 												self._logger.debug("Image for  " + str(li.get("name")))
 												files = {'photo':("image.jpg", image_data2)}
 												data2 = data
 												data2['caption'] = ""
-												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2)
+												r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data2, proxies=self.getProxies())
 											else:
 												self._logger.debug("no image  " + str(li.get("name")))
 										else:
@@ -1350,7 +1423,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 						#except Exception as ex:
 						#	self._logger.error("Caught an exception trying clean previous images : " + str(ex))
 						#	self._logger.info("will try to save image in path " + os.getcwd())
-						r = requests.get(url)
+						r = requests.get(url, proxies=self.getProxies())
 
 						if r.status_code >= 300:
 							thumbnail_data = None
@@ -1367,14 +1440,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.debug("Sending with image.. and thumbnail so image first " + str(chatID))
 					files = {'photo':("image.jpg", image_data)}
 					data['caption'] = ""
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data, proxies=self.getProxies())
 					self._logger.debug("Sending image finished. " + str(r.status_code))
 
 					self._logger.debug("Sending thumbnail.. " + str(chatID))
 					files = {'photo':("image.jpg", thumbnail_data)}
 					if message is not "":
 						data['caption'] = message
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data, proxies=self.getProxies())
 					self._logger.debug("Sending finished. " + str(r.status_code))
 				elif image_data:
 					self._logger.debug("Sending with image.. " + str(chatID))
@@ -1382,7 +1455,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					#self._logger.debug("files so far: " + str(files))
 					if message is not "":
 						data['caption'] = message
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data, proxies=self.getProxies())
 
 					self._logger.debug("Sending finished. " + str(r.status_code))
 
@@ -1393,14 +1466,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					if message is not "":
 						data['caption'] = message
 
-					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data)
+					r = requests.post(self.bot_url + "/sendPhoto", files=files, data=data, proxies=self.getProxies())
 
 					self._logger.debug("Sending finished. " + str(r.status_code))
 
 				else:
 					self._logger.debug("Sending without image.. " + str(chatID))
 					data['text'] = message
-					r =requests.post(self.bot_url + "/sendMessage", data=data)
+					r =requests.post(self.bot_url + "/sendMessage", data=data, proxies=self.getProxies())
 					self._logger.debug("Sending finished. " + str(r.status_code))
 
 
@@ -1436,15 +1509,33 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		except Exception as ex:
 			self._logger.exception("Exception PostImgMethod: "+ str(ex) )
 
+	def humanbytes(self,B):
+		'Return the given bytes as a human friendly KB, MB, GB, or TB string'
+		B = float(B)
+		KB = float(1024)
+		MB = float(KB ** 2) # 1,048,576
+		GB = float(KB ** 3) # 1,073,741,824
+		TB = float(KB ** 4) # 1,099,511,627,776
+
+		if B < KB:
+			return '{0} {1}'.format(B,'Bytes' if 0 == B > 1 else 'Byte')
+		elif KB <= B < MB:
+			return '{0:.2f} KB'.format(B/KB)
+		elif MB <= B < GB:
+			return '{0:.2f} MB'.format(B/MB)
+		elif GB <= B < TB:
+			return '{0:.2f} GB'.format(B/GB)
+		elif TB <= B:
+			return '{0:.2f} TB'.format(B/TB)
 
 	def send_file(self,chat_id,path,text):
 		if not self.send_messages:
 			return
 
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 			files = {'document': open(path, 'rb')}
-			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id,'caption':text})
+			r = requests.post(self.bot_url + "/sendDocument", files=files, data={'chat_id':chat_id,'caption':text}, proxies=self.getProxies())
 		except Exception as ex:
 			self._logger.debug("Caught an exception in send_file(): " + str(ex))
 
@@ -1452,15 +1543,15 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		if not self.send_messages:
 			return
 		try:
-			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'})
+			requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
 			files = {'document': open(path, 'rb')}
-			r = requests.post(self.bot_url + "/editMessageMedia", files=files, data={'chat_id':chat_id,'message_id':message_id})
+			r = requests.post(self.bot_url + "/editMessageMedia", files=files, data={'chat_id':chat_id,'message_id':message_id}, proxies=self.getProxies())
 		except Exception as ex:
 			pass
 
 	def delete_msg(self,chat_id,message_id):
 		try:
-			r = requests.post(self.bot_url + "/deleteMessage", data={'chat_id':chat_id,'message_id':message_id})
+			r = requests.post(self.bot_url + "/deleteMessage", data={'chat_id':chat_id,'message_id':message_id}, proxies=self.getProxies())
 		except Exception as ex:
 			pass
 
@@ -1469,7 +1560,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 
 		files = {'video': open(video_file, 'rb')}
-		r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message})
+		r = requests.post(self.bot_url + "/sendVideo", files=files, data={'chat_id':self._settings.get(["chat"]), 'caption':message}, proxies=self.getProxies())
 		self._logger.debug("Sending finished. " + str(r.status_code) + " " + str(r.content))
 
 	def get_file(self, file_id):
@@ -1477,7 +1568,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			return
 
 		self._logger.debug("Requesting file with id %s.", file_id)
-		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id})
+		r = requests.get(self.bot_url + "/getFile", data={'file_id': file_id}, proxies=self.getProxies())
 		# {"ok":true,"result":{"file_id":"BQADAgADCgADrWJxCW_eFdzxDPpQAg","file_size":26,"file_path":"document\/file_3.gcode"}}
 		r.raise_for_status()
 		data = r.json()
@@ -1485,7 +1576,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			raise Exception(gettext("Telegram didn't respond well to getFile. The response was: %(response)s", response=r.text))
 		url = self.bot_file_url + "/" + data['result']['file_path']
 		self._logger.debug("Downloading file: %s", url)
-		r = requests.get(url)
+		r = requests.get(url, proxies=self.getProxies())
 		r.raise_for_status()
 		return r.content
 
@@ -1500,7 +1591,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					self._logger.debug("Not able to load group photos. "+ str(chat_id)+" EXIT")
 					return
 				self._logger.debug("requests.get("+self.bot_url + "/getUserProfilePhotos")
-				r = requests.get(self.bot_url + "/getUserProfilePhotos", params = {'limit': 1, "user_id": chat_id})
+				r = requests.get(self.bot_url + "/getUserProfilePhotos", params = {'limit': 1, "user_id": chat_id}, proxies=self.getProxies())
 				r.raise_for_status()
 				data = r.json()
 				if not "ok" in data:
@@ -1526,7 +1617,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		if token is None:
 			token = self._settings.get(["token"])
-		response = requests.get("https://api.telegram.org/bot" + token + "/getMe")
+		response = requests.get("https://api.telegram.org/bot" + token + "/getMe", proxies=self.getProxies())
 		self._logger.debug("getMe returned: " + str(response.json()))
 		self._logger.debug("getMe status code: " + str(response.status_code))
 		json = response.json()
@@ -1547,7 +1638,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			shallRun=force
 			if not force:
 				# check if a list of commands was already set
-				resp = requests.get(self.bot_url + "/getMyCommands").json()
+				resp = requests.get(self.bot_url + "/getMyCommands", proxies=self.getProxies()).json()
 				self._logger.debug("getMyCommands returned " + str(resp))
 				shallRun=(len(resp['result']) == 0)
 			if shallRun:
@@ -1573,10 +1664,18 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				commands.append({"command":"shutup","description":"Disables automatic notifications until the next print ends"})
 				commands.append({"command":"dontshutup","description":"Makes the bot talk again (opposite of `/shutup`)"})
 				commands.append({"command":"help","description":"Shows this help message"})
-				resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}).json()
+				resp = requests.post(self.bot_url + "/setMyCommands", data={'commands':json.dumps(commands)}, proxies=self.getProxies()).json()
 				self._logger.debug("setMyCommands returned " + str(resp))
 		except Exception as ex:
 			pass
+
+	def getProxies(self):
+		http_proxy = self._settings.get(["http_proxy"])
+		https_proxy = self._settings.get(["https_proxy"])
+		return {
+			'http': http_proxy,
+			'https': https_proxy
+			}
 ##########
 ### Helper methods
 ##########
@@ -1620,7 +1719,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 		data = None
 		if snapshot_url:
 			try:
-				r = requests.get(snapshot_url,timeout=10)
+				r = requests.get(snapshot_url,timeout=10, proxies=self.getProxies())
 				data = r.content
 			except Exception as e:
 				self._logger.exception("TimeOut Exception: " + str(e))
@@ -1638,7 +1737,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if flipV:
 				image = image.transpose(Image.FLIP_TOP_BOTTOM)
 			if rotate:
-				image = image.transpose(Image.ROTATE_270)
+				if not self._settings.get_boolean(["invertImgRot"]):
+					image = image.transpose(Image.ROTATE_270)
+				else:
+					image = image.transpose(Image.ROTATE_90)
 			output = bytes_reader_class()
 			image.save(output, format="JPEG")
 			data = output.getvalue()
@@ -1653,7 +1755,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 			if self._plugin_manager.get_plugin("DisplayLayerProgress",True):
 				headers = { 'X-Api-Key' : self._settings.global_get(['api','key']),}
 				#r = requests.get("http://localhost:"+ str(self.tcmd.port) + "/plugin/DisplayLayerProgress/value", headers=headers)
-				r = requests.get("http://localhost:"+ str(self.tcmd.port) +"/plugin/DisplayLayerProgress/values", headers=headers,timeout=3)
+				r = requests.get("http://localhost:"+ str(self.tcmd.port) +"/plugin/DisplayLayerProgress/values", headers=headers,timeout=3, proxies=self.getProxies())
 				self._logger.debug("get_current_layers : r=" +str(r) )
 				if (r.status_code >= 300):
 					return None
@@ -1675,19 +1777,22 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				if printTime == 0 or str(printTime)=="11:11:00":
 					return ""  # maybe put something like "nothing to print" in here
 				self._logger.debug("printTime=" + str(printTime))
-				finish_time = current_time + datetime.timedelta(0, printTime)
+				try:
+					finish_time = current_time + datetime.timedelta(0, printTime)
+				except Exception as ex:
+					return ""
 			else:
 				finish_time = current_time + datetime.timedelta(0, currentData["progress"]["printTimeLeft"])
 
 			if finish_time.day > current_time.day and finish_time > current_time + datetime.timedelta(days=7):
 				# longer than a week ahead
-				format = "%d.%m.%Y %H:%M:%S"
+				format = self._settings.get(["WeekTimeFormat"]) # "%d.%m.%Y %H:%M:%S"
 			elif finish_time.day > current_time.day:
 				# not today but within a week
-				format = "%a %H:%M:%S"
+				format = self._settings.get(["DayTimeFormat"]) #"%a %H:%M:%S"
 			else:
 				# today
-				format = "%H:%M:%S"
+				format = self._settings.get(["TimeFormat"]) # "%H:%M:%S"
 			return finish_time.strftime(format)
 		except Exception as ex:
 			self._logger.exception("An Exception in get final time : " + str(ex) )
@@ -1703,7 +1808,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 		try:
 			try:
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			except Exception as ex:
 				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 		#	saveDir = os.getcwd()
@@ -1738,7 +1843,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				return ""
 
 			try:
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			except Exception as ex:
 				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 			#os.nice(20) # force this to use less CPU
@@ -1830,7 +1935,10 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 					flipping = flipping + "," + "hflip"
 				if rotate:
 					self._logger.info("Need to rotate 90deg counter clockwise")
-					flipping = flipping + "," + "transpose=2"
+					if not self._settings.get_boolean(["invertImgRot"]):
+						flipping = flipping + "," + "transpose=2"
+					else:
+						flipping = flipping + "," + "transpose=1"
 				flipping = flipping.lstrip(',')
 				params.append( flipping )
 
@@ -1848,7 +1956,7 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 
 			self._logger.info("will now create the video  " + str(params).strip('[]') )
 			try:
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			except Exception as ex:
 				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 
@@ -1857,14 +1965,14 @@ class TelegramPlugin(octoprint.plugin.EventHandlerPlugin,
 				if myproc.poll() is not None:
 					break
 				try:
-					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+					requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 				except Exception as ex:
 					self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 				time.sleep(0.5)
 
 			self._logger.info("Finish the video")
 			try:
-				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'})
+				requests.get(self.bot_url + "/sendChatAction", params = {'chat_id': chatID, 'action': 'record_video'}, proxies=self.getProxies())
 			except Exception as ex:
 				self._logger.error("Caught an exception trying sending action:record_video : " + str(ex))
 			ret = outPath
