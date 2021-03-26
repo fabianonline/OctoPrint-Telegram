@@ -1136,7 +1136,7 @@ class TCMD():
 					]
 				self.main.send_msg(msg,chatID=chat_id,responses=keys,msg_id = self.main.getUpdateMsgId(chat_id),markup="Markdown")
 		else:
-			msg = self.gEmo('settings') + gettext(" *Tune print stettings*")
+			msg = self.gEmo('settings') + gettext(" *Tune print settings*")
 			profile = self.main._printer_profile_manager.get_current()
 			temps = self.main._printer.get_current_temperatures()
 			self.tempTemp = []
