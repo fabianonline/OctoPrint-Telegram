@@ -28,13 +28,13 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'PrintPaused': {
-				'text': "Paused printing {file} at {percent}%%. {time_left} remaining.",
+				'text': "Paused printing {file} at {percent}%. {time_left} remaining.",
 				'image': True,
 				'combined' : True,
 				'markup': "off"
 			},
 			'PrintResumed': {
-				'text': "Resumed printing {file} at {percent}%%. {time_left} remaining.",
+				'text': "Resumed printing {file} at {percent}%. {time_left} remaining.",
 				'image': True,
 				'combined' : True,
 				'markup': "off"
@@ -46,7 +46,7 @@ telegramMsgDict = {
 				'markup': "off"
 			},
 			'ZChange': {
-				'text': "Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}%% done, {time_left} remaining.",
+				'text': "Printing at Z={z}.\nBed {bed_temp}/{bed_target}, Extruder {e1_temp}/{e1_target}.\n{time_done}, {percent}% done, {time_left} remaining.",
 				'image': True,
 				'combined' : True,
 				'markup': "off"

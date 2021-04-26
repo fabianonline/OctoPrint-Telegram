@@ -40,10 +40,12 @@ $(function() {
         self.isloading = ko.observable(false);
         self.errored = ko.observable(false);
         self.token_state_str = ko.observable("Unknown");
+        self.setCommandList_state_str = ko.observable("");
     	self.editChatDialog = undefined;  
         self.varInfoDialog = undefined;      
         self.emoInfoDialog = undefined;
         self.mupInfoDialog = undefined;  
+        self.timeInfoDialog = undefined;  
     	self.currChatID = "Unknown";
         self.currChatTitle = ko.observable("Unknown");
         self.bind_cmd = {}; 
@@ -91,6 +93,14 @@ $(function() {
             self.bind['no_setting'] = response.no_setting;
             self.bind['bind_text'] = response.bind_text;
             var ShowGifBtn = self.settings.settings.plugins.telegram.send_gif()
+            var ShowGifBtn = self.settings.settings.plugins.telegram.send_gif()
+
+            if (ShowGifBtn)
+            {
+                $('.gif-options').toggle();
+            }
+
+            
             
             if (ShowGifBtn)
             {
@@ -125,6 +135,20 @@ $(function() {
                     txt = "No Image";
                     hideMup = "";
                     hideComb = "display:none"
+                }
+
+                if(self.settings.settings.plugins.telegram.messages[keys[id]].silent()) {
+                  imgSilent = "volume-off";
+                  bSilent = "warning";
+                  txtSilent = "Silent";
+                  hideMup = "";
+                  hideComb = "";
+                } else{
+                  imgSilent = "volume-up";
+                  bSilent = "success";
+                  txtSilent = "Notification";
+                  hideMup = "";
+                  hideComb = ""
                 }
                 if(self.settings.settings.plugins.telegram.messages[keys[id]].gif()){
                     imgGif = "camera";
@@ -192,6 +216,12 @@ $(function() {
                 btnImg += '<i id="chkImg'+self.msgCnt+'" class="icon-'+img+'"></i> ';
                 btnImg += '<span id="chkTxt'+self.msgCnt+'">'+txt+'</span></label><br>';
 
+                var btnSilent = '<span class="muted"><small>Send silently?<br></small></span>';
+                btnSilent += '<label id="chkSilentBtn'+self.msgCnt+'" class="btn btn-'+bSilent+' btn-mini" title="Toggle \'Silence\'">';
+                btnSilent += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.silent, click: toggleSilent(\''+self.msgCnt+'\')"/>';
+                btnSilent += '<i id="chkSilent'+self.msgCnt+'" class="icon-'+imgSilent+'"></i> ';
+                btnSilent += '<span id="chkSilentTxt'+self.msgCnt+'">'+txtSilent+'</span></label><br>';
+
                 var btnGif = '<span class="muted" id="chkGifLbl'+self.msgCnt+'" style="' + showGif + '" ><small>Send with gif?<br></small></span>';
                 btnGif += '<label id="chkGifBtn'+self.msgCnt+'"  style="' + showGif + '" class="btn btn-'+bGif+' btn-mini" title="Toggle \'Send with gif\'">';
                 btnGif += '<input type="checkbox" style="display:none" data-bind="checked: settings.settings.plugins.telegram.messages.'+keys[id]+'.gif, click: toggleGif(\''+self.msgCnt+'\')"/>';
@@ -209,7 +239,7 @@ $(function() {
                     msgEdt += '<div class="controls " >';
                         msgEdt += '<div class="row">';
                             msgEdt += '<div class="span9"><textarea rows="4" style="margin-left:7px;" class="block" data-bind="value: settings.settings.plugins.telegram.messages.'+keys[id]+'.text"></textarea></div>';
-                            msgEdt += '<div class="span3" style="text-align:center;">' + btnImg + btnGif + btnSecMsg +  btnGrp + '</div>';
+                            msgEdt += '<div class="span3" style="text-align:center;">' + btnImg + btnGif + btnSecMsg + btnSilent + btnGrp + '</div>';
                         msgEdt += '</div></div></div>';
 
                 $('#telegram_msg_list').append(msgEdt);
@@ -288,6 +318,19 @@ $(function() {
             }
         }
 
+        self.toggleSilent = function(data){
+          if(!self.onBindLoad){
+              $('#chkSilent'+data).toggleClass("icon-volume-off icon-volume-up");
+              $('#chkSilentBtn'+data).toggleClass("btn-success btn-warning");
+              if($('#chkSilentTxt'+data).text()==="Silent"){
+                  $('#chkSilentTxt'+data).text("Notification");
+              }
+              else{
+                  $('#chkSilentTxt'+data).text("Silent");
+              }
+          }
+      }
+
         self.toggleGif = function(data){
             if(!self.onBindLoad){
                 $('#chkGif'+data).toggleClass("icon-ban-circle icon-camera");
@@ -311,6 +354,7 @@ $(function() {
                 $('.gif-options').toggle();
             }
         }
+        
 
         self.toggleImg2 = function(data){
             if(!self.onBindLoad){
@@ -362,6 +406,41 @@ $(function() {
                 $('#teleErrored2').removeClass("text-error");
             }
 
+        }
+
+        self.setCommandResponse = function(response) {
+            self.setCommandList_state_str(response.setMyCommands_state_str);
+            self.errored(!response.ok);
+            if(!response.ok){
+                $('#CmdteleErrored').removeClass("text-warning");
+                $('#CmdteleErrored').addClass("text-error");
+            }
+            else{
+                $('#CmdteleErrored').removeClass("text-warning");
+                $('#CmdteleErrored').addClass("text-success");
+            }
+
+        }
+
+        self.setCommandList = function(data, event) {
+            console.log("StartSetCommandList");
+            $('#CmdteleErrored').addClass("text-warning"); 
+            $('#CmdteleErrored').removeClass("text-danger"); 
+            $('#CmdteleErrored').removeClass("text-sucess"); 
+            self.setCommandList_state_str("Please wait ...")
+            var callback = function() {
+                $.ajax({ 
+                    url: API_BASEURL + "plugin/telegram",
+                    type: "POST",
+                    dataType: "json",
+                    data: JSON.stringify({ "command": "setCommandList", "force": 'True'}),
+                    contentType: "application/json",
+                    success: self.setCommandResponse
+                });
+            };
+            showConfirmationDialog('Do you really want to set default commands ', function (e) {
+                callback();
+            });
         }
         
         self.fromResponse = function(response) {
@@ -493,10 +572,31 @@ $(function() {
             self.varInfoDialog = $('#settings-telegramDialogVarInfo');
             self.emoInfoDialog = $('#settings-telegramDialogEmoInfo');
             self.mupInfoDialog = $('#settings-telegramDialogMupInfo');
+            self.timeInfoDialog = $('#settings-telegramDialogTimeInfo');
             $('.teleEmojiImg').each( function(){
                 $(this).attr('src','/plugin/telegram/static/img/'+$(this).attr('id')+".png")
             });
             
+        }
+
+        self.isNumber = function(number) {
+            return !isNaN(parseFloat(number)) && isFinite(number);
+        }
+
+        self.onSettingsBeforeSave = function() {
+	        // Check specific settings to be a number, not a null
+	        // In case it's not a number set it to be 0
+            var settings = self.settings.settings.plugins.telegram;
+            var settings_to_check_number = [
+                settings.notification_height,
+                settings.notification_time,
+                settings.message_at_print_done_delay
+            ];
+            for (var i = 0; i < settings_to_check_number.length; i++) {
+                if (!self.isNumber(settings_to_check_number[i]())) {
+                    settings_to_check_number[i](0);
+                }
+            }
         }
 
         self.onServerDisconnect = function(){
