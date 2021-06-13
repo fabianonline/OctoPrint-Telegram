@@ -632,9 +632,14 @@ class TelegramListener(threading.Thread):
             # Track command
             if command.startswith("/"):
                 self.main.track_action("command/" + command[1:])
+            # Identify user
+            try:
+                user = message["message"]["chat"]["first_name"] + " " + message["message"]["chat"]["last_name"]
+            except:
+                user = ""
             # execute command
             self.main.tcmd.commandDict[command]["cmd"](
-                chat_id, from_id, command, parameter
+                chat_id, from_id, command, parameter, user
             )
         else:
             # user was not alloed to execute this command

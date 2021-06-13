@@ -17,8 +17,6 @@ from .telegramNotifications import telegramMsgDict
 # Each command has its own handler. If you want to add/del commands, read the following:
 # SEE DOCUMENTATION IN WIKI: https://github.com/fabianonline/OctoPrint-Telegram/wiki/Add%20commands%20and%20notifications
 ################################################################################################################
-
-
 class TCMD:
     def __init__(self, main):
         self.main = main
@@ -64,7 +62,7 @@ class TCMD:
     ############################################################################################
     # COMMAND HANDLERS
     ############################################################################################
-    def cmdYes(self, chat_id, from_id, cmd, parameter):
+    def cmdYes(self, chat_id, from_id, cmd, parameter, user = ""):
         self.main.send_msg(
             gettext("Alright."),
             chatID=chat_id,
@@ -73,7 +71,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdNo(self, chat_id, from_id, cmd, parameter):
+    def cmdNo(self, chat_id, from_id, cmd, parameter, user = ""):
         self.main.send_msg(
             gettext("Maybe next time."),
             chatID=chat_id,
@@ -82,7 +80,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdTest(self, chat_id, from_id, cmd, parameter):
+    def cmdTest(self, chat_id, from_id, cmd, parameter, user = ""):
         self.main.send_msg(
             self.gEmo("question") + gettext(" Is this a test?\n\n"),
             responses=[
@@ -95,7 +93,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdStatus(self, chat_id, from_id, cmd, parameter):
+    def cmdStatus(self, chat_id, from_id, cmd, parameter, user = ""):
         if not self.main._printer.is_operational():
             with_image = self.main._settings.get_boolean(["image_not_connected"])
             self.main.send_msg(
@@ -112,7 +110,7 @@ class TCMD:
 
     ############################################################################################
     def cmdGif(
-        self, chat_id, from_id, cmd, parameter
+        self, chat_id, from_id, cmd, parameter, user
     ):  # GWE 05/05/2019 add command to get gif
         if self.main._settings.get(["send_gif"]):
             if not self.main._printer.is_operational():
@@ -235,7 +233,7 @@ class TCMD:
 
     ############################################################################################
     def cmdSuperGif(
-        self, chat_id, from_id, cmd, parameter
+        self, chat_id, from_id, cmd, parameter, user
     ):  # GWE 05/05/2019 add command to get gif
         if self.main._settings.get(["send_gif"]):
             if not self.main._printer.is_operational():
@@ -354,7 +352,7 @@ class TCMD:
             )
 
     ############################################################################################
-    def cmdSettings(self, chat_id, from_id, cmd, parameter):
+    def cmdSettings(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and parameter != "back":
             params = parameter.split("_")
             if params[0] == "h":
@@ -368,7 +366,7 @@ class TCMD:
                             ["notification_height"], self.SettingsTemp[0], force=True
                         )
                         self.main._settings.save()
-                        self.cmdSettings(chat_id, from_id, cmd, "back")
+                        self.cmdSettings(chat_id, from_id, cmd, "back", user)
                         return
                     if self.SettingsTemp[0] < 0:
                         self.SettingsTemp[0] = 0
@@ -415,7 +413,7 @@ class TCMD:
                             ["notification_time"], self.SettingsTemp[1], force=True
                         )
                         self.main._settings.save()
-                        self.cmdSettings(chat_id, from_id, cmd, "back")
+                        self.cmdSettings(chat_id, from_id, cmd, "back", user)
                         return
                     if self.SettingsTemp[1] < 0:
                         self.SettingsTemp[1] = 0
@@ -446,7 +444,7 @@ class TCMD:
                 else:
                     self.main._settings.set_int(["send_gif"], 1, force=True)
                 self.main._settings.save()
-                self.cmdSettings(chat_id, from_id, cmd, "back")
+                self.cmdSettings(chat_id, from_id, cmd, "back", user)
                 return
             elif params[0] == "m":
                 if self.main._settings.get_boolean(["multicam"]):
@@ -454,7 +452,7 @@ class TCMD:
                 else:
                     self.main._settings.set_int(["multicam"], 1, force=True)
                 self.main._settings.save()
-                self.cmdSettings(chat_id, from_id, cmd, "back")
+                self.cmdSettings(chat_id, from_id, cmd, "back", user)
                 return
         else:
             if self.main._settings.get_boolean(["send_gif"]):
@@ -522,9 +520,9 @@ class TCMD:
             )
 
     ############################################################################################
-    def cmdAbort(self, chat_id, from_id, cmd, parameter):
+    def cmdAbort(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and parameter == "stop":
-            self.main._printer.cancel_print()
+            self.main._printer.cancel_print(user=user)
             self.main.send_msg(
                 self.gEmo("info") + gettext(" Aborting the print."),
                 chatID=chat_id,
@@ -557,20 +555,20 @@ class TCMD:
                 )
 
     ############################################################################################
-    def cmdTogglePause(self, chat_id, from_id, cmd, parameter):
+    def cmdTogglePause(self, chat_id, from_id, cmd, parameter, user = ""):
         msg = ""
         if self.main._printer.is_printing():
             msg = self.gEmo("hourglass") + " Pausing the print."
-            self.main._printer.toggle_pause_print()
+            self.main._printer.toggle_pause_print(user=user)
         elif self.main._printer.is_paused():
             msg = self.gEmo("black right-pointing triangle") + " Resuming the print."
-            self.main._printer.toggle_pause_print()
+            self.main._printer.toggle_pause_print(user=user)
         else:
             msg = "  Currently I'm not printing, so there is nothing to pause/resume."
         self.main.send_msg(msg, chatID=chat_id, inline=False)
 
     ############################################################################################
-    def cmdShutup(self, chat_id, from_id, cmd, parameter):
+    def cmdShutup(self, chat_id, from_id, cmd, parameter, user = ""):
         if chat_id not in self.main.shut_up:
             self.main.shut_up[chat_id] = 0
         self.main.shut_up[chat_id] += 1
@@ -591,7 +589,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdNShutup(self, chat_id, from_id, cmd, parameter):
+    def cmdNShutup(self, chat_id, from_id, cmd, parameter, user = ""):
         if chat_id in self.main.shut_up:
             self.main.shut_up[chat_id] = 0
         self.main.send_msg(
@@ -601,7 +599,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdPrint(self, chat_id, from_id, cmd, parameter):
+    def cmdPrint(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and len(parameter.split("|")) == 1:
             if parameter == "s":  # start print
                 data = self.main._printer.get_current_data()
@@ -631,7 +629,7 @@ class TCMD:
                         msg_id=self.main.getUpdateMsgId(chat_id),
                     )
                 else:
-                    self.main._printer.start_print()
+                    self.main._printer.start_print(user=user)
                     self.main.send_msg(
                         self.gEmo("rocket") + gettext(" Started the print job."),
                         chatID=chat_id,
@@ -710,10 +708,10 @@ class TCMD:
                         msg_id=self.main.getUpdateMsgId(chat_id),
                     )
         else:
-            self.cmdFiles(chat_id, from_id, cmd, parameter)
+            self.cmdFiles(chat_id, from_id, cmd, parameter, user)
 
     ############################################################################################
-    def cmdFiles(self, chat_id, from_id, cmd, parameter):
+    def cmdFiles(self, chat_id, from_id, cmd, parameter, user = ""):
         try:
             if parameter:
                 par = parameter.split("|")
@@ -742,6 +740,7 @@ class TCMD:
                         from_id,
                         cmd,
                         self.hashMe(str(list(storages.keys())[0] + "/"), 8) + "|0",
+                        user
                     )
                 else:
                     self.generate_dir_hash_dict()
@@ -774,7 +773,7 @@ class TCMD:
             )
 
     ############################################################################################
-    def cmdUpload(self, chat_id, from_id, cmd, parameter):
+    def cmdUpload(self, chat_id, from_id, cmd, parameter, user = ""):
         self.main.send_msg(
             self.gEmo("info")
             + " To upload a gcode file (also accept zip file), just send it to me.\nThe file will be stored in 'TelegramPlugin' folder.",
@@ -782,7 +781,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdSys(self, chat_id, from_id, cmd, parameter):
+    def cmdSys(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and parameter != "back":
             params = parameter.split("_")
             if params[0] == "sys":
@@ -1029,7 +1028,7 @@ class TCMD:
             self.main.send_msg(message, chatID=chat_id, responses=keys, msg_id=msg_id)
 
     ############################################################################################
-    def cmdCtrl(self, chat_id, from_id, cmd, parameter):
+    def cmdCtrl(self, chat_id, from_id, cmd, parameter, user = ""):
         if not self.main._printer.is_operational():
             self.main.send_msg(
                 self.gEmo("warning")
@@ -1135,7 +1134,7 @@ class TCMD:
             self.main.send_msg(message, chatID=chat_id, responses=keys, msg_id=msg_id)
 
     ############################################################################################
-    def cmdPrinterOn(self, chat_id, from_id, cmd, parameter):
+    def cmdPrinterOn(self, chat_id, from_id, cmd, parameter, user = ""):
         if self.main._plugin_manager.get_plugin("psucontrol", True):
             try:  # Let's check if the printer has been turned on before.
                 headers = {
@@ -1449,7 +1448,7 @@ class TCMD:
             )
 
     ############################################################################################
-    def cmdPrinterOff(self, chat_id, from_id, cmd, parameter):
+    def cmdPrinterOff(self, chat_id, from_id, cmd, parameter, user = ""):
         if self.main._plugin_manager.get_plugin("psucontrol", True):
             try:  # Let's check if the printer has been turned off before.
                 headers = {
@@ -1758,7 +1757,7 @@ class TCMD:
             )
 
     ############################################################################################
-    def cmdSwitchOff(self, chat_id, from_id, cmd, parameter):
+    def cmdSwitchOff(self, chat_id, from_id, cmd, parameter, user = ""):
         self._logger.info("Shutting down printer with API")
         try:
             if self.main._plugin_manager.get_plugin("psucontrol", True):
@@ -1855,7 +1854,7 @@ class TCMD:
         return
 
     ############################################################################################
-    def cmdSwitchOn(self, chat_id, from_id, cmd, parameter):
+    def cmdSwitchOn(self, chat_id, from_id, cmd, parameter, user = ""):
         self._logger.info("Attempting to turn on the printer with API")
         try:
             if self.main._plugin_manager.get_plugin("psucontrol", True):
@@ -1966,7 +1965,7 @@ class TCMD:
         return
 
     ############################################################################################
-    def cmdUser(self, chat_id, from_id, cmd, parameter):
+    def cmdUser(self, chat_id, from_id, cmd, parameter, user = ""):
         msg = self.gEmo("info") + " *Your user settings:*\n\n"
         msg += "*ID:* " + str(chat_id) + "\n"
         msg += "*Name:* " + self.main.chats[chat_id]["title"] + "\n"
@@ -2012,7 +2011,7 @@ class TCMD:
         self.main.send_msg(msg, chatID=chat_id, markup="Markdown")
 
     ############################################################################################
-    def cmdConnection(self, chat_id, from_id, cmd, parameter):
+    def cmdConnection(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and parameter != "back":
             params = parameter.split("|")
             if params[0] == "s":
@@ -2100,7 +2099,7 @@ class TCMD:
                 )
 
     ############################################################################################
-    def cmdTune(self, chat_id, from_id, cmd, parameter):
+    def cmdTune(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and parameter != "back":
             params = parameter.split("_")
             if params[0] == "feed":
@@ -2114,7 +2113,7 @@ class TCMD:
                         self.tuneTemp[0] -= base / (10 ** len(params[1]))
                     else:
                         self.main._printer.feed_rate(int(self.tuneTemp[0]))
-                        self.cmdTune(chat_id, from_id, cmd, "back")
+                        self.cmdTune(chat_id, from_id, cmd, "back", user)
                         return
                     if self.tuneTemp[0] < 50:
                         self.tuneTemp[0] = 50
@@ -2158,7 +2157,7 @@ class TCMD:
                         self.tuneTemp[1] -= base / (10 ** len(params[1]))
                     else:
                         self.main._printer.flow_rate(int(self.tuneTemp[1]))
-                        self.cmdTune(chat_id, from_id, cmd, "back")
+                        self.cmdTune(chat_id, from_id, cmd, "back", user)
                         return
                     if self.tuneTemp[1] < 50:
                         self.tuneTemp[1] = 200
@@ -2206,12 +2205,12 @@ class TCMD:
                         self.main._printer.set_temperature(
                             "tool" + str(toolNo), self.tempTemp[toolNo]
                         )
-                        self.cmdTune(chat_id, from_id, cmd, "back")
+                        self.cmdTune(chat_id, from_id, cmd, "back", user)
                         return
                     else:
                         self.main._printer.set_temperature("tool" + str(toolNo), 0)
                         self.tempTemp[toolNo] = 0
-                        self.cmdTune(chat_id, from_id, cmd, "back")
+                        self.cmdTune(chat_id, from_id, cmd, "back", user)
                         return
                     if self.tempTemp[toolNo] < 0:
                         self.tempTemp[toolNo] = 0
@@ -2274,12 +2273,12 @@ class TCMD:
                         self.tempTemp[toolNo] -= base / (10 ** len(params[1]))
                     elif params[1].startswith("s"):
                         self.main._printer.set_temperature("bed", self.tempTemp[toolNo])
-                        self.cmdTune(chat_id, from_id, cmd, "back")
+                        self.cmdTune(chat_id, from_id, cmd, "back", user)
                         return
                     else:
                         self.main._printer.set_temperature("bed", 0)
                         self.tempTemp[toolNo] = 0
-                        self.cmdTune(chat_id, from_id, cmd, "back")
+                        self.cmdTune(chat_id, from_id, cmd, "back", user)
                         return
                     if self.tempTemp[toolNo] < 0:
                         self.tempTemp[toolNo] = 0
@@ -2365,7 +2364,7 @@ class TCMD:
             )
 
     ############################################################################################
-    def cmdFilament(self, chat_id, from_id, cmd, parameter):
+    def cmdFilament(self, chat_id, from_id, cmd, parameter, user = ""):
         if self.main._plugin_manager.get_plugin("filamentmanager", True):
             if parameter and parameter != "back":
                 self._logger.info("Parameter received for filament: %s" % parameter)
@@ -2726,7 +2725,7 @@ class TCMD:
             self.main.send_msg(message, chatID=chat_id, msg_id=msg_id)
 
     ###########################################################################################
-    def cmdGCode(self, chat_id, from_id, cmd, parameter):
+    def cmdGCode(self, chat_id, from_id, cmd, parameter, user = ""):
         if parameter and parameter != "back":
             params = parameter.split("_")
             self.main._printer.commands(params[0])
@@ -2739,7 +2738,7 @@ class TCMD:
             self.main.send_msg(message, chatID=chat_id, msg_id=msg_id)
 
     ############################################################################################
-    def cmdHelp(self, chat_id, from_id, cmd, parameter):
+    def cmdHelp(self, chat_id, from_id, cmd, parameter, user = ""):
         if self.main._plugin_manager.get_plugin("psucontrol", True):
             switch_command = (
                 "/off - Switch off the Printer.\n/on - Switch on the Printer.\n"

@@ -403,6 +403,11 @@ class TMSG:
                     self._logger.error("Exception on formatting message: " + str(ex))
             file = status["job"]["file"]["name"]
             path = status["job"]["file"]["path"]
+            owner = status["job"]["user"]
+            if owner == None:
+                owner = ''
+                if owner == '_api':
+                    owner = ''
 
             try:
                 if event == "PrintStarted":
@@ -430,6 +435,16 @@ class TMSG:
                 self._logger.exception(
                     "Exception on getting movie for MovieDone: " + str(ex)
                 )
+
+            
+            if "user" in payload:
+                user = payload["user"]
+                if user == None:
+                    user = ""
+                if user == "_api":
+                    user = "API"
+            else:
+                user = ""
 
             if "file" in payload:
                 file = payload["file"]
