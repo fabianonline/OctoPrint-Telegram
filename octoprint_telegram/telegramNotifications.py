@@ -99,6 +99,7 @@ telegramMsgDict = {
         "no_setting": True,
     },
     "StatusPrinting": {"bind_msg": "ZChange", "no_setting": True},
+    "plugin_octolapse_movie_done": {"bind_msg": "MovieDone", "no_setting": True},
     "plugin_pause_for_user_event_notify": {
         "text": "{emo:warning} "
         + gettext(
@@ -232,6 +233,7 @@ class TMSG:
             "gCode_M600": self.msgColorChangeRequested,
             "Error": self.msgPrinterError,
             "MovieDone": self.msgMovieDone,
+            "plugin_octolapse_movie_done": self.msgMovieDone,
             "UserNotif": self.msgUserNotif,
             "Connected": self.msgConnected,
             "Disconnected": self.msgConnected,
@@ -280,6 +282,8 @@ class TMSG:
         self._sendNotification(payload, **kwargs)
 
     def msgMovieDone(self, payload, **kwargs):
+        if kwargs["event"] == "plugin_octolapse_movie_done":
+            kwargs["event"] == "MovieDone"
         self._sendNotification(payload, **kwargs)
 
     def msgPrinterError(self, payload, **kwargs):
@@ -423,6 +427,8 @@ class TMSG:
                 self._logger.exception("Exception on getting thumbnail: " + str(ex))
 
             try:
+                if event == "plugin_octolapse_movie_done":
+                    event = "MovieDone"
                 if event == "MovieDone":
                     if "movie" in payload:
                         kwargs["movie"] = payload["movie"]
@@ -469,6 +475,7 @@ class TMSG:
                     + "'."
                 )
             self._logger.debug("Sending Notification: " + message)
+            self._logger.debug(kwargs)
             # Do we want to send with Markup?
             kwargs["markup"] = self.main._settings.get(
                 ["messages", kwargs["event"], "markup"]

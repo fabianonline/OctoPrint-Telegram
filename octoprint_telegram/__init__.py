@@ -1809,6 +1809,8 @@ class TelegramPlugin(
             if with_gif:  # giloser 05/05/19
                 try:
                     sendOneInLoop = False
+                    if kwargs["event"] == "plugin_octolapse_movie_done":
+                        kwargs["event"] = "MovieDone"
                     if kwargs["event"] == "MovieDone":
                         ret = kwargs["movie"]
                         # file = self._file_manager.path_on_disk(octoprint.filemanager.FileDestinations.LOCAL, ret)
@@ -1893,8 +1895,8 @@ class TelegramPlugin(
                             ret = self.create_gif_new(chatID, 0, 0)
 
                     if ret != "" and not sendOneInLoop:
-                        self._logger.debug("send_file whith message: " + str(ret))
-                        self.send_file(chatID, ret, message)
+                        self._logger.debug("send_video with message: " + str(ret))
+                        self.send_video(chatID, ret, message)
                         # ret = self.create_gif_new(chatID,0,0)
                         # if ret != "":
                         # 	self.send_file(chatID, ret,message)
@@ -2256,7 +2258,7 @@ class TelegramPlugin(
         except Exception as ex:
             pass
 
-    def send_video(self, message, video_file):
+    def send_video(self, chatID, video_file, message):
         if not self.send_messages:
             return
 
@@ -2264,7 +2266,7 @@ class TelegramPlugin(
         r = requests.post(
             self.bot_url + "/sendVideo",
             files=files,
-            data={"chat_id": self._settings.get(["chat"]), "caption": message},
+            data={"chat_id": chatID, "caption": message},
             proxies=self.getProxies(),
         )
         self._logger.debug(
