@@ -110,7 +110,7 @@ class TCMD:
 
     ############################################################################################
     def cmdGif(
-        self, chat_id, from_id, cmd, parameter, user
+        self, chat_id, from_id, cmd, parameter, user = ""
     ):  # GWE 05/05/2019 add command to get gif
         if self.main._settings.get(["send_gif"]):
             if not self.main._printer.is_operational():
@@ -233,7 +233,7 @@ class TCMD:
 
     ############################################################################################
     def cmdSuperGif(
-        self, chat_id, from_id, cmd, parameter, user
+        self, chat_id, from_id, cmd, parameter, user = ""
     ):  # GWE 05/05/2019 add command to get gif
         if self.main._settings.get(["send_gif"]):
             if not self.main._printer.is_operational():
