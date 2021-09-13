@@ -262,7 +262,7 @@ sudo apt-get install cpulimit
                                              - the TuyaSmartplug plugin API. Requires the [TuyaSmartplug plugin](https://github.com/ziirish/OctoPrint-TuyaSmartplug/)
 											 sadly for now wait on accept the push request to get the list of plug
 
-**`/gcode_XXX`** - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
+**`/gcode`** - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
 
 <!-- omit in toc -->
 #### Notes:
