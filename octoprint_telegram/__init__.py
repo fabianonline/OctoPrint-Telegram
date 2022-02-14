@@ -1982,31 +1982,37 @@ class TelegramPlugin(
                                 self._logger.debug("multicam_profiles : " + str(curr))
                                 for li in curr:
                                     try:
-                                        self._logger.debug(
-                                            "multicam profile:  " + str(li)
-                                        )
-                                        snapshot_url = li.get("URL")
+                                        snapshot_url = li.get("snapshot") # try to get the snapshot url
                                         self._logger.debug(
                                             "multicam url :  " + str(snapshot_url)
                                         )
-
-                                        defsnap = self._settings.global_get(
-                                            ["webcam", "snapshot"]
-                                        )
-                                        defstream = self._settings.global_get(
-                                            ["webcam", "stream"]
-                                        )
-                                        streamname = defstream.rsplit("/", 1).pop()
-                                        snapname = defsnap.rsplit("/", 1).pop()
-                                        if streamname in snapshot_url:
+                                        
+                                        if not snapshot_url: # if snapshot url is not stored try to create it
                                             self._logger.debug(
-                                                str(streamname)
-                                                + " found so should be replaced by "
-                                                + str(snapname)
+                                                "multicam profile:  " + str(li)
                                             )
-                                            snapshot_url = snapshot_url.replace(
-                                                streamname, snapname
+                                            snapshot_url = li.get("URL")
+                                            self._logger.debug(
+                                                "multicam url :  " + str(snapshot_url)
                                             )
+
+                                            defsnap = self._settings.global_get(
+                                                ["webcam", "snapshot"]
+                                            )
+                                            defstream = self._settings.global_get(
+                                                ["webcam", "stream"]
+                                            )
+                                            streamname = defstream.rsplit("/", 1).pop()
+                                            snapname = defsnap.rsplit("/", 1).pop()
+                                            if streamname in snapshot_url:
+                                                self._logger.debug(
+                                                    str(streamname)
+                                                    + " found so should be replaced by "
+                                                    + str(snapname)
+                                                )
+                                                snapshot_url = snapshot_url.replace(
+                                                    streamname, snapname
+                                                )
 
                                         self._logger.debug(
                                             "Snapshot URL: " + str(snapshot_url)
