@@ -1,0 +1,11 @@
+BugFixxes:
+- Flickering Input => Bouncetime (?) sometimes makes the Output flicker?
+- Check if Variables exist in settings_migrate => for later versions ==> Check if Working
+
+Implementations:
+- Add Defaultsettings
+- Add Button to link to Platine 
+
+
+Merge:
+- __init__ and above

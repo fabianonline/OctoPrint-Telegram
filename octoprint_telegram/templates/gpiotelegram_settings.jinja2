@@ -1,0 +1,357 @@
+<div class = "gpioTelegram-settings" data-bind="event:{change: $root.callChange}" id ="settings_gpio_plugin_telegram">
+    <div class = "head">
+        <h2>GPIO-Configuration</h2> 
+
+    </div>
+    
+    <div class="error" data-bind="visible: $root.changed">Don't forget to save</div>
+    <div class="error" data-bind="bisible: $root.error">At least one Pin is configured twice. Check and reconfigure it</div>
+
+    <div class ="body">
+        <div class="area">
+            <h3>Pin Configuration</h3>
+            
+            <div data-bind="foreach: pinConfigs">
+                <div class ="element">
+                    <!-- first row -->
+                    <div class="elementRow">
+                        <div class ="column">
+                            <div >Name</div>
+                            <input data-bind="textInput: name"/>
+                        </div>
+                        <div class ="column">
+                            <div >Pin</div>
+                            <select data-bind="options: $parent.possiblePins, value: pin, event: {change: $root.callChange}"></select>
+                        </div>
+                    </div>
+                    <!-- seccond row -->
+                    <div class="elementRow">
+                        <div class ="column">
+                            <div>Pinmode</div>
+                            <select data-bind="value: mode, event: {change: $root.callChange}">
+                                <option value="output">Output</option>
+                                <option value="input">Input</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Output -->
+                    <!-- ko if: mode() == "output" -->
+                    <div class="elementRowInsert" >
+                        <div>Active when: </div>
+                        <select data-bind="value: activeState, event: {change: $root.callChange}">
+                            <option value="low">Low</option>
+                            <option value="high">High</option>
+                        </select>                            
+                    </div>
+                    <div class="elementRowInsert" >
+                        <div>Default: </div>
+                        <select data-bind="value: defaultState, event: {change: $root.callChange}">
+                            <option value="off">Off</option>
+                            <option value="On">On</option>
+                        </select>                            
+                    </div>
+                    
+                    <div class="elementRowInsert" >
+                        <div>Can be changed via Telegram: </div>
+                        <select data-bind="value: visibleInTelegram, event: {change: $root.callChange}">
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>                            
+                    </div>
+                    <!-- /ko -->
+                    
+
+                    <!-- Input -->
+                    <!-- ko if: mode() == "input" -->
+                    <div class="elementRowInsert" >
+                        <div>Edgedetection: </div>
+                        <select data-bind="value: edgeDetection, event: {change: $root.callChange}">
+                            <option value="rising">Rising</option>
+                            <option value="falling">Falling</option>
+                            <option value="both">Both</option>
+                        </select>                            
+                    </div>
+                    <div class="elementRowInsert" >
+                        <div>BounceTime (ms): </div>
+                        <input data-bind="value: bounceTime, event: {change: $root.callChange}"/>                         
+                    </div>
+                    <div class="elementRowInsert" >
+                        <div>Resistor: </div>
+                        <select data-bind="value: pullUpDown, event: {change: $root.callChange}">
+                            <option value="none">None</option>
+                            <option value="up">Pullup</option>
+                            <option value="down">Pulldown</option>
+                        </select>                            
+                    </div>
+                    <!-- /ko -->                 
+                    
+                    <div class="elementRowInsert" >
+                        <div>Is displayed in the UI: </div>
+                        <select data-bind="value: visibleInUI, event: {change: $root.callChange}">
+                            <option value="true">True</option>
+                            <option value="false">False</option>
+                        </select>                            
+                    </div>
+
+                    <div class="button">
+                        <a title="Remove Pin" class="btn btn-danger" data-bind="click: $parent.removeGpioPin, event: {change: $root.callChange}">
+                            <i class="icon-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>            
+        </div>
+        <div class="row-fluid">
+            <div class="offset11 span1">
+                <a title="Add Pin" class="btn btn-primary" data-bind="click: addGpioPin, event: {change: $root.callChange}" > 
+                    <i class="icon-plus"></i>
+                </a>
+            </div>
+        </div>
+
+        <hr class = "line">
+        <div class = "area">
+            <h3>Variables</h3>
+            <div data-bind = "foreach: variables">
+                <div class = "element">
+                    
+                    <div class="elementRowInsert" >
+                        <div>Name </div>
+                        <input data-bind="value: name, event: {change: $root.callChange}"/>                         
+                    </div>
+                    <div class="elementRowInsert" >
+                        <div>DefaultValue (Integer) </div>
+                        <input data-bind="value: value, event: {change: $root.callChange}"/>                         
+                    </div>
+
+                    <div class="button">
+                        <a title="Remove Variable" class="btn btn-danger" data-bind="click: $parent.removeVariable, event: {change: $root.callChange}">
+                            <i class="icon-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>            
+        </div>
+        <div class="row-fluid">
+            <div class="offset11 span1">
+                <a title="Add Variable" class="btn btn-primary" data-bind="click: addVariable, event: {change: $root.callChange}" > 
+                    <i class="icon-plus"></i>
+                </a>
+            </div>
+        </div>
+        <hr class="line">
+        <div class="area">
+            <h3>Logic Configuration</h3>
+
+            <div data-bind="foreach: logicConfigs">
+                <div class ="element">
+                    <div class="elementRow">
+                        <div>Trigger</div>
+                        <div class ="column">
+                            <select data-bind="value: trigger">
+                                <option value="pin">Pin</option>
+                                <option value="event">Event</option>
+                                <option value="variable">Variable</option>
+                            </select>
+                        </div>
+
+                        <!-- ko if: trigger() == "event"-->
+                        <div class ="column">
+                            <div>Triggerevent</div>
+                            <select data-bind="value: triggerEvent, options: $parent.possibleEvents"></select>
+                        </div>
+                        <!-- /ko --> 
+
+                        <!-- ko if: trigger() == "variable"-->
+                        <div class ="column">
+                            <div>VariableName</div>
+                            <input data-bind="value: triggerVariable"/>  
+                        </div>
+
+                        <div>Condition</div>
+                        <div class ="column">
+                            <select data-bind="value: triggerVariableCondition">
+                                <option value="<">Value < Target</option>
+                                <option value="<=">Value <= Target</option>
+                                <option value="=">Value == Target</option>
+                                <option value=">=">Value >= Target</option>
+                                <option value=">">Value > Target</option>
+                                <option value="!=">Value != Target</option>
+                            </select>
+                        </div>
+                        
+                        <div class ="column">
+                            <div>Target</div>
+                            <input data-bind="value: triggerVariableValue"/>  
+                        </div>
+
+                        <!-- /ko --> 
+
+                        <!-- ko if: trigger() == "pin"-->
+                        <div class ="column">
+                            <div>Trigger Pin</div>
+                            <select data-bind="value: triggerPin, options: $parent.choosenInputs"></select>
+                        </div>
+                        <!-- /ko --> 
+                    </div>
+
+                    <div class = "elementRow">
+                        <div>Delay between Trigger and Action:</div>
+                        <input data-bind="value: triggerDelay"/>  
+                    </div>
+                    
+                    <div class="elementRow">
+                        <div class ="column">
+                            <div>Action</div>
+                            <select data-bind="value: type">
+                                <option value="output">Output</option>
+                                <option value="message">Message</option>
+                                <option value="emergency">Emergency</option>
+                                <option value="printer">Printeraction</option>
+                                <option value="variable">Variable</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- ko if: type() == "output" -->
+                    <div class="elementRowInsert " >
+                        <div>Activate Pin</div>
+                        <div class ="column">
+                            <select data-bind="value: pin, options: $parent.choosenOutputs"></select>
+                        </div>
+                    </div>
+                    <div class="elementRowInsert" >
+                        <div>Mode</div>
+                        <div class ="column">
+                            <select data-bind="value: pinMode">
+                                <option value="toggle">Toggle</option>
+                                <option value="enable">Enable</option>
+                                <option value="disable">Disable</option>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- /ko -->
+
+                    <!-- ko if: type() == "message" -->
+                    <div class="elementRowInsert " >
+                        <div>Message</div>
+                            <textarea data-bind="textInput: message" rows="5" class ="textfield"> </textarea>
+                    </div>
+                    <!-- /ko -->
+
+                    <!-- ko if: type() == "emergency" -->
+                    <div class="elementRowInsert " >
+                        <div>Emergencymessage</div>
+                        <textarea data-bind="textInput: emergency" rows="5" class ="textfield"> </textarea>
+                    </div>
+                    <div class ="elementRowInsert">    
+                        <div>Amount of Messages per Intervall </div>
+                        <input data-bind="value: emergencyCount"/>  
+                    </div>
+                    <div class ="elementRowInsert">    
+                        <div>Amount of Intervalls </div>
+                        <input data-bind="value: emergencyIntervall"/>   
+                    </div>
+                    <div class = "elementRowInsert">
+                            <div>Time between Intervalls (s)</div>
+                            <input data-bind="value: emergencyTime"/>  
+                    </div>
+                    <!-- /ko -->
+                    
+                    <!-- ko if: type() == "printer" -->
+                    <div class="elementRowInsert " >
+                        <div>Printeraction</div>
+                        <div class ="column">
+                            <select data-bind="value: printerAction">
+                                <option value="gcode">G-Code Command</option>
+                                <option value="pausePrint">Pause Print</option>
+                                <option value="resumePrint">Resume Print</option>
+                                <option value="togglePrint">Toggles Print</option>
+                                <option value="home">Home Printer</option>
+                                <option value="cancel">Cancel Print</option>
+                                <option value="setTemperature">Set Temperature</option>
+                            </select>
+                        </div>
+                    </div>
+
+                        <!-- ko if: printerAction() == "gcode" -->
+                        <div class="elementRowInsert " >
+                            <div>G-Code</div>
+                                <textarea data-bind="textInput: gCode" rows="5" class ="textfield"> </textarea>
+                         </div>
+
+                        <!-- /ko -->
+                        <!-- ko if: printerAction() == "home" -->
+                        <div class="elementRowInsert " >
+                            <div>Axes to home. </div>
+                            <input data-bind="value: axes"/>  
+                         </div>
+
+                        <!-- /ko -->
+                        
+                        <!-- ko if: printerAction() == "setTemperature" -->
+                        <div class="elementRowInsert " >
+                            <div>Target</div>
+                            <div class ="column">
+                                <select data-bind="value: tempTarget">
+                                    <option value="bed">Bed</option>
+                                    <option value="tool0">1. Extruder</option>
+                                    <option value="tool1">2. Extruder</option>
+                                    <option value="tool2">3. Extruder</option>
+                                    <option value="tool3">4. Extruder</option>
+                                    <option value="tool4">5. Extruder</option>
+                                    <option value="tool5">6. Extruder</option>
+                                    <option value="tool6">7. Extruder</option>
+                                    <option value="tool7">8. Extruder</option>
+                                    <option value="tool8">9. Extruder</option>
+                                    <option value="tool9">10. Extruder</option>
+                                </select>
+                            </div>
+
+                            <div>Temperature in °C</div>
+                            <div class ="column">
+                                <input data-bind="value: temp"/>  
+                            </div>
+                        </div>
+                        <!-- /ko -->
+                    
+                    <!-- /ko -->
+                    
+                    <!-- ko if: type() == "variable" -->
+                    <div class="elementRowInsert " >
+                        <div>Name</div>
+                        <input data-bind="value: variableName"/> 
+                        
+                        <div>Action</div>
+                        <div class ="column">
+                            <select data-bind="value: variableAction">
+                                <option value="set">Set to Value</option>
+                                <option value="add">Add Value</option>
+                                <option value="subtract">Subtract Value</option>
+                            </select>
+                        </div>
+
+                        <div>Value</div>
+                        <input data-bind="value: variableCount"/> 
+                    </div>
+                    <!-- /ko -->
+
+                    <div class="button">
+                        <a title="Remove Logic" class="btn btn-danger" data-bind="click: $parent.removeLogic">
+                            <i class="icon-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row-fluid">
+            <div class="offset11 span1">
+                <a title="Add Logic" class="btn btn-primary" data-bind="click: addLogic" > 
+                    <i class="icon-plus"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

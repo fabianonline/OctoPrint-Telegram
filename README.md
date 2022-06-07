@@ -79,6 +79,8 @@ If you already have a bot, you only need your bot token to proceed. GOTO `4.` (o
 	on - Turns on the printer power via the PSUControl plugin API. Requires PSU Control plugin installation.
 	off - Turns off the printer power via the PSUControl plugin API. Requires PSU Control plugin.
 	gcode_XXX - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
+	gpio_info - Send current GPIO-Configuration.
+	gpio_XXX_YYY - Send GPIO command with XXX = Pin and YYY = mode (on, off, toggle)
 	```
 	<img src="https://raw.githubusercontent.com/fabianonline/OctoPrint-Telegram/screenshots/bot_optional.png" alt="Optional bot settings" width="60%" align="center"/> <br><br><br>
 	
@@ -263,6 +265,10 @@ sudo apt-get install cpulimit
 											 sadly for now wait on accept the push request to get the list of plug
 
 **`/gcode`** - Send the gcode to the printer where XXX is the gcode command (/gcode_M117 HelloWorld for exemple)
+
+**`/gpio_info`** - Get Info about current GPIO-Outputs
+
+**`/gpio_XXX_YYY`** - Send GPIO-Commands to handle your GPIO-Pins. XXX is the GPIO-Pinnumber, YYY is the mode (toggle, on, off).
 
 <!-- omit in toc -->
 #### Notes:

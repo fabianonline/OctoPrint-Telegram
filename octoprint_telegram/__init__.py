@@ -12,7 +12,7 @@ from .telegramNotifications import (
 )  # dict of known notification messages
 from .emojiDict import telegramEmojiDict  # dict of known emojis
 from babel.dates import format_date, format_datetime, format_time
-
+from .gpiocontrol import GPIO_Control as GPIO
 
 bytes_reader_class = io.BytesIO
 
@@ -901,6 +901,7 @@ class TelegramPlugin(
             "stop": "\U000025FC",
         }
         self.emojis.update(telegramEmojiDict)
+        self.gpio = None
 
     # all emojis will be get via this method to disable them globaly by the corrosponding setting
     # so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]
@@ -958,14 +959,21 @@ class TelegramPlugin(
     ##########
 
     def get_assets(self):
-        return dict(js=["js/telegram.js"])
+        return dict(
+            js=["js/telegram.js", "js/telegram_gpio.js"],
+            css = ["css/telegram_gpio.css"]
+            )
 
     ##########
     ### Template API
     ##########
 
     def get_template_configs(self):
-        return [dict(type="settings", name="Telegram", custom_bindings=True)]
+        return [
+            dict(type="settings", name="Telegram", custom_bindings=True, template="telegram_settings.jinja2"),
+            dict(type="settings", name="Telegram-GPIO", custom_bindings=True, template="gpiotelegram_settings.jinja2"),
+            dict(type="tab", name="GPIO-Control", custom_bindings=True, template="gpiotelegram_tab.jinja2")
+        ]
 
     ##########
     ### Wizard API
@@ -990,6 +998,7 @@ class TelegramPlugin(
         self._logger.addFilter(TelegramPluginLoggingFilter())
         self.tcmd = TCMD(self)
         self.triggered = False
+        self.gpio.gpio_afterStartup()
         self.tmsg = TMSG(
             self
         )  # Notification Message Handler class. called only by on_event()
@@ -1032,6 +1041,10 @@ class TelegramPlugin(
                 pass
 
     def on_startup(self, host, port):
+        # Initialize and startup GPIO-Control
+        self.gpio = GPIO(self)
+        self.gpio.gpio_startup()
+
         try:
             self.tcmd.port = self._settings.global_get(["server", "port"])
             # self.main.tcmd.port = port
@@ -1041,13 +1054,14 @@ class TelegramPlugin(
     def on_shutdown(self):
         self.on_event("PrinterShutdown", {})
         self.stop_listening()
+        self.gpio.gpio_shutdown()
 
     ##########
     ### Settings API
     ##########
 
     def get_settings_version(self):
-        return 5
+        return 6
         # Settings version numbers used in releases
         # < 1.3.0: no settings versioning
         # 1.3.0 : 1
@@ -1059,6 +1073,7 @@ class TelegramPlugin(
         # 1.4.2 : 3
         # 1.4.3 : 4
         # 1.5.1 : 5 (PauseForUser)
+        # 2.0.0 : 6 (GPIO-Control)
 
     def get_settings_defaults(self):
         return dict(
@@ -1096,6 +1111,9 @@ class TelegramPlugin(
             TimeFormat="%H:%M:%S",
             DayTimeFormat="%a %H:%M:%S",
             WeekTimeFormat="%d.%m.%Y %H:%M:%S",
+            gpio_PinConfigs = [],
+            gpio_LogicConfigs = [],
+            gpio_Variables = [],
         )
 
     def get_settings_preprocessors(self):
@@ -1228,6 +1246,15 @@ class TelegramPlugin(
                 else:
                     msgOut.update({msg2: messages[msg]})
             self._settings.set(["messages"], msgOut)
+
+            #### Check if GPIO-Settings exist, else add them
+            if "gpio_Pinconfigs" not in self._settings.get():
+                self._settings.set(['gpio_PinConfigs'], [])
+            if "gpio_LogicConfigs" not in self._settings.get():
+                self._settings.set(['gpio_LogicConfigs'], [])
+            if "gpio_Variables" not in self._settings.get():
+                self._settings.set(['gpio_Variables'], [])
+
             ########## Delete old settings
             self._settings.set(["message_at_startup"], None)
             self._settings.set(["message_at_shutdown"], None)
@@ -1374,6 +1401,10 @@ class TelegramPlugin(
         # Update Tracking
         if "tracking_activated" in data and not data["tracking_activated"]:
             data["tracking_token"] = None
+
+            
+        self.gpio.handleSettingsBeforeSave(data)
+
         # Now save settings
         octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
         self.set_log_level()
@@ -1386,6 +1417,9 @@ class TelegramPlugin(
                 self.start_listening()
             else:
                 self.connection_state_str = gettext("No token given.")
+        
+        # Reconfigure Pins
+        self.gpio.configurePins()
 
     def on_settings_load(self):
         data = octoprint.plugin.SettingsPlugin.on_settings_load(self)
@@ -1429,6 +1463,10 @@ class TelegramPlugin(
     ##########
 
     def on_event(self, event, payload, **kwargs):
+        # Send Event to GPIO
+        if self.gpio is not None:
+            self.gpio.handleEventTriggers(event, payload, **kwargs)
+
         try:
             self._logger.debug("self.tmsg = " + str(self.tmsg))
             # if we know the event, start handler
@@ -1454,11 +1492,16 @@ class TelegramPlugin(
             testEvent=["event"],
             delChat=["ID"],
             setCommandList=["force"],
+            activateGPIO=["id", "state"],    #GPIO Side
         )
 
     def on_api_get(self, request):
+        # Got an GPIO request
+        if 'gpio' in request.args:
+            return self.gpio.onRequest(request)
+
         # got an user-update with this command. so lets do that
-        if (
+        elif (
             "id" in request.args
             and "cmd" in request.args
             and "note" in request.args
@@ -1609,6 +1652,8 @@ class TelegramPlugin(
                         "error_msg": str(ex),
                     }
                 )
+        elif command == "activateGPIO":
+            self.gpio.onCommand(command,data)
 
     ##########
     ### Telegram API-Functions

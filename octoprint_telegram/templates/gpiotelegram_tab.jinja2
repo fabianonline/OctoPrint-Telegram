@@ -1,0 +1,32 @@
+<div class = "gpioTelegram-tab">
+    <div class = "head">
+        <h2>Telegram GPIO-Controller</h2> 
+    </div>
+
+    <div class = "body">
+            <div data-bind="foreach: buttons">
+                
+                <!-- ko if: visibleInUI() == "true" -->
+                    <div class ="element">
+                        <div class="title" data-bind= "text: name"></div>
+
+                        <!-- ko if: mode() == "output" -->
+                            <button class="btn" data-toggle="dropdown" data-bind="click: $parent.activatePin, attr: {'disabled': state != 'off'}">ON</button>
+                            <button class="btn" data-toggle="dropdown" data-bind="click: $parent.deactivatePin, attr: {'disabled': state != 'on'}">OFF</button>
+                        <!-- /ko -->
+                    
+
+                        <!-- ko if: mode() == "input" -->
+                            <!-- ko if: state == "on" -->
+                                <div class= "LED" style = "background-color: red"> </div>
+                            <!-- /ko -->
+
+                            <!-- ko if: state == "off" -->
+                                <div class= "LED" style = "background-color: lightgray"> </div>
+                            <!-- /ko -->
+                        <!-- /ko -->
+                    </div>
+                <!-- /ko -->
+            </div>
+    </div>
+</div>
