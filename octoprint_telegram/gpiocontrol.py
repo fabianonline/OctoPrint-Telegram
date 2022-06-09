@@ -305,14 +305,14 @@ class GPIO_Control():
 
                     _delay = int(logicData["triggerDelay"])
 
-                    self.threadedTriggerLogic(logicData,_delay)
+                    (threading.Thread(target=self.threadedTriggerLogic,args= (logicData,_delay), daemon=True)).start()
 
-    def threadedTriggerLogic(self, logicData, delay):
+    def threadedTriggerLogic(self, logicData, delay, currentVariableValue = ""):
         if delay > 0:
             time.sleep(delay)
-        self.triggerLogic(logicData)
+        self.triggerLogic(logicData, currentVariableValue)
 
-    def triggerLogic(self, logicData):
+    def triggerLogic(self, logicData, currentVariableValue = ""):
         """Checks what logic should trigger and triggeres it"""
 
         if logicData["type"] == "output":
@@ -374,8 +374,18 @@ class GPIO_Control():
                         break
                     
         elif logicData["type"] == "message":
-            self._logger.info("Send message: {}".format(logicData["message"]))
-            self.main.send_msg(logicData["message"])
+            _message = logicData["message"]
+
+            self._logger.info("Message: {}; LD: {}".format(_message, logicData))
+
+            if logicData["trigger"] == "variable" and logicData["sendVariable"] == "true":
+                self._logger.info("Triggered by variable and send Variable == true")
+                _message = _message.replace("XGPIOX", currentVariableValue)
+                
+            self._logger.info("Message: {}".format(_message))
+
+            self._logger.info("Send message: {}".format(_message))
+            self.main.send_msg(_message)
 
         elif logicData["type"] == "emergency":
             _count = 1
@@ -391,8 +401,7 @@ class GPIO_Control():
             if "emergencyTime" in logicData:
                 _time = int(logicData["emergencyTime"])
 
-            thread = threading.Thread(target=self.sendEmergencyMessage, args = (logicData["emergency"], _count, _intervall, _time), daemon=True)
-            thread.start()
+            (threading.Thread(target=self.sendEmergencyMessage, args = (logicData["emergency"], _count, _intervall, _time), daemon=True)).start()
                
         elif logicData["type"] == "printer":
             if logicData["printerAction"] == "gcode":
@@ -456,22 +465,22 @@ class GPIO_Control():
                     _number = int(logicData["variableCount"])
                     _current = _variable.value
 
-                    try:
-                        if logicData["variableAction"] == "set":
-                            _variable.value = _number
-                            self._logger.info("Set Variable {} to {}".format(logicData["variableName"], _variable.value))
-                            self.handleVariableChange(logicData["variableName"], _variable.value)
-                        elif logicData["variableAction"] == "add":
-                            _variable.value = _current + _number
-                            self._logger.info("Added {} to Variable {}. New Value: {}".format(_number, logicData["variableName"], _variable.value))
-                            self.handleVariableChange(logicData["variableName"], _variable.value)
-                        elif logicData["variableAction"] == "subtract":
-                            _variable.value = _current - _number
-                            self._logger.info("Subtracted {} from Variable {}. New Value: {}".format(_number, logicData["variableName"], _variable.value))
-                            self.handleVariableChange(logicData["variableName"], _variable.value)
-                    except Exception as e:
-                        self._logger.info("Error while doing variable Action on {}. Error: {}".format(logicData["variableName"],e))
-                    break
+                   # try:
+                    if logicData["variableAction"] == "set":
+                        _variable.value = _number
+                        self._logger.info("Set Variable {} to {}".format(logicData["variableName"], _variable.value))
+                        self.handleVariableChange(logicData["variableName"], _variable.value)
+                    elif logicData["variableAction"] == "add":
+                        _variable.value = _current + _number
+                        self._logger.info("Added {} to Variable {}. New Value: {}".format(_number, logicData["variableName"], _variable.value))
+                        self.handleVariableChange(logicData["variableName"], _variable.value)
+                    elif logicData["variableAction"] == "subtract":
+                        _variable.value = _current - _number
+                        self._logger.info("Subtracted {} from Variable {}. New Value: {}".format(_number, logicData["variableName"], _variable.value))
+                        self.handleVariableChange(logicData["variableName"], _variable.value)
+                 #   except Exception as e:
+                  #      self._logger.info("Error while doing variable Action on {}. Error: {}".format(logicData["variableName"],e.__class__))
+                  #  break
             else:
                 self._logger.info("Can't find Variable {}. Maybe it is not registered".format(logicData["variableName"]))
         else:
@@ -490,36 +499,38 @@ class GPIO_Control():
                     _condition = logicData["triggerVariableCondition"]
                     _target = int(logicData["triggerVariableValue"])
                     _delay = int(logicData["triggerDelay"])
+
                     
                     if _condition == "<":
                         if _value < _target:
                             self._logger.info("Variablehandling: {} is {} than {}. Triggering Logic.".format(_value, _condition, _target))
-                            self.threadedTriggerLogic(logicData,_delay)
+                            self.threadedTriggerLogic(logicData,_delay, str(_value))
 
                     elif _condition == "<=":
                         if _value <= _target:
                             self._logger.info("Variablehandling: {} is {} than {}. Triggering Logic.".format(_value, _condition, _target))
-                            self.threadedTriggerLogic(logicData,_delay)
+                            self.threadedTriggerLogic(logicData,_delay, str(_value))
 
                     elif _condition == "=":
                         if _value == _target:
                             self._logger.info("Variablehandling: {} is {} than {}. Triggering Logic.".format(_value, _condition, _target))
-                            self.threadedTriggerLogic(logicData,_delay)
+                            self.threadedTriggerLogic(logicData,_delay, str(_value))
 
                     elif _condition == ">=":
                         if _value >= _target:
                             self._logger.info("Variablehandling: {} is {} than {}. Triggering Logic.".format(_value, _condition, _target))
-                            self.threadedTriggerLogic(logicData,_delay)
+                            self.threadedTriggerLogic(logicData,_delay, str(_value))
 
                     elif _condition == ">":                        
                         if _value > _target:
                             self._logger.info("Variablehandling: {} is {} than {}. Triggering Logic.".format(_value, _condition, _target))
-                            self.threadedTriggerLogic(logicData,_delay)
+                            self.threadedTriggerLogic(logicData,_delay, str(_value))
+                            self._logger.info()
                         
                     elif _condition == "!=":
                         if _value != _target:
                             self._logger.info("Variablehandling: {} is {} than {}. Triggering Logic.".format(_value, _condition, _target))
-                            self.threadedTriggerLogic(logicData,_delay)
+                            self.threadedTriggerLogic(logicData,_delay, str(_value))
 
     def handleGPIOCommand(self, _pin, _mode):
         """This Function handles the Activation/Deactivation of an Pin"""

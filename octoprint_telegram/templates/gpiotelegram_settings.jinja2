@@ -238,6 +238,17 @@
                         <div>Message</div>
                             <textarea data-bind="textInput: message" rows="5" class ="textfield"> </textarea>
                     </div>
+                    <!-- ko if: trigger() == "variable" -->
+                        <div class="elementRowInsert" >
+                            <div>Replace an XGPIOX in your Message with the current Value of the Variable</div>
+                            <div class ="column">
+                                <select data-bind="value: sendVariable">
+                                    <option value="false">False</option>
+                                    <option value="true">True</option>
+                                </select>
+                            </div>
+                        </div>
+                    <!-- /ko -->
                     <!-- /ko -->
 
                     <!-- ko if: type() == "emergency" -->

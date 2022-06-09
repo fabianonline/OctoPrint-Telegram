@@ -131,6 +131,7 @@ $(function() {
                 pinMode: ko.observable("toggle"),              // Output => Enable / Disable / Toggle
 
                 message: ko.observable("New Text Message"),
+                sendVariable: ko.observable("false"),
 
                 emergency: ko.observable("This is an Emergencymessage. Check your Printer"),
                 emergencyCount: ko.observable(5),               // Amount of Messages per Block
