@@ -4,7 +4,7 @@ from octoprint.printer import UnknownScript
 import logging, sarge, hashlib, datetime, time, operator, socket
 import octoprint.filemanager
 import requests
-import base64
+import base64 
 from flask_babel import gettext
 
 # from subprocess import Popen, PIPE
@@ -57,6 +57,7 @@ class TCMD:
             "/tune": {"cmd": self.cmdTune, "param": True},
             "/help": {"cmd": self.cmdHelp, "bind_none": True},
             "/gcode": {"cmd": self.cmdGCode, "param": True},
+            "/gpio": {"cmd": self.cmdGPIO, 'bind_none':True, 'param':True}
         }
 
     ############################################################################################
@@ -2737,6 +2738,29 @@ class TCMD:
             msg_id = self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
             self.main.send_msg(message, chatID=chat_id, msg_id=msg_id)
 
+    ###############
+    def cmdGPIO(self, chat_id, from_id, cmd, parameter, user = ""):
+        if parameter and parameter != "back":
+            params = parameter.split('_')
+
+            if len(params) == 1:
+                message = ""
+                if params[0] == "info":
+                    # Return the Info
+                    message = self.main.gpio.getCurrentOutputs()
+                else:
+                    # Dont know what you wanna do
+                    message = "Tell me what you wanna do with this Pin (toggle, off, on)"			
+            else:
+                # Handling Pin
+                message = self.main.gpio.handleGPIOCommand(int(params[0]), params[1])
+			
+            msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+            self.main.send_msg(message,chatID=chat_id,msg_id=msg_id)
+        else:
+            message = self.gEmo('info') + " call GPIO-command with either: 1. /gpio_info to get the current Pins or 2. /gpio_XXX_YYY where XXX is the Pin and YYY is the mode (toggle, on,off)"
+            msg_id=self.main.getUpdateMsgId(chat_id) if parameter == "back" else ""
+            self.main.send_msg(message,chatID=chat_id,msg_id=msg_id)
     ############################################################################################
     def cmdHelp(self, chat_id, from_id, cmd, parameter, user = ""):
         if self.main._plugin_manager.get_plugin("psucontrol", True):

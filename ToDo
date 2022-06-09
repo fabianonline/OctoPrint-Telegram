@@ -1,0 +1,3 @@
+Implementations:
+- Send the current Variable Count with the message 
+- Check Threading and implement it, so that all the Logic runs in Thread after Trigger. Maybe do 1 collectorfunction where Event, Variable, Pin and Telegramtrigger meet
