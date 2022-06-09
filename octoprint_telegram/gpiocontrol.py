@@ -376,13 +376,8 @@ class GPIO_Control():
         elif logicData["type"] == "message":
             _message = logicData["message"]
 
-            self._logger.info("Message: {}; LD: {}".format(_message, logicData))
-
             if logicData["trigger"] == "variable" and logicData["sendVariable"] == "true":
-                self._logger.info("Triggered by variable and send Variable == true")
                 _message = _message.replace("XGPIOX", currentVariableValue)
-                
-            self._logger.info("Message: {}".format(_message))
 
             self._logger.info("Send message: {}".format(_message))
             self.main.send_msg(_message)
