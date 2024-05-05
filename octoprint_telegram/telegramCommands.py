@@ -2793,7 +2793,7 @@ class TCMD:
             path = "/".join(fullPath.split("/")[1:])
             self._logger.debug("fileList path : " + str(path))
             fileList = self.main._file_manager.list_files(
-                path=path, destinations=dest, recursive=False
+                path=path, recursive=False
             )
             files = fileList[dest]
             arrayD = []
