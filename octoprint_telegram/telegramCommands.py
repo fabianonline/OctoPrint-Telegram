@@ -786,9 +786,9 @@ class TCMD:
         try:
             data = self.main._printer.get_current_data()
             if self.main._printer.is_printing():
-                self.main.send_msg(self.gEmo("warning") + " A print job is already running. You can"t print two thing at the same time. Maybe you want to use /abort?",chatID=chat_id)#, msg_id = self.main.getUpdateMsgId(chat_id))
+                self.main.send_msg(self.gEmo("warning") + " A print job is already running. You can't print two thing at the same time. Maybe you want to use /abort? ",chatID=chat_id)#, msg_id = self.main.getUpdateMsgId(chat_id))
             elif not self.main._printer.is_operational():
-                self.main.send_msg(self.gEmo("warning") + gettext(" Can"t start printing: I"m not connected to a printer."),chatID=chat_id)#, msg_id = self.main.getUpdateMsgId(chat_id))
+                self.main.send_msg(self.gEmo("warning") + gettext(" Can't start printing: I'm not connected to a printer."),chatID=chat_id)#, msg_id = self.main.getUpdateMsgId(chat_id))
             elif data["job"]["file"]["name"] is not None:
                 file = data["job"]["file"]["name"]
                 msg = self.gEmo("info") + gettext(" The file " +str(file)+" is loaded.\n\n"+self.gEmo("question")+" Do you want me to start printing it now?", file=data["job"]["file"]["name"])
