@@ -1753,9 +1753,11 @@ class TelegramPlugin(
                 premethod = self._settings.get(["PreImgMethod"])
                 self._logger.debug("PreImgMethod {}".format(premethod))
                 precommand = self._settings.get(["PreImgCommand"])
+				doneprecommand = False
                 if premethod == "GCODE":
                     self._logger.debug("PreImgCommand {}".format(precommand))
                     self._printer.commands(precommand)
+					doneprecommand = True
                 elif premethod == "SYSTEM":
                     self._logger.debug("PreImgCommand {}".format(precommand))
                     p = subprocess.Popen(precommand, shell=True)
@@ -1769,10 +1771,18 @@ class TelegramPlugin(
                         r = p.returncode
                         self._logger.debug(
                             "PreImg system command returned: {}".format(r)
-                        )
+					doneprecommand = True
+				
+				if doneprecommand:
+					precommanddelay = self._settings.get_int(["precommand_delay"])
+					if precommanddelay != None:
+						if precommanddelay > 0:
+							time.sleep(precommanddelay)
+
         except Exception as ex:
             self._logger.exception("Exception PreImgMethod: " + str(ex))
 
+		self._settings.get_int(["message_at_print_done_delay"])
         if delay > 0:
             time.sleep(delay)
         try:
@@ -1982,15 +1992,10 @@ class TelegramPlugin(
                                 self._logger.debug("multicam_profiles : " + str(curr))
                                 for li in curr:
                                     try:
-                                        snapshot_url = li.get("snapshot") # try to get the snapshot url
-                                        self._logger.debug(
-                                            "multicam url :  " + str(snapshot_url)
-                                        )
-                                        
-                                        if not snapshot_url: # if snapshot url is not stored try to create it
-                                            self._logger.debug(
-                                                "multicam profile:  " + str(li)
-                                            )
+										self._logger.debug("multicam profile:  " + str(li))
+										snapshot_url = li.get("snapshot")
+										self._logger.debug("multicam snapshot :  " + str(snapshot_url))
+										if(snapshot_url == "" or snapshot_url == "http://" or snapshot_url == "https://" or snapshot_url == None):
                                             snapshot_url = li.get("URL")
                                             self._logger.debug(
                                                 "multicam url :  " + str(snapshot_url)
@@ -2177,6 +2182,12 @@ class TelegramPlugin(
 
         try:
             if with_image or with_gif:
+				#delay
+				postcommanddelay = self._settings.get_int(["postcommand_delay"])
+				if postcommanddelay != None:
+					if postcommanddelay > 0:
+						time.sleep(postcommanddelay)
+				
                 ##find a way to decide if should and what command to light on
                 postmethod = self._settings.get(["PostImgMethod"])
                 self._logger.debug("PostImgMethod {}".format(postmethod))
@@ -2500,7 +2511,8 @@ class TelegramPlugin(
                         "description": "Makes the bot talk again (opposite of `/shutup`)",
                     }
                 )
-                commands.append(
+                commands.append({"command":"again","description":"Print again the same file"})
+				commands.append(
                     {"command": "help", "description": "Shows this help message"}
                 )
                 resp = requests.post(
@@ -2578,11 +2590,11 @@ class TelegramPlugin(
         rotate = self._settings.global_get(["webcam", "rotate90"])
         self._logger.debug(
             "Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate
-        )
+		image = Image.open(bytes_reader_class(data))
         if data == None:
             return None
         if flipH or flipV or rotate:
-            image = Image.open(bytes_reader_class(data))
+			
             if flipH:
                 image = image.transpose(Image.FLIP_LEFT_RIGHT)
             if flipV:
@@ -2714,16 +2726,17 @@ class TelegramPlugin(
             if self.TestProgram(["nice", "--version"]) > 0:
                 params = ["nice", "-n", "20"]
 
-            self._logger.info("test if cpulimit exist")
-            if self.TestProgram(["cpulimit", "--help"]) <= 0:
-                self._logger.info(
-                    "cpulimit don't exist so send a message to install and exit"
-                )
-                self.send_msg(
-                    self.gEmo("dizzy face")
-                    + " Problem creating gif, please check log file, and make sure you have installed cpulimit with following command : `sudo apt-get install cpulimit`",
-                    chatID=chatID,
-                )
+			if(os.name != 'nt'):
+	            self._logger.info("test if cpulimit exist")
+	            if self.TestProgram(["cpulimit", "--help"]) <= 0:
+	                self._logger.info(
+	                    "cpulimit don't exist so send a message to install and exit"
+	                )
+	                self.send_msg(
+	                    self.gEmo("dizzy face")
+	                    + " Problem creating gif, please check log file, and make sure you have installed cpulimit with following command : `sudo apt-get install cpulimit`",
+	                    chatID=chatID,
+	            )
                 return ""
 
             self._logger.info("test if ffmpeg exist")
@@ -2788,20 +2801,21 @@ class TelegramPlugin(
                     "Caught an exception trying to get number of cpu : " + str(ex)
                 )
 
-            self._logger.info(
-                "limit_cpu="
-                + str(limit_cpu)
-                + " | used_cpu="
-                + str(used_cpu)
-                + " | because nb_cpu="
-                + str(nb_cpu)
-            )
-            params.append("cpulimit")
-            params.append("-l")
-            params.append(str(limit_cpu))
-            params.append("-f")
-            params.append("-z")
-            params.append("--")
+			if(os.name != 'nt'):
+	            self._logger.info(
+	                "limit_cpu="
+	                + str(limit_cpu)
+	                + " | used_cpu="
+	                + str(used_cpu)
+	                + " | because nb_cpu="
+	                + str(nb_cpu)
+	            )
+	            params.append("cpulimit")
+	            params.append("-l")
+	            params.append(str(limit_cpu))
+	            params.append("-f")
+	            params.append("-z")
+	            params.append("--")
             params.append("ffmpeg")
             params.append("-y")
             params.append("-threads")
