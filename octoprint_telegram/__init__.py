@@ -3,6 +3,8 @@ from PIL import Image
 from subprocess import Popen, PIPE
 import threading, requests, urllib3, re, time, datetime, io, json, random, logging, traceback, io, collections, os, flask, base64, PIL, pkg_resources, subprocess, zipfile, glob, sys, multiprocessing
 import octoprint.plugin, octoprint.util, octoprint.filemanager
+from octoprint.schema.webcam import RatioEnum, Webcam, WebcamCompatibility
+from octoprint.webcams import WebcamNotAbleToTakeSnapshotException
 from flask_babel import gettext
 from flask_login import current_user
 from .telegramCommands import TCMD  # telegramCommands.
@@ -43,7 +45,7 @@ class TelegramListener(threading.Thread):
         self.do_stop = False
         self.username = "UNKNOWN"
         self._logger = main._logger.getChild("listener")
-        self.gEmo = self.main.gEmo
+        self.gEmo = self.main.gEmo 
 
     def run(self):
         self._logger.debug("Try first connect.")
@@ -901,6 +903,18 @@ class TelegramPlugin(
             "stop": "\U000025FC",
         }
         self.emojis.update(telegramEmojiDict)
+        self.cameras = []
+        self.snap_new_method = False
+
+    def initialize_cameras(self):
+        self._logger.info("Initialize the camera")
+        if hasattr(octoprint.plugin.types, "WebcamProviderPlugin"):
+            self.cameras = self._plugin_manager.get_implementations(octoprint.plugin.types.WebcamProviderPlugin)
+            self.snap_new_method = True
+        else:
+            self.cameras = []
+            self.snap_new_method = False
+
 
     # all emojis will be get via this method to disable them globaly by the corrosponding setting
     # so if you want to use emojis anywhere use gEmo("...") istead of emojis["..."]
@@ -988,6 +1002,7 @@ class TelegramPlugin(
     def on_after_startup(self):
         self.set_log_level()
         self._logger.addFilter(TelegramPluginLoggingFilter())
+        self.initialize_cameras()
         self.tcmd = TCMD(self)
         self.triggered = False
         self.tmsg = TMSG(
@@ -1729,6 +1744,32 @@ class TelegramPlugin(
         except Exception as ex:
             self._logger.debug("Caught an exception in _send_edit_msg(): " + str(ex))
 
+    def take_webcam_snapshot(self, provided_webcam):
+        webcam = provided_webcam.config
+
+        if webcam is None:
+            self._logger.exception("Exception WebcamNotAbleToTakeSnapshotException(provided_webcam is None)")
+            return None
+
+        # using compat.snapshot because snapshotDisplay is supposedly only for user
+        snapshot_url = webcam.compat.snapshot
+        can_snapshot = snapshot_url is not None and snapshot_url != "http://" and snapshot_url != ""
+
+        if not can_snapshot:
+            self._logger.exception("Exception WebcamNotAbleToTakeSnapshotException("+webcam.name+")")
+            return None
+
+        with self._capture_mutex:
+            self._logger.debug(f"Capturing image from {snapshot_url}")
+            r = requests.get(
+                snapshot_url,
+                stream=True,
+                timeout=self.snapshotTimeout,
+                verify=self.snapshotSslValidation,
+            )
+            r.raise_for_status()
+            return r.iter_content(chunk_size=1024)
+
     def _send_msg(
         self,
         message="",
@@ -1854,61 +1895,92 @@ class TelegramPlugin(
                     else:
                         self._logger.info("Will try to create a gif ")
 
-                        # requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
-                        if self._plugin_manager.get_plugin(
-                            "multicam", True
-                        ) and self._settings.get(["multicam"]):
-                            try:
-                                curr = self._settings.global_get(
-                                    ["plugins", "multicam", "multicam_profiles"]
-                                )
-                                self._logger.debug("multicam_profiles : " + str(curr))
-                                ListGif = []
-                                for li in curr:
+                        if self.snap_new_method:
+                            for camera in self.cameras:
+                                configs = camera.get_webcam_configurations()
+                                for config in configs:
                                     try:
-                                        self._logger.debug(
-                                            "multicam profile : " + str(li)
-                                        )
-                                        url = li.get("URL")
+                                        self._logger.debug("get_webcam_configurations : " + str(config))
+                                        url = config.snapshotDisplay
                                         self._logger.debug("multicam URL : " + str(url))
-                                        ret = self.create_gif_new(chatID, 0, li)
+                                        ret = self.create_gif_new(chatID, 0, 0,config)
                                         if ret != "":
                                             ListGif.append(ret)
-                                            # if not sendOneInLoop:
-                                            # 	self.send_file(chatID, ret,message)
-                                            # else:
-                                            # 	self.send_file(chatID, ret,"")
-                                            # sendOneInLoop = True
                                     except Exception as ex:
                                         self._logger.exception(
-                                            "Exception loop multicam URL to create gif: "
+                                            "Exception loop webcam configuration to create gif: "
                                             + str(ex)
                                         )
-                                ret = ListGif[-1]
-                                self._logger.debug("ListGif: " + str(ListGif))
-                                for x in ListGif:
-                                    try:
-                                        if x != ret:
-                                            self._logger.debug(
-                                                "send_file whithout message: " + str(x)
+                                    ret = ListGif[-1]
+                                    self._logger.debug("ListGif: " + str(ListGif))
+                                    for x in ListGif:
+                                        try:
+                                            if x != ret:
+                                                self._logger.debug(
+                                                    "send_file whithout message: " + str(x)
+                                                )
+                                                self.send_file(chatID, x, "")
+                                        except Exception as ex:
+                                            self._logger.exception(
+                                                "Exception loop multicam URL to send gif: "
+                                                + str(ex)
                                             )
-                                            self.send_file(chatID, x, "")
-                                    except Exception as ex:
-                                        self._logger.exception(
-                                            "Exception loop multicam URL to send gif: "
-                                            + str(ex)
-                                        )
-
-                            except Exception as ex:
-                                self._logger.exception(
-                                    "Exception occured on getting multicam options: "
-                                    + str(ex)
-                                )
                         else:
-                            ret = self.create_gif_new(chatID, 0, 0)
+                            # requests.get(self.main.bot_url + "/sendChatAction", params = {'chat_id': chat_id, 'action': 'upload_document'}, proxies=self.getProxies())
+                            if self._plugin_manager.get_plugin(
+                                "multicam", True
+                            ) and self._settings.get(["multicam"]):
+                                try:
+                                    curr = self._settings.global_get(
+                                        ["plugins", "multicam", "multicam_profiles"]
+                                    )
+                                    self._logger.debug("multicam_profiles : " + str(curr))
+                                    ListGif = []
+                                    for li in curr:
+                                        try:
+                                            self._logger.debug(
+                                                "multicam profile : " + str(li)
+                                            )
+                                            url = li.get("URL")
+                                            self._logger.debug("multicam URL : " + str(url))
+                                            ret = self.create_gif_new(chatID, 0, li)
+                                            if ret != "":
+                                                ListGif.append(ret)
+                                                # if not sendOneInLoop:
+                                                # 	self.send_file(chatID, ret,message)
+                                                # else:
+                                                # 	self.send_file(chatID, ret,"")
+                                                # sendOneInLoop = True
+                                        except Exception as ex:
+                                            self._logger.exception(
+                                                "Exception loop multicam URL to create gif: "
+                                                + str(ex)
+                                            )
+                                    ret = ListGif[-1]
+                                    self._logger.debug("ListGif: " + str(ListGif))
+                                    for x in ListGif:
+                                        try:
+                                            if x != ret:
+                                                self._logger.debug(
+                                                    "send_file whithout message: " + str(x)
+                                                )
+                                                self.send_file(chatID, x, "")
+                                        except Exception as ex:
+                                            self._logger.exception(
+                                                "Exception loop multicam URL to send gif: "
+                                                + str(ex)
+                                            )
+
+                                except Exception as ex:
+                                    self._logger.exception(
+                                        "Exception occured on getting multicam options: "
+                                        + str(ex)
+                                    )
+                            else:
+                                ret = self.create_gif_new(chatID, 0, 0,0)
 
                         if ret == "":
-                            ret = self.create_gif_new(chatID, 0, 0)
+                            ret = self.create_gif_new(chatID, 0, 0,0)
 
                     if ret != "" and not sendOneInLoop:
                         self._logger.debug("send_video with message: " + str(ret))
@@ -1927,109 +1999,23 @@ class TelegramPlugin(
                     )  # and make sure you have installed libav-tools or ffmpeg with command : `sudo apt-get install libav-tools`",chatID=chat_id)
             else:
                 self._logger.debug("data so far: " + str(data))
-
+                image_data = None
                 if with_image:
-                    try:
-                        image_data = self.take_image(
-                            self._settings.global_get(["webcam", "snapshot"])
-                        )
-                    except Exception as ex:
-                        self._logger.info(
-                            "Caught an exception trying take image: " + str(ex)
-                        )
-
-                    try:
-                        printable_image_data = None
-                        if image_data != None:  # giloser check before using
-                            if is_in_python_2():
-                                printable_image_data = image_data.decode(
-                                    "utf8", errors="ignore"
-                                )
-                            else:
-                                printable_image_data = str(image_data)
-                        # self._logger.debug("image data so far: {}".format(printable_image_data))
-                    except Exception as ex:
-                        self._logger.info(
-                            "Caught an exception trying to create printable_image_data: "
-                            + str(ex)
-                        )
-
-                    try:
-                        if (
-                            not image_data
-                            or image_data == None
-                            or "html" in printable_image_data
-                        ):
-                            image_data = None
-                            message = "[ERR GET IMAGE]\n\n " + "".join(
-                                message
-                            )  # .decode('utf-8', errors='ignore'))
-                    except Exception as ex:
-                        self._logger.info(
-                            "Caught an exception trying to add info that we don't have image: "
-                            + str(ex)
-                        )
-
-                    try:
-                        self._logger.debug(
-                            "message so far: {}".format(message)
-                        )  # .decode('utf-8', errors='ignore')))
-                    except Exception as ex:
-                        self._logger.info(
-                            "Caught an exception trying to debug message so far: "
-                            + str(ex)
-                        )
-
-                    try:
-                        files = {}
-                        sendOneInLoop = False
-                        if self._plugin_manager.get_plugin(
-                            "multicam", True
-                        ) and self._settings.get(["multicam"]):
-                            try:
-                                curr = self._settings.global_get(
-                                    ["plugins", "multicam", "multicam_profiles"]
-                                )
-                                self._logger.debug("multicam_profiles : " + str(curr))
-                                for li in curr:
+                    if self.snap_new_method:
+                            for camera in self.cameras:
+                                configs = camera.get_webcam_configurations()
+                                for config in configs:
                                     try:
-                                        self._logger.debug("multicam profile:  " + str(li))
-                                        snapshot_url = li.get("snapshot")
-                                        self._logger.debug("multicam snapshot :  " + str(snapshot_url))
-                                        if(snapshot_url == "" or snapshot_url == "http://" or snapshot_url == "https://" or snapshot_url == None):
-                                            snapshot_url = li.get("URL")
-                                            self._logger.debug(
-                                                "multicam url :  " + str(snapshot_url)
-                                            )
-
-                                            defsnap = self._settings.global_get(
-                                                ["webcam", "snapshot"]
-                                            )
-                                            defstream = self._settings.global_get(
-                                                ["webcam", "stream"]
-                                            )
-                                            streamname = defstream.rsplit("/", 1).pop()
-                                            snapname = defsnap.rsplit("/", 1).pop()
-                                            if streamname in snapshot_url:
-                                                self._logger.debug(
-                                                    str(streamname)
-                                                    + " found so should be replaced by "
-                                                    + str(snapname)
-                                                )
-                                                snapshot_url = snapshot_url.replace(
-                                                    streamname, snapname
-                                                )
-
-                                        self._logger.debug(
-                                            "Snapshot URL: " + str(snapshot_url)
-                                        )
-                                        if snapshot_url != self._settings.global_get(
-                                            ["webcam", "snapshot"]
-                                        ):
-                                            image_data2 = self.take_image(snapshot_url)
+                                        self._logger.debug("get_webcam_configurations : " + str(config))
+                                        url = config.snapshotDisplay
+                                        self._logger.debug("cam conf URL : " + str(url))
+                                        if image_data == None:
+                                            image_data = self.take_image(url,config)
+                                        else:
+                                            image_data2 = self.take_image(url,config)
                                             if str(image_data2) != "":
                                                 self._logger.debug(
-                                                    "Image for  " + str(li.get("name"))
+                                                    "Image for  " + str(config.name)
                                                 )
                                                 files = {
                                                     "photo": ("image.jpg", image_data2)
@@ -2044,27 +2030,151 @@ class TelegramPlugin(
                                                 )
                                             else:
                                                 self._logger.debug(
-                                                    "no image  " + str(li.get("name"))
+                                                    "no image  " + str(config.name)
                                                 )
-                                        else:
-                                            self._logger.debug(
-                                                "url is the same as the one from octoprint "
-                                            )
-
                                     except Exception as ex:
                                         self._logger.exception(
-                                            "Exception loop multicam URL to create image: "
+                                            "Exception loop webcam configuration to create gif: "
                                             + str(ex)
                                         )
-                            except Exception as ex:
-                                self._logger.exception(
-                                    "Exception occured on getting multicam options: "
-                                    + str(ex)
-                                )
-                    except Exception as ex:
-                        self._logger.exception(
-                            "Exception occured on getting multicam plugin: " + str(ex)
+                    else:
+                        try:
+                            image_data = self.take_image(
+                            self._settings.global_get(["webcam", "snapshot"])
                         )
+
+                        except Exception as ex:
+                            self._logger.info(
+                                "Caught an exception trying take image: " + str(ex)
+                            )
+
+                        try:
+                            files = {}
+                            sendOneInLoop = False
+                            if self._plugin_manager.get_plugin(
+                                "multicam", True
+                            ) and self._settings.get(["multicam"]):
+                                try:
+                                    curr = self._settings.global_get(
+                                        ["plugins", "multicam", "multicam_profiles"]
+                                    )
+                                    self._logger.debug("multicam_profiles : " + str(curr))
+                                    for li in curr:
+                                        try:
+                                            self._logger.debug("multicam profile:  " + str(li))
+                                            snapshot_url = li.get("snapshot")
+                                            self._logger.debug("multicam snapshot :  " + str(snapshot_url))
+                                            if(snapshot_url == "" or snapshot_url == "http://" or snapshot_url == "https://" or snapshot_url == None):
+                                                snapshot_url = li.get("URL")
+                                                self._logger.debug(
+                                                    "multicam url :  " + str(snapshot_url)
+                                                )
+
+                                                defsnap = self._settings.global_get(
+                                                    ["webcam", "snapshot"]
+                                                )
+                                                defstream = self._settings.global_get(
+                                                    ["webcam", "stream"]
+                                                )
+                                                streamname = defstream.rsplit("/", 1).pop()
+                                                snapname = defsnap.rsplit("/", 1).pop()
+                                                if streamname in snapshot_url:
+                                                    self._logger.debug(
+                                                        str(streamname)
+                                                        + " found so should be replaced by "
+                                                        + str(snapname)
+                                                    )
+                                                    snapshot_url = snapshot_url.replace(
+                                                        streamname, snapname
+                                                    )
+
+                                            self._logger.debug(
+                                                "Snapshot URL: " + str(snapshot_url)
+                                            )
+                                            if snapshot_url != self._settings.global_get(
+                                                ["webcam", "snapshot"]
+                                            ):
+                                                image_data2 = self.take_image(snapshot_url)
+                                                if str(image_data2) != "":
+                                                    self._logger.debug(
+                                                        "Image for  " + str(li.get("name"))
+                                                    )
+                                                    files = {
+                                                        "photo": ("image.jpg", image_data2)
+                                                    }
+                                                    data2 = data
+                                                    data2["caption"] = ""
+                                                    r = requests.post(
+                                                        self.bot_url + "/sendPhoto",
+                                                        files=files,
+                                                        data=data2,
+                                                        proxies=self.getProxies(),
+                                                    )
+                                                else:
+                                                    self._logger.debug(
+                                                        "no image  " + str(li.get("name"))
+                                                    )
+                                            else:
+                                                self._logger.debug(
+                                                    "url is the same as the one from octoprint "
+                                                )
+
+                                        except Exception as ex:
+                                            self._logger.exception(
+                                                "Exception loop multicam URL to create image: "
+                                                + str(ex)
+                                            )
+                                except Exception as ex:
+                                    self._logger.exception(
+                                        "Exception occured on getting multicam options: "
+                                        + str(ex)
+                                    )
+                        except Exception as ex:
+                            self._logger.exception(
+                                "Exception occured on getting multicam plugin: " + str(ex)
+                            )
+
+                try:
+                    printable_image_data = None
+                    if image_data != None:  # giloser check before using
+                        if is_in_python_2():
+                            printable_image_data = image_data.decode(
+                                "utf8", errors="ignore"
+                            )
+                        else:
+                            printable_image_data = str(image_data)
+                    # self._logger.debug("image data so far: {}".format(printable_image_data))
+                except Exception as ex:
+                    self._logger.info(
+                        "Caught an exception trying to create printable_image_data: "
+                        + str(ex)
+                    )
+
+                try:
+                    if (
+                        not image_data
+                        or image_data == None
+                        or "html" in printable_image_data
+                    ):
+                        image_data = None
+                        message = "[ERR GET IMAGE]\n\n " + "".join(
+                            message
+                        )  # .decode('utf-8', errors='ignore'))
+                except Exception as ex:
+                    self._logger.info(
+                        "Caught an exception trying to add info that we don't have image: "
+                        + str(ex)
+                    )
+
+                try:
+                    self._logger.debug(
+                        "message so far: {}".format(message)
+                    )  # .decode('utf-8', errors='ignore')))
+                except Exception as ex:
+                    self._logger.info(
+                        "Caught an exception trying to debug message so far: "
+                        + str(ex)
+                    )
 
                 r = None
 
@@ -2573,9 +2683,12 @@ class TelegramPlugin(
             del self.updateMessageID[id]
         return uMsgID
 
-    def take_image(self, snapshot_url=""):
+    def take_image(self, snapshot_url="",cam_conf=0):
         if snapshot_url == "":
-            snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+            if cam_conf == 0:
+                snapshot_url = self._settings.global_get(["webcam", "snapshot"])
+            else:
+                snapshot_url = cam_conf.snapshot
 
         self._logger.debug("Snapshot URL: " + str(snapshot_url))
         data = None
@@ -2586,9 +2699,16 @@ class TelegramPlugin(
             except Exception as e:
                 self._logger.exception("TimeOut Exception: " + str(e))
                 return None
-        flipH = self._settings.global_get(["webcam", "flipH"])
-        flipV = self._settings.global_get(["webcam", "flipV"])
-        rotate = self._settings.global_get(["webcam", "rotate90"])
+            
+        if cam_conf == 0:
+            flipH = self._settings.global_get(["webcam", "flipH"])
+            flipV = self._settings.global_get(["webcam", "flipV"])
+            rotate = self._settings.global_get(["webcam", "rotate90"])
+        else:
+            flipH = cam_conf.flipH
+            flipV = cam_conf.flipV
+            rotate = cam_conf.rotate90
+
         self._logger.debug (
             "Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate
         )
@@ -2684,11 +2804,14 @@ class TelegramPlugin(
 
         return strtime + strdate
 
-    def create_gif_new(self, chatID, sec=7, multicam_prof=0):
+    def create_gif_new(self, chatID, sec=7, multicam_prof=0,cam_conf=0):
         ret = ""
         stream_url = 0
         if multicam_prof != 0:
             stream_url = multicam_prof.get("URL")
+
+        if cam_conf != 0:
+            stream_url = cam_conf.snapshot
 
         try:
             try:
@@ -2709,7 +2832,14 @@ class TelegramPlugin(
                 outPath = (
                     self.get_plugin_data_folder()
                     + "/tmpgif/gif_"
-                    + multicam_prof.get("name").replace(" ", "_")
+                    + multicam_prof.get("name").replace(" ", "_").replace("/","_")
+                    + ".mp4"
+                )
+            elif cam_conf != 0:
+                outPath = (
+                    self.get_plugin_data_folder()
+                    + "/tmpgif/gif_"
+                    + cam_conf.name.replace(" ", "_").replace("/","_")
                     + ".mp4"
                 )
             else:
@@ -2845,6 +2975,10 @@ class TelegramPlugin(
                 flipH = multicam_prof.get("flipH")
                 flipV = multicam_prof.get("flipV")
                 rotate = multicam_prof.get("rotate90")
+            elif cam_conf != 0:
+                flipH = cam_conf.flipH
+                flipV = cam_conf.flipV
+                rotate = cam_conf.rotate90
             else:
                 flipH = self._settings.global_get(["webcam", "flipH"])
                 flipV = self._settings.global_get(["webcam", "flipV"])
