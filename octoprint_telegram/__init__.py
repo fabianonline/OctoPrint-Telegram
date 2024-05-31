@@ -2011,23 +2011,20 @@ class TelegramPlugin(
                                         self._logger.debug("cam conf URL : " + str(url))
                                         if image_data == None:
                                             image_data = self.take_image(url,config)
+                                            self._logger.debug ("take_image return data : %s",image_data)
                                         else:
                                             image_data2 = self.take_image(url,config)
+                                            self._logger.debug ("take_image return data : %s",image_data2)
                                             if str(image_data2) != "":
                                                 self._logger.debug(
                                                     "Image for  " + str(config.name)
                                                 )
                                                 files = {
-                                                    "photo": ("image.jpg", image_data2)
+                                                    "photo": ("image.jpg", image_data2, 'image/jpeg')
                                                 }
                                                 data2 = data
                                                 data2["caption"] = ""
-                                                r = requests.post(
-                                                    self.bot_url + "/sendPhoto",
-                                                    files=files,
-                                                    data=data2,
-                                                    proxies=self.getProxies(),
-                                                )
+                                                r = self.send_request(self.bot_url,"/sendPhoto",files,data2,self.getProxies())
                                             else:
                                                 self._logger.debug(
                                                     "no image  " + str(config.name)
@@ -2100,16 +2097,11 @@ class TelegramPlugin(
                                                         "Image for  " + str(li.get("name"))
                                                     )
                                                     files = {
-                                                        "photo": ("image.jpg", image_data2)
+                                                        "photo": ("image.jpg", image_data2 ,'image/jpeg')
                                                     }
                                                     data2 = data
                                                     data2["caption"] = ""
-                                                    r = requests.post(
-                                                        self.bot_url + "/sendPhoto",
-                                                        files=files,
-                                                        data=data2,
-                                                        proxies=self.getProxies(),
-                                                    )
+                                                    r = self.send_request(self.bot_url,"/sendPhoto",files,data2,self.getProxies())
                                                 else:
                                                     self._logger.debug(
                                                         "no image  " + str(li.get("name"))
@@ -2218,66 +2210,41 @@ class TelegramPlugin(
                         "Sending with image.. and thumbnail so image first "
                         + str(chatID)
                     )
-                    files = {"photo": ("image.jpg", image_data)}
+                    files = {"photo": ("image.jpg", image_data, 'image/jpeg')}
                     data["caption"] = ""
-                    r = requests.post(
-                        self.bot_url + "/sendPhoto",
-                        files=files,
-                        data=data,
-                        proxies=self.getProxies(),
-                    )
-                    self._logger.debug("Sending image finished. " + str(r.status_code))
+                    r = self.send_request(self.bot_url,"/sendPhoto",files,data,self.getProxies())
+
+                    self._logger.debug("Sending finished. " + str(r.status_code))
 
                     self._logger.debug("Sending thumbnail.. " + str(chatID))
-                    files = {"photo": ("image.jpg", thumbnail_data)}
+                    files = {"photo": ("image.jpg", thumbnail_data ,'image/jpeg')}
                     if message is not "":
                         data["caption"] = message
-                    r = requests.post(
-                        self.bot_url + "/sendPhoto",
-                        files=files,
-                        data=data,
-                        proxies=self.getProxies(),
-                    )
+                    r = self.send_request(self.bot_url,"/sendPhoto",files,data,self.getProxies())
                     self._logger.debug("Sending finished. " + str(r.status_code))
                 elif image_data:
                     self._logger.debug("Sending with image.. " + str(chatID))
-                    files = {"photo": ("image.jpg", image_data)}
+                    files = {"photo": ("image.jpg", image_data ,'image/jpeg')}
                     # self._logger.debug("files so far: " + str(files))
                     if message is not "":
                         data["caption"] = message
-                    r = requests.post(
-                        self.bot_url + "/sendPhoto",
-                        files=files,
-                        data=data,
-                        proxies=self.getProxies(),
-                    )
-
+                    r = self.send_request(self.bot_url,"/sendPhoto",files,data,self.getProxies())
                     self._logger.debug("Sending finished. " + str(r.status_code))
 
                 elif thumbnail_data != None:
                     self._logger.debug("Sending with thumbnail.. " + str(chatID))
-                    files = {"photo": ("image.jpg", thumbnail_data)}
+                    files = {"photo": ("image.jpg", thumbnail_data, 'image/jpeg')}
 
                     if message is not "":
                         data["caption"] = message
 
-                    r = requests.post(
-                        self.bot_url + "/sendPhoto",
-                        files=files,
-                        data=data,
-                        proxies=self.getProxies(),
-                    )
-
+                    r = self.send_request(self.bot_url,"/sendPhoto",files,data,self.getProxies())
                     self._logger.debug("Sending finished. " + str(r.status_code))
 
                 else:
                     self._logger.debug("Sending without image.. " + str(chatID))
                     data["text"] = message
-                    r = requests.post(
-                        self.bot_url + "/sendMessage",
-                        data=data,
-                        proxies=self.getProxies(),
-                    )
+                    r = self.send_request(self.bot_url,"/sendMessage",None,data,self.getProxies())
                     self._logger.debug("Sending finished. " + str(r.status_code))
 
                 if r is not None and inline:
@@ -2323,6 +2290,32 @@ class TelegramPlugin(
         except Exception as ex:
             self._logger.exception("Exception PostImgMethod: " + str(ex))
 
+    def send_request(self,url,urlfct,files,data,proxies):
+        if files != None:
+            r = requests.post(
+                url + urlfct,
+                files=files,
+                data=data,
+                proxies=proxies,
+            )
+            self._logger.debug("Sending image finished. " + str(r.status_code))
+            if r.status_code >= 300:
+                self._logger.error("Message with image not send because => " + str(r.reason))
+                self._logger.debug("full response => " + str(r.text))
+                message = "[ERR SEND IMAGE]\n\n " + "".join(
+                    message
+                ) 
+                data["text"] = message
+                r = self.send_request(url,"/sendMessage",None,data,proxies)
+        else:
+            r = requests.post(
+                url + urlfct,
+                data=data,
+                proxies=proxies,
+            )
+            self._logger.debug("Sending message finished. " + str(r.status_code))
+        return r
+    
     def humanbytes(self, B):
         "Return the given bytes as a human friendly KB, MB, GB, or TB string"
         B = float(B)
@@ -2396,12 +2389,9 @@ class TelegramPlugin(
             return
 
         files = {"video": open(video_file, "rb")}
-        r = requests.post(
-            self.bot_url + "/sendVideo",
-            files=files,
-            data={"chat_id": chatID, "caption": message},
-            proxies=self.getProxies(),
-        )
+        data={"chat_id": chatID, "caption": message}
+        
+        r = self.send_request(self.bot_url,"/sendVideo",files,data,self.getProxies())
         self._logger.debug(
             "Sending finished. " + str(r.status_code) + " " + str(r.content)
         )
@@ -2714,6 +2704,7 @@ class TelegramPlugin(
         )
         image = Image.open(bytes_reader_class(data))
         if data == None:
+            self._logger.debug ("data is None so return None")
             return None
         if flipH or flipV or rotate:
 			
@@ -2731,7 +2722,18 @@ class TelegramPlugin(
             data = output.getvalue()
             output.close()
 
+        self._logger.debug ("take_image return data : %s",str(data))
+        encoded_image = self.encode_image_to_base64(image)
+        self._logger.debug ("take_image return image as base64 : %s",str(encoded_image))
         return data
+
+    def encode_image_to_base64(self, image):
+        """
+        Encodes a PIL Image object to a base64 string for easy embedding or storage.
+        """
+        buffered =  bytes_reader_class()
+        image.save(buffered, format="JPEG")
+        return "data:image/jpeg;base64," + base64.b64encode(buffered.getvalue()).decode('utf-8')
 
     def get_current_layers(self):
         layers = None

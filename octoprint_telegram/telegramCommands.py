@@ -782,7 +782,7 @@ class TCMD:
         )
 
     ############################################################################################
-    def cmdAgain(self,chat_id,from_id,cmd,parameter): 
+    def cmdAgain(self,chat_id,from_id,cmd,parameter, user=""): 
         try:
             data = self.main._printer.get_current_data()
             if self.main._printer.is_printing():
