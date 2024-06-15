@@ -2010,10 +2010,10 @@ class TelegramPlugin(
                                         url = config.snapshotDisplay
                                         self._logger.debug("cam conf URL : " + str(url))
                                         if image_data == None:
-                                            image_data = self.take_image(url,config)
+                                            image_data = self.take_image(url,config,camera)
                                             self._logger.debug ("take_image return data : %s",image_data)
                                         else:
-                                            image_data2 = self.take_image(url,config)
+                                            image_data2 = self.take_image(url,config,camera)
                                             self._logger.debug ("take_image return data : %s",image_data2)
                                             if str(image_data2) != "":
                                                 self._logger.debug(
@@ -2302,6 +2302,11 @@ class TelegramPlugin(
             if r.status_code >= 300:
                 self._logger.error("Message with image not send because => " + str(r.reason))
                 self._logger.debug("full response => " + str(r.text))
+                message = ""
+                if data["caption"] != "":
+                    message = data["caption"]
+                elif data["text"] != "":
+                    message = data["text"]
                 message = "[ERR SEND IMAGE]\n\n " + "".join(
                     message
                 ) 
@@ -2673,23 +2678,37 @@ class TelegramPlugin(
             del self.updateMessageID[id]
         return uMsgID
 
-    def take_image(self, snapshot_url="",cam_conf=0):
+    def take_image(self, snapshot_url="",cam_conf=0,camera = None):
+        snapshot = None
         if snapshot_url == "":
             if cam_conf == 0:
                 snapshot_url = self._settings.global_get(["webcam", "snapshot"])
             else:
                 snapshot_url = cam_conf.snapshot
-
-        self._logger.debug("Snapshot URL: " + str(snapshot_url))
-        data = None
-        if snapshot_url:
+                
+        
+        if cam_conf != 0 and camera != None:
             try:
-                r = requests.get(snapshot_url, timeout=10, proxies=self.getProxies())
-                data = r.content
+                self._logger.debug("will try to get the snapshot from the plugin for " + str(cam_conf.name))
+                snapshot = camera.take_webcam_snapshot(cam_conf.name)
             except Exception as e:
-                self._logger.exception("TimeOut Exception: " + str(e))
-                return None
-            
+                self._logger.exception("Exception get snaposhot from octoprint: " + str(e))
+                snapshot = None
+
+        if snapshot != None:
+            self._logger.debug("set the snapshot to data to try to continue")
+            data = snapshot
+        else:
+            self._logger.debug("Snapshot URL: " + str(snapshot_url))
+            data = None
+            if snapshot_url:
+                try:
+                    r = requests.get(snapshot_url, timeout=10, proxies=self.getProxies())
+                    data = r.content
+                except Exception as e:
+                    self._logger.exception("TimeOut Exception: " + str(e))
+                    return None
+                
         if cam_conf == 0:
             flipH = self._settings.global_get(["webcam", "flipH"])
             flipV = self._settings.global_get(["webcam", "flipV"])
@@ -2702,6 +2721,8 @@ class TelegramPlugin(
         self._logger.debug (
             "Image transformations [H:%s, V:%s, R:%s]", flipH, flipV, rotate
         )
+        
+
         image = Image.open(bytes_reader_class(data))
         if data == None:
             self._logger.debug ("data is None so return None")
